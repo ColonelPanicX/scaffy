@@ -29,6 +29,7 @@ python3 scaffy.py --name my-project --path /path/to/base
 # With flags
 python3 scaffy.py --name my-project --path /path/to/base \
   --governance strict \
+  --platform github \
   --agent claude --agent codex \
   --description "Automates AWS resource exports to Excel" \
   --init-git
@@ -46,6 +47,7 @@ python3 scaffy.py --dry-run
 | `--force` | Overwrite existing files | off |
 | `--dry-run` | Show planned actions without writing | off |
 | `--governance MODE` | `lightweight`, `standard`, or `strict` | interactive (`standard`) |
+| `--platform PLATFORM` | `github`, `gitlab`, or `none` — writes platform-native issue and PR/MR templates | interactive (`none`) |
 | `--agent AGENT` | Agent(s) to generate root files for: `claude`, `codex`, `gemini`, `all`. Repeatable. | `all` |
 | `--init-git` | Run `git init` in the project root after scaffolding | off |
 | `--description TEXT` | Short description injected into `context.md` and agent files | interactive (optional) |

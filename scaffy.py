@@ -4,8 +4,8 @@ Self-contained initializer for multi-agent project scaffold.
 
 Usage:
     python scaffy.py [--name NAME] [--path PATH] [--force] [--dry-run]
-                     [--governance MODE] [--agent AGENT [...]] [--init-git]
-                     [--description TEXT]
+                     [--governance MODE] [--platform PLATFORM] [--agent AGENT [...]]
+                     [--init-git] [--description TEXT]
 
 If --name and --path are both provided, runs without interactive prompts.
 Otherwise uses interactive menus for mode/target/governance selection.
@@ -16,6 +16,7 @@ Options:
   --force              Overwrite existing files.
   --dry-run            Show planned actions and exit without writing anything.
   --governance MODE    Governance mode: lightweight, standard, or strict. Default: standard.
+  --platform PLATFORM  Git platform: github, gitlab, or none. Default: none.
   --agent AGENT        Agent(s) to generate root instruction files for: claude, codex,
                        gemini, or all. Can be specified multiple times. Default: all.
   --init-git           Run git init in the project root after scaffolding.
@@ -38,6 +39,7 @@ from zoneinfo import ZoneInfo
 
 TZ = ZoneInfo("America/New_York")
 GOVERNANCE_MODES = ("lightweight", "standard", "strict")
+PLATFORM_MODES = ("github", "gitlab", "none")
 AGENT_NAMES = ("claude", "codex", "gemini")
 
 
@@ -377,6 +379,7 @@ project: {project_name}
 created: {date}
 timezone: America/New_York
 governance_mode: {governance_mode}
+platform: {platform}
 agents:
 {agents_yaml}
 """,
@@ -1244,6 +1247,187 @@ Follow-up links:
 
 
 # ---------------------------------------------------------------------------
+# Platform files — written to .github/ or .gitlab/ based on --platform flag
+# ---------------------------------------------------------------------------
+
+_GITHUB_ISSUE_TEMPLATE = """\
+---
+name: Work Item
+about: Feature, bug, task, or improvement
+title: '[<area>] <imperative summary>'
+labels: ''
+assignees: ''
+---
+
+## Description
+
+<!-- What is the problem or goal? Include current vs. desired behavior and why it matters. -->
+
+-
+
+## Proposed Solution
+
+<!-- Intended approach. Note affected components, architectural considerations, and tradeoffs. -->
+
+-
+
+## Acceptance Criteria
+
+- [ ]
+- [ ]
+
+## Test Plan
+
+<!-- How will this be validated? Unit tests, integration tests, manual steps. -->
+
+## Definition of Done
+
+- [ ] Implementation finished
+- [ ] Tests added/updated (or justified)
+- [ ] Docs updated (if needed)
+- [ ] PR opened and linked to this issue
+- [ ] Review complete
+- [ ] Merged into target branch
+"""
+
+_GITHUB_PR_TEMPLATE = """\
+## Summary
+
+<!-- What changed, in plain language? -->
+
+-
+
+## Why
+
+<!-- Why this change is needed (bug fix, feature, risk reduction, maintenance). -->
+
+-
+
+## Linked Issue(s)
+
+Closes #
+Related #
+
+## Validation
+
+How was this verified?
+
+- [ ] Unit tests
+- [ ] Integration/end-to-end tests
+- [ ] Manual verification
+- [ ] CI checks passed
+
+Evidence (commands, screenshots, logs, links):
+
+```text
+```
+
+## Risk Assessment
+
+- Functional regression: low / medium / high
+- Security impact: none / low / medium / high
+- Deployment risk: low / medium / high
+
+## Reviewer Checklist
+
+- [ ] Scope matches linked issue intent
+- [ ] Acceptance criteria satisfied
+- [ ] Test evidence adequate for risk level
+- [ ] No sensitive data or secrets introduced
+"""
+
+_GITLAB_ISSUE_TEMPLATE = """\
+## Description
+
+<!-- What is the problem or goal? Include current vs. desired behavior and why it matters. -->
+
+-
+
+## Proposed Solution
+
+<!-- Intended approach. Note affected components, architectural considerations, and tradeoffs. -->
+
+-
+
+## Acceptance Criteria
+
+- [ ]
+- [ ]
+
+## Test Plan
+
+<!-- How will this be validated? Unit tests, integration tests, manual steps. -->
+
+## Definition of Done
+
+- [ ] Implementation finished
+- [ ] Tests added/updated (or justified)
+- [ ] Docs updated (if needed)
+- [ ] MR opened and linked to this issue
+- [ ] Review complete
+- [ ] Merged into target branch
+"""
+
+_GITLAB_MR_TEMPLATE = """\
+## Summary
+
+<!-- What changed, in plain language? -->
+
+-
+
+## Why
+
+<!-- Why this change is needed (bug fix, feature, risk reduction, maintenance). -->
+
+-
+
+## Linked Issue(s)
+
+Closes #
+Related #
+
+## Validation
+
+How was this verified?
+
+- [ ] Unit tests
+- [ ] Integration/end-to-end tests
+- [ ] Manual verification
+- [ ] CI checks passed
+
+Evidence (commands, screenshots, logs, links):
+
+```text
+```
+
+## Risk Assessment
+
+- Functional regression: low / medium / high
+- Security impact: none / low / medium / high
+- Deployment risk: low / medium / high
+
+## Reviewer Checklist
+
+- [ ] Scope matches linked issue intent
+- [ ] Acceptance criteria satisfied
+- [ ] Test evidence adequate for risk level
+- [ ] No sensitive data or secrets introduced
+"""
+
+PLATFORM_FILES: dict[str, dict[str, str]] = {
+    "github": {
+        ".github/ISSUE_TEMPLATE/issue-template.md": _GITHUB_ISSUE_TEMPLATE,
+        ".github/pull_request_template.md": _GITHUB_PR_TEMPLATE,
+    },
+    "gitlab": {
+        ".gitlab/issue_templates/issue-template.md": _GITLAB_ISSUE_TEMPLATE,
+        ".gitlab/merge_request_templates/merge-request-template.md": _GITLAB_MR_TEMPLATE,
+    },
+    "none": {},
+}
+
+
+# ---------------------------------------------------------------------------
 # Agent root files — written to project root, conditioned on --agent flag
 # ---------------------------------------------------------------------------
 
@@ -1456,6 +1640,24 @@ def prompt_for_governance() -> str:
         print("Invalid. Enter 1, 2, or 3.")
 
 
+def prompt_for_platform() -> str:
+    print("\nGit platform:")
+    print("  1) GitHub")
+    print("  2) GitLab")
+    print("  3) None / other")
+    choices = {"1": "github", "2": "gitlab", "3": "none"}
+    while True:
+        try:
+            value = input("Select [1-3, Enter to skip]: ").strip()
+        except EOFError:
+            raise SystemExit("No input provided; exiting.")
+        if not value:
+            return "none"
+        if value in choices:
+            return choices[value]
+        print("Invalid. Enter 1, 2, or 3.")
+
+
 def prompt_for_description() -> str:
     print("\nProject description (optional):")
     print("  A short sentence injected into context.md and agent instruction files.")
@@ -1472,6 +1674,7 @@ def render_template(
     project_name: str,
     description: str,
     governance_mode: str,
+    platform: str,
     agents: list[str],
     date: str,
 ) -> str:
@@ -1481,6 +1684,7 @@ def render_template(
         "{project_name}": project_name,
         "{description}": description_rendered,
         "{governance_mode}": governance_mode,
+        "{platform}": platform,
         "{agents_yaml}": agents_yaml,
         "{date}": date,
     }
@@ -1538,6 +1742,13 @@ def main() -> None:
         help="Governance mode: lightweight, standard, or strict.",
     )
     parser.add_argument(
+        "--platform",
+        metavar="PLATFORM",
+        choices=PLATFORM_MODES,
+        default=None,
+        help="Git platform: github, gitlab, or none. Default: none.",
+    )
+    parser.add_argument(
         "--agent",
         metavar="AGENT",
         choices=(*AGENT_NAMES, "all"),
@@ -1570,6 +1781,7 @@ def main() -> None:
         project_name = args.name
         target_root = (Path(args.path).expanduser().resolve() / project_name).resolve()
         governance_mode = args.governance or "standard"
+        platform = args.platform or "none"
         description = args.description
     else:
         print("Project Initialize")
@@ -1590,6 +1802,7 @@ def main() -> None:
             project_name = suggest_project_name_from_target(target_root)
 
         governance_mode = args.governance or prompt_for_governance()
+        platform = args.platform or prompt_for_platform()
         description = args.description or prompt_for_description()
 
     # .gitignore fallback
@@ -1605,6 +1818,7 @@ def main() -> None:
         project_name=project_name,
         description=description,
         governance_mode=governance_mode,
+        platform=platform,
         agents=selected_agents,
         date=timestamp,
     )
@@ -1617,6 +1831,7 @@ def main() -> None:
     if mode == "new":
         print(f"Name:       {project_name}")
     print(f"Governance: {governance_mode}")
+    print(f"Platform:   {platform}")
     print(f"Agents:     {', '.join(selected_agents)}")
     print(f"Date:       {timestamp} (America/New_York)")
     if target_root.exists() and not args.force:
@@ -1631,6 +1846,8 @@ def main() -> None:
     for agent in selected_agents:
         filename, _ = AGENT_ROOT_FILES[agent]
         print(f"  write {target_root / filename}")
+    for rel_path in PLATFORM_FILES.get(platform, {}):
+        print(f"  write {target_root / rel_path}")
     if args.init_git:
         print(f"  git init {target_root}")
 
@@ -1661,6 +1878,9 @@ def main() -> None:
         filename, content = AGENT_ROOT_FILES[agent]
         rendered = render_template(content, **render_kwargs)
         safe_write(target_root / filename, rendered, args.force)
+
+    for rel_path, content in PLATFORM_FILES.get(platform, {}).items():
+        safe_write(target_root / rel_path, content, args.force)
 
     if args.init_git:
         print(f"\nRunning git init in {target_root} ...")
