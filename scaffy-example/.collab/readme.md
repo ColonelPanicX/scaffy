@@ -1,0 +1,71 @@
+# Collaboration Workspace
+
+Everything AI agents need lives inside this `.collab/` directory.
+
+## About `.collab/`
+
+This directory contains internal AI agent collaboration artifacts (session summaries,
+kanban board, contracts, etc.).
+
+**`.collab/` is intentionally excluded from version control** (listed in `.gitignore`).
+It exists only on your local machine.
+
+If you want to share `.collab/` contents with someone else, do so out-of-band
+(e.g., zip the folder and send it directly). Do not force-add it to git.
+
+## Quick Start
+
+- All agents: read `collab-contract.md`, `kanban-board.md`, and `context.md` before acting.
+- If the kanban board is empty, treat the project as newly initialized and wait for the user
+  to describe goals before drafting plans or tasks.
+- Start sessions by using the relevant sequence from `initial-prompts/`:
+  - `initial-prompts/new-project/` for brand-new repos
+  - `initial-prompts/existing-project/` for retrofitted repos
+  - `initial-prompts/agents/` for agent-specific supplements
+- Use `OPEN SESSION` at the start of each working session to resume context quickly.
+- Use `CLOSE SESSION` at the end of each session to save progress.
+- Write session summaries to `session-summaries/` on close.
+- Keep `kanban-board.md` current — it is the internal source of truth for task status.
+
+## Directory Structure
+
+- `collab-contract.md` — Rules, conventions, and logging requirements.
+- `kanban-board.md` — Task tracking (internal source of truth).
+- `context.md` — Stable project facts: tech stack, key files, conventions, dependencies.
+- `project.yaml` — Machine-readable project metadata (name, date, governance mode, agents).
+- `initial-prompts/` — Onboarding prompt sequences for first and subsequent sessions.
+  - `new-project/00-onboard.md` — First-session cold start for new projects.
+  - `new-project/01-context-build.md` — Memory/context initialization after onboarding.
+  - `existing-project/00-onboard.md` — First-session cold start for existing projects.
+  - `existing-project/01-context-build.md` — Memory/context initialization after onboarding.
+  - `agents/claude.md` — Claude Code-specific supplement.
+  - `agents/codex.md` — Codex-specific supplement.
+  - `agents/gemini.md` — Gemini-specific supplement.
+- `session-summaries/` — Session summaries from all agents.
+  Naming:
+  - First summary of the day: `MM.DD.YYYY-agentname-summary.md`
+  - Additional same-day summaries: `MM.DD.YYYY-##-agentname-summary.md`
+    (use zero-padded sequence like `02`, `03`, etc.)
+- `audit/` — Analysis reports, planning documents, and progress tracking artifacts.
+- `git-management/` — Optional VCS platform governance templates.
+  Includes: `git-guidelines.md`, `issue-template.md`, `pull-request-template.md`
+
+## Audit Directory Guidance
+
+Use `audit/` for durable project artifacts that support traceability.
+
+Intended contents:
+- Analysis reports (technical assessments, gap analyses, code reviews)
+- Planning documents (implementation plans, architecture decisions, remediation strategies)
+- Progress tracking (milestone snapshots, completion metrics, status notes)
+
+Conventions:
+- Filenames should be lowercase, hyphen-separated.
+- Prefix date when time-sensitive: `MM.DD.YYYY-report-name.md`
+- Keep content factual and link to source files rather than duplicating large excerpts.
+
+## Conventions
+
+- Timezone: America/New_York. Dates use `MM.DD.YYYY` (no times).
+- Filenames: lowercase, hyphen-separated.
+- Avoid destructive commands unless explicitly approved.
