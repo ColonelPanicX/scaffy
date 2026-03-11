@@ -1,10 +1,10 @@
-# project-initialize
+# scaffy
 
 Initialize a project with a standard `.collab/` workspace scaffold for multi-agent collaboration.
 
 ## Purpose
 
-`proj_init.py` creates a collaboration scaffold with:
+`scaffy.py` creates a collaboration scaffold with:
 
 - `.collab/collab-contract.md` — Rules, guardrails, and session protocols (OPEN/CLOSE SESSION)
 - `.collab/kanban-board.md` — Task tracking board
@@ -21,20 +21,20 @@ Initialize a project with a standard `.collab/` workspace scaffold for multi-age
 
 ```bash
 # Interactive
-python3 proj_init.py
+python3 scaffy.py
 
 # Fully scripted (non-interactive)
-python3 proj_init.py --name my-project --path /path/to/base
+python3 scaffy.py --name my-project --path /path/to/base
 
 # With flags
-python3 proj_init.py --name my-project --path /path/to/base \
+python3 scaffy.py --name my-project --path /path/to/base \
   --governance strict \
   --agent claude --agent codex \
   --description "Automates AWS resource exports to Excel" \
   --init-git
 
 # Preview without writing
-python3 proj_init.py --dry-run
+python3 scaffy.py --dry-run
 ```
 
 ## Flags
@@ -77,12 +77,12 @@ The scaffold installs two trigger phrases into all agent contracts:
   by default — they are intended to be tracked in version control.
 - Uses `America/New_York` and `MM.DD.YYYY` date formatting in generated templates.
 
-## Make `proj_init` Available Everywhere
+## Make `scaffy` Available Everywhere
 
 ```bash
 mkdir -p ~/.local/bin
-chmod +x path/to/project-initialize/proj_init.py
-ln -sf path/to/project-initialize/proj_init.py ~/.local/bin/proj_init
+chmod +x path/to/scaffy/scaffy.py
+ln -sf path/to/scaffy/scaffy.py ~/.local/bin/scaffy
 ```
 
 Ensure `~/.local/bin` is on your `PATH` (Bash):
@@ -96,12 +96,12 @@ source ~/.bashrc
 Verify:
 
 ```bash
-which proj_init
-proj_init --help
+which scaffy
+scaffy --help
 ```
 
 If you move the script later, update the symlink:
 
 ```bash
-ln -sf /new/path/to/proj_init.py ~/.local/bin/proj_init
+ln -sf /new/path/to/scaffy.py ~/.local/bin/scaffy
 ```

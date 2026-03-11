@@ -3,9 +3,9 @@
 Self-contained initializer for multi-agent project scaffold.
 
 Usage:
-    python proj_init.py [--name NAME] [--path PATH] [--force] [--dry-run]
-                        [--governance MODE] [--agent AGENT [...]] [--init-git]
-                        [--description TEXT]
+    python scaffy.py [--name NAME] [--path PATH] [--force] [--dry-run]
+                     [--governance MODE] [--agent AGENT [...]] [--init-git]
+                     [--description TEXT]
 
 If --name and --path are both provided, runs without interactive prompts.
 Otherwise uses interactive menus for mode/target/governance selection.
