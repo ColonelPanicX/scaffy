@@ -2,6 +2,7 @@ project: scaffy-example
 created: 03.11.2026
 timezone: America/New_York
 governance_mode: standard
+platform: none
 agents:
   - claude
   - codex
