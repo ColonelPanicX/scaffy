@@ -3,6 +3,11 @@
 .codex/
 .gemini/
 
+# Agent instruction files (captured in scaffy-example/)
+CLAUDE.md
+AGENTS.md
+GEMINI.md
+
 # Collaboration Workspace (internal AI artifacts — not for version control)
 .collab/
 
