@@ -115,3 +115,34 @@ Immediately execute the Session Close Protocol — do not wait for additional in
 > create, update, and close items there first.
 > Regardless, **always keep `kanban-board.md` in sync** so it remains a useful internal
 > snapshot for any agent or session that cannot reach the external tracker.
+
+---
+
+## Ideas Directory
+
+- **Location**: `.collab/ideas/`
+- **Purpose**: Persistent thinking space for ideas that aren't ready to become tickets.
+  Use this directory to capture, workshop, and evolve ideas collaboratively before they
+  enter the formal task pipeline.
+- **One file per idea cluster** — name files descriptively (lowercase, hyphen-separated).
+- **Use the template** at `.collab/ideas/idea-template.md` as a starting point.
+- **Nothing in `ideas/` is required to go anywhere.** Ideas can sit, evolve, or be parked
+  indefinitely. The value is keeping them on paper so they aren't lost between sessions.
+
+### Agent Behavior in `ideas/`
+
+When the user points you at a file in `.collab/ideas/`:
+
+1. Read the full file before responding.
+2. Engage honestly — assess whether the idea has merit, identify gaps, ask clarifying questions.
+3. Append a dated entry to the **Discussion Log** section summarizing the exchange and any
+   key conclusions.
+4. Update **Next Steps / Open Questions** to reflect the current state.
+5. Update the `Status` field as the idea progresses:
+   `drafting` → `workshopping` → `parked` or `graduated`
+6. Do **not** create tickets, tasks, or kanban entries from an idea without explicit user approval.
+
+When an idea graduates to a formal ticket:
+
+- Add `Graduated → GitHub Issue #__ on MM.DD.YYYY` at the bottom of the file.
+- Leave the file in `ideas/` as a record — do not delete it.

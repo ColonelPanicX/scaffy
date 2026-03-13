@@ -10,6 +10,7 @@ Initialize a project with a standard `.collab/` workspace scaffold for multi-age
 - `.collab/kanban-board.md` — Task tracking board
 - `.collab/context.md` — Stable project facts: tech stack, key files, conventions
 - `.collab/project.yaml` — Machine-readable project metadata
+- `.collab/ideas/` — Idea incubator: persistent thinking space for pre-ticket concepts
 - `.collab/initial-prompts/` — Onboarding prompt sequences for new and existing projects
 - `.collab/session-summaries/` — Session summary directory with template
 - `.collab/audit/` — Analysis reports and planning documents
@@ -48,6 +49,7 @@ python3 scaffy.py --dry-run
 | `--dry-run` | Show planned actions without writing | off |
 | `--governance MODE` | `lightweight`, `standard`, or `strict` | interactive (`standard`) |
 | `--platform PLATFORM` | `github`, `gitlab`, or `none` — writes platform-native issue and PR/MR templates | interactive (`none`) |
+| `--license LICENSE` | `mit`, `apache-2.0`, `gpl-3.0`, `agpl-3.0`, `bsd-2-clause`, `bsd-3-clause`, `mpl-2.0`, `unlicense`, or `none` — writes a `LICENSE` file | interactive (`none`) |
 | `--agent AGENT` | Agent(s) to generate root files for: `claude`, `codex`, `gemini`, `all`. Repeatable. | `all` |
 | `--init-git` | Run `git init` in the project root after scaffolding | off |
 | `--description TEXT` | Short description injected into `context.md` and agent files | interactive (optional) |
@@ -68,6 +70,27 @@ The scaffold installs two trigger phrases into all agent contracts:
   then delivers a concise resume of where things stand. Use at the start of every session.
 - **`CLOSE SESSION`** — Agent writes a session summary and updates the kanban board.
   Use at the end of every session.
+
+## Ideas Workflow
+
+The `.collab/ideas/` directory is a persistent thinking space for ideas that aren't ready to
+become formal tickets yet. It bridges the gap between "I had a thought" and "I opened an issue."
+
+**How it works:**
+
+1. Create a file for your idea: `.collab/ideas/my-idea-name.md`
+2. Use `.collab/ideas/idea-template.md` as a starting point
+3. Brain dump freely — no rules, no required format in the idea body
+4. When ready, point your agent at the file: *"Hey, look at this idea — does it have legs?"*
+5. The agent will engage honestly, then append a dated summary to the **Discussion Log** section
+6. Ideas evolve over time. Status tracks the lifecycle: `drafting` → `workshopping` → `parked` or `graduated`
+7. When an idea becomes a ticket, note the issue number at the bottom and leave the file in place
+
+**Key property:** nothing in `ideas/` is required to go anywhere. Ideas can sit, evolve slowly,
+or be parked indefinitely. The point is keeping them on paper so they aren't lost when a session closes.
+
+When scaffolding into an **existing project**, scaffy will print a reminder to migrate any ideas
+you already have written down or in your head into the new directory.
 
 ## Behavior
 

@@ -26,6 +26,7 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
 - Use `CLOSE SESSION` at the end of each session to save progress.
 - Write session summaries to `session-summaries/` on close.
 - Keep `kanban-board.md` current — it is the internal source of truth for task status.
+- Use `ideas/` to workshop pre-ticket concepts. See `collab-contract.md` for agent behavior rules.
 
 ## Directory Structure
 
@@ -46,9 +47,25 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
   - First summary of the day: `MM.DD.YYYY-agentname-summary.md`
   - Additional same-day summaries: `MM.DD.YYYY-##-agentname-summary.md`
     (use zero-padded sequence like `02`, `03`, etc.)
+- `ideas/` — Idea incubator: persistent thinking space for pre-ticket concepts and proposals.
+  - `idea-template.md` — Starter template for new idea files.
 - `audit/` — Analysis reports, planning documents, and progress tracking artifacts.
 - `git-management/` — Optional VCS platform governance templates.
   Includes: `git-guidelines.md`, `issue-template.md`, `pull-request-template.md`
+
+## Ideas Directory Guidance
+
+Use `ideas/` for concepts that aren't ready to be formal tickets yet — brain dumps, half-formed
+proposals, things worth thinking through before committing to a sprint.
+
+Workflow:
+- Create one file per idea cluster, named descriptively (e.g., `better-onboarding.md`).
+- Use `idea-template.md` as a starting point.
+- Workshop ideas with an agent: ask for honest feedback, capture the discussion in the
+  **Discussion Log** section of the file so context isn't lost when the session closes.
+- When an idea is ready to become a ticket, note it at the bottom of the file and graduate it
+  to your issue tracker. Leave the file in place as a record.
+- Ideas that don't go anywhere can be left as `parked` — they might be useful later.
 
 ## Audit Directory Guidance
 

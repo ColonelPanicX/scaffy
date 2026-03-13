@@ -4,8 +4,8 @@ Self-contained initializer for multi-agent project scaffold.
 
 Usage:
     python scaffy.py [--name NAME] [--path PATH] [--force] [--dry-run]
-                     [--governance MODE] [--platform PLATFORM] [--agent AGENT [...]]
-                     [--init-git] [--description TEXT]
+                     [--governance MODE] [--platform PLATFORM] [--license LICENSE]
+                     [--agent AGENT [...]] [--init-git] [--description TEXT]
 
 If --name and --path are both provided, runs without interactive prompts.
 Otherwise uses interactive menus for mode/target/governance selection.
@@ -17,6 +17,8 @@ Options:
   --dry-run            Show planned actions and exit without writing anything.
   --governance MODE    Governance mode: lightweight, standard, or strict. Default: standard.
   --platform PLATFORM  Git platform: github, gitlab, or none. Default: none.
+  --license LICENSE    License to generate: mit, apache-2.0, gpl-3.0, agpl-3.0,
+                       bsd-2-clause, bsd-3-clause, mpl-2.0, unlicense, or none. Default: none.
   --agent AGENT        Agent(s) to generate root instruction files for: claude, codex,
                        gemini, or all. Can be specified multiple times. Default: all.
   --init-git           Run git init in the project root after scaffolding.
@@ -41,6 +43,7 @@ TZ = ZoneInfo("America/New_York")
 GOVERNANCE_MODES = ("lightweight", "standard", "strict")
 PLATFORM_MODES = ("github", "gitlab", "none")
 AGENT_NAMES = ("claude", "codex", "gemini")
+LICENSE_CHOICES = ("mit", "apache-2.0", "gpl-3.0", "agpl-3.0", "bsd-2-clause", "bsd-3-clause", "mpl-2.0", "unlicense", "none")
 
 
 def now_tz() -> datetime:
@@ -133,6 +136,7 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
 - Use `CLOSE SESSION` at the end of each session to save progress.
 - Write session summaries to `session-summaries/` on close.
 - Keep `kanban-board.md` current — it is the internal source of truth for task status.
+- Use `ideas/` to workshop pre-ticket concepts. See `collab-contract.md` for agent behavior rules.
 
 ## Directory Structure
 
@@ -153,9 +157,25 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
   - First summary of the day: `MM.DD.YYYY-agentname-summary.md`
   - Additional same-day summaries: `MM.DD.YYYY-##-agentname-summary.md`
     (use zero-padded sequence like `02`, `03`, etc.)
+- `ideas/` — Idea incubator: persistent thinking space for pre-ticket concepts and proposals.
+  - `idea-template.md` — Starter template for new idea files.
 - `audit/` — Analysis reports, planning documents, and progress tracking artifacts.
 - `git-management/` — Optional VCS platform governance templates.
   Includes: `git-guidelines.md`, `issue-template.md`, `pull-request-template.md`
+
+## Ideas Directory Guidance
+
+Use `ideas/` for concepts that aren't ready to be formal tickets yet — brain dumps, half-formed
+proposals, things worth thinking through before committing to a sprint.
+
+Workflow:
+- Create one file per idea cluster, named descriptively (e.g., `better-onboarding.md`).
+- Use `idea-template.md` as a starting point.
+- Workshop ideas with an agent: ask for honest feedback, capture the discussion in the
+  **Discussion Log** section of the file so context isn't lost when the session closes.
+- When an idea is ready to become a ticket, note it at the bottom of the file and graduate it
+  to your issue tracker. Leave the file in place as a record.
+- Ideas that don't go anywhere can be left as `parked` — they might be useful later.
 
 ## Audit Directory Guidance
 
@@ -296,6 +316,37 @@ Immediately execute the Session Close Protocol — do not wait for additional in
 > create, update, and close items there first.
 > Regardless, **always keep `kanban-board.md` in sync** so it remains a useful internal
 > snapshot for any agent or session that cannot reach the external tracker.
+
+---
+
+## Ideas Directory
+
+- **Location**: `.collab/ideas/`
+- **Purpose**: Persistent thinking space for ideas that aren't ready to become tickets.
+  Use this directory to capture, workshop, and evolve ideas collaboratively before they
+  enter the formal task pipeline.
+- **One file per idea cluster** — name files descriptively (lowercase, hyphen-separated).
+- **Use the template** at `.collab/ideas/idea-template.md` as a starting point.
+- **Nothing in `ideas/` is required to go anywhere.** Ideas can sit, evolve, or be parked
+  indefinitely. The value is keeping them on paper so they aren't lost between sessions.
+
+### Agent Behavior in `ideas/`
+
+When the user points you at a file in `.collab/ideas/`:
+
+1. Read the full file before responding.
+2. Engage honestly — assess whether the idea has merit, identify gaps, ask clarifying questions.
+3. Append a dated entry to the **Discussion Log** section summarizing the exchange and any
+   key conclusions.
+4. Update **Next Steps / Open Questions** to reflect the current state.
+5. Update the `Status` field as the idea progresses:
+   `drafting` → `workshopping` → `parked` or `graduated`
+6. Do **not** create tickets, tasks, or kanban entries from an idea without explicit user approval.
+
+When an idea graduates to a formal ticket:
+
+- Add `Graduated → GitHub Issue #__ on MM.DD.YYYY` at the bottom of the file.
+- Leave the file in `ideas/` as a record — do not delete it.
 """,
 
     ".collab/kanban-board.md": """\
@@ -342,6 +393,31 @@ Examples:
 ## Done
 """,
 
+    ".collab/ideas/idea-template.md": """\
+# Idea Title
+
+_Started: {date}_
+_Status: drafting_
+
+<!-- Status values: drafting | workshopping | parked | graduated -->
+
+## The Idea
+
+<!-- Brain dump here. No rules. Write freely. -->
+
+## Discussion Log
+
+<!-- Agent/human back-and-forth: summaries, assessments, key decisions.    -->
+<!-- Date-stamp each entry: _MM.DD.YYYY_ — so the evolution is traceable. -->
+
+## Next Steps / Open Questions
+
+<!-- What needs to happen before this becomes a ticket — or gets parked. -->
+
+---
+<!-- When graduated: Graduated → GitHub Issue #__ on MM.DD.YYYY -->
+""",
+
     ".collab/context.md": """\
 # Project Context
 
@@ -380,6 +456,7 @@ created: {date}
 timezone: America/New_York
 governance_mode: {governance_mode}
 platform: {platform}
+license: {license}
 agents:
 {agents_yaml}
 """,
@@ -1247,6 +1324,426 @@ Follow-up links:
 
 
 # ---------------------------------------------------------------------------
+# License texts — written to LICENSE based on --license flag
+# ---------------------------------------------------------------------------
+
+_LICENSE_MIT = """\
+MIT License
+
+Copyright (c) <YEAR> <AUTHOR OR ORGANIZATION>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+
+_LICENSE_APACHE2 = """\
+                                 Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
+
+   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+   1. Definitions.
+
+      "License" shall mean the terms and conditions for use, reproduction,
+      and distribution as defined by Sections 1 through 9 of this document.
+
+      "Licensor" shall mean the copyright owner or entity authorized by
+      the copyright owner that is granting the License.
+
+      "Legal Entity" shall mean the union of the acting entity and all
+      other entities that control, are controlled by, or are under common
+      control with that entity. For the purposes of this definition,
+      "control" means (i) the power, direct or indirect, to cause the
+      direction or management of such entity, whether by contract or
+      otherwise, or (ii) ownership of fifty percent (50%) or more of the
+      outstanding shares, or (iii) beneficial ownership of such entity.
+
+      "You" (or "Your") shall mean an individual or Legal Entity
+      exercising permissions granted by this License.
+
+      "Source" form shall mean the preferred form for making modifications,
+      including but not limited to software source code, documentation
+      source, and configuration files.
+
+      "Object" form shall mean any form resulting from mechanical
+      transformation or translation of a Source form, including but
+      not limited to compiled object code, generated documentation,
+      and conversions to other media types.
+
+      "Work" shall mean the work of authorship made available under
+      the License, as indicated by a copyright notice that is included in
+      or attached to the work (an example is provided in the Appendix below).
+
+      "Derivative Works" shall mean any work, whether in Source or Object
+      form, that is based on (or derived from) the Work and for which the
+      editorial revisions, annotations, elaborations, or other modifications
+      represent, as a whole, an original work of authorship. For the purposes
+      of this License, Derivative Works shall not include works that remain
+      separable from, or merely link (or bind by name) to the interfaces of,
+      the Work and derivative works thereof.
+
+      "Contribution" shall mean, as submitted to the Licensor for inclusion
+      in the Work by the copyright owner or by an individual or Legal Entity
+      authorized to submit on behalf of the copyright owner. For the purposes
+      of this definition, "submitted" means any form of electronic, verbal,
+      or written communication sent to the Licensor or its representatives,
+      including but not limited to communication on electronic mailing lists,
+      source code control systems, and issue tracking systems that are managed
+      by, or on behalf of, the Licensor for the purpose of discussing and
+      improving the Work, but excluding communication that is conspicuously
+      marked or designated in writing by the copyright owner as "Not a
+      Contribution."
+
+      "Contributor" shall mean Licensor and any Legal Entity on behalf of
+      whom a Contribution has been received by the Licensor and included
+      within the Work.
+
+   2. Grant of Copyright License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      copyright license to reproduce, prepare Derivative Works of,
+      publicly display, publicly perform, sublicense, and distribute the
+      Work and such Derivative Works in Source or Object form.
+
+   3. Grant of Patent License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      (except as stated in this section) patent license to make, have made,
+      use, offer to sell, sell, import, and otherwise transfer the Work,
+      where such license applies only to those patent claims licensable
+      by such Contributor that are necessarily infringed by their
+      Contribution(s) alone or by the combination of their Contribution(s)
+      with the Work to which such Contribution(s) was submitted. If You
+      institute patent litigation against any entity (including a cross-claim
+      or counterclaim in a lawsuit) alleging that the Work or any
+      Contribution embodied within the Work constitutes direct or contributory
+      patent infringement, then any patent licenses granted to You under
+      this License for that Work shall terminate as of the date such
+      litigation is filed.
+
+   4. Redistribution. You may reproduce and distribute copies of the
+      Work or Derivative Works thereof in any medium, with or without
+      modifications, and in Source or Object form, provided that You
+      meet the following conditions:
+
+      (a) You must give any other recipients of the Work or Derivative
+          Works a copy of this License; and
+
+      (b) You must cause any modified files to carry prominent notices
+          stating that You changed the files; and
+
+      (c) You must retain, in the Source form of any Derivative Works
+          that You distribute, all copyright, patent, trademark, and
+          attribution notices from the Source form of the Work,
+          excluding those notices that do not pertain to any part of
+          the Derivative Works; and
+
+      (d) If the Work includes a "NOTICE" text file as part of its
+          distribution, You must include a readable copy of the
+          attribution notices contained within such NOTICE file, in
+          at least one of the following places: within a NOTICE text
+          file distributed as part of the Derivative Works; within
+          the Source form or documentation, if provided along with the
+          Derivative Works; or, within a display generated by the
+          Derivative Works, if and wherever such third-party notices
+          normally appear. The contents of the NOTICE file are for
+          informational purposes only and do not modify the License.
+          You may add Your own attribution notices within Derivative
+          Works that You distribute, alongside or in addition to the
+          NOTICE text from the Work, provided that such additional
+          attribution notices cannot be construed as modifying the License.
+
+      You may add Your own license statement for Your modifications and
+      may provide additional grant of rights to use, copy, modify, merge,
+      publish, distribute, sublicense, and/or sell copies of the
+      Contribution, either on an "as is" basis or under different terms
+      and conditions, provided that Your use, reproduction, and
+      distribution of the Contribution otherwise complies with the
+      conditions stated in this License.
+
+   5. Submission of Contributions. Unless You explicitly state otherwise,
+      any Contribution intentionally submitted for inclusion in the Work
+      by You to the Licensor shall be under the terms and conditions of
+      this License, without any additional terms or conditions.
+      Notwithstanding the above, nothing herein shall supersede or modify
+      the terms of any separate license agreement you may have executed
+      with Licensor regarding such Contributions.
+
+   6. Trademarks. This License does not grant permission to use the trade
+      names, trademarks, service marks, or product names of the Licensor,
+      except as required for reasonable and customary use in describing the
+      origin of the Work and reproducing the content of the NOTICE file.
+
+   7. Disclaimer of Warranty. Unless required by applicable law or
+      agreed to in writing, Licensor provides the Work (and each
+      Contributor provides its Contributions) on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+      implied, including, without limitation, any warranties or conditions
+      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+      PARTICULAR PURPOSE. You are solely responsible for determining the
+      appropriateness of using or redistributing the Work and assume any
+      risks associated with Your exercise of permissions under this License.
+
+   8. Limitation of Liability. In no event and under no legal theory,
+      whether in tort (including negligence), contract, or otherwise,
+      unless required by applicable law (such as deliberate and grossly
+      negligent acts) or agreed to in writing, shall any Contributor be
+      liable to You for damages, including any direct, indirect, special,
+      incidental, or exemplary damages of any character arising as a
+      result of this License or out of the use or inability to use the
+      Work (including but not limited to damages for loss of goodwill,
+      work stoppage, computer failure or malfunction, or all other
+      commercial damages or losses), even if such Contributor has been
+      advised of the possibility of such damages.
+
+   9. Accepting Warranty or Additional Liability. While redistributing
+      the Work or Derivative Works thereof, You may choose to offer,
+      and charge a fee for, acceptance of support, warranty, indemnity,
+      or other liability obligations and/or rights consistent with this
+      License. However, in accepting such obligations, You may offer only
+      conditions that are consistent with this License.
+
+   END OF TERMS AND CONDITIONS
+
+   APPENDIX: How to apply the Apache License to your work.
+
+      To apply the Apache License to your work, attach the following
+      boilerplate notice, with the fields enclosed by brackets "[]"
+      replaced with your own identifying information. (Don't include
+      the brackets!)  The text should be enclosed in the appropriate
+      comment syntax for the file format. Please also include the
+      "NOTICE" file as described above.
+
+   Copyright <YEAR> <AUTHOR OR ORGANIZATION>
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+"""
+
+_LICENSE_GPL3 = """\
+                    GNU GENERAL PUBLIC LICENSE
+                       Version 3, 29 June 2007
+
+ Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
+ Everyone is permitted to copy and distribute verbatim copies
+ of this license document, but changing it is not allowed.
+
+                            Preamble
+
+  The GNU General Public License is a free, copyleft license for
+software and other kinds of works.
+
+  For the complete license text, see:
+  https://spdx.org/licenses/GPL-3.0-only.html
+
+  To apply this license to your project, add the following notice.
+  Replace <YEAR>, <AUTHOR OR ORGANIZATION>, and <PROGRAM NAME>:
+
+    <PROGRAM NAME>
+    Copyright (C) <YEAR>  <AUTHOR OR ORGANIZATION>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+SPDX-License-Identifier: GPL-3.0-only
+
+NOTE: Replace this file with the full GPL-3.0 license text from:
+      https://www.gnu.org/licenses/gpl-3.0.txt
+"""
+
+_LICENSE_AGPL3 = """\
+                    GNU AFFERO GENERAL PUBLIC LICENSE
+                       Version 3, 19 November 2007
+
+ Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
+ Everyone is permitted to copy and distribute verbatim copies
+ of this license document, but changing it is not allowed.
+
+  For the complete license text, see:
+  https://spdx.org/licenses/AGPL-3.0-only.html
+
+  To apply this license to your project, add the following notice.
+  Replace <YEAR>, <AUTHOR OR ORGANIZATION>, and <PROGRAM NAME>:
+
+    <PROGRAM NAME>
+    Copyright (C) <YEAR>  <AUTHOR OR ORGANIZATION>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+SPDX-License-Identifier: AGPL-3.0-only
+
+NOTE: Replace this file with the full AGPL-3.0 license text from:
+      https://www.gnu.org/licenses/agpl-3.0.txt
+"""
+
+_LICENSE_BSD2 = """\
+BSD 2-Clause License
+
+Copyright (c) <YEAR>, <AUTHOR OR ORGANIZATION>
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+"""
+
+_LICENSE_BSD3 = """\
+BSD 3-Clause License
+
+Copyright (c) <YEAR>, <AUTHOR OR ORGANIZATION>
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its contributors
+   may be used to endorse or promote products derived from this software
+   without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+"""
+
+_LICENSE_MPL2 = """\
+Mozilla Public License Version 2.0
+==================================
+
+  For the complete license text, see:
+  https://spdx.org/licenses/MPL-2.0.html
+
+  To apply this license to your project, replace <YEAR> and
+  <AUTHOR OR ORGANIZATION> below, then replace this file with the
+  full MPL-2.0 text from:
+  https://www.mozilla.org/en-US/MPL/2.0/
+
+Copyright (c) <YEAR> <AUTHOR OR ORGANIZATION>
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+SPDX-License-Identifier: MPL-2.0
+
+NOTE: Replace this file with the full MPL-2.0 license text from:
+      https://www.mozilla.org/media/MPL/2.0/index.txt
+"""
+
+_LICENSE_UNLICENSE = """\
+This is free and unencumbered software released into the public domain.
+
+Anyone is free to copy, modify, publish, use, compile, sell, or
+distribute this software, either in source code form or as a compiled
+binary, for any purpose, commercial or non-commercial, and by any
+means.
+
+In jurisdictions that recognize copyright laws, the author or authors
+of this software dedicate any and all copyright interest in the
+software to the public domain. We make this dedication for the benefit
+of the public at large and to the detriment of our heirs and
+successors. We intend this dedication to be an overt act of
+relinquishment in perpetuity of all present and future rights to this
+software under copyright law.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+
+For more information, please refer to <https://unlicense.org>
+"""
+
+LICENSE_TEXTS: dict[str, str] = {
+    "mit": _LICENSE_MIT,
+    "apache-2.0": _LICENSE_APACHE2,
+    "gpl-3.0": _LICENSE_GPL3,
+    "agpl-3.0": _LICENSE_AGPL3,
+    "bsd-2-clause": _LICENSE_BSD2,
+    "bsd-3-clause": _LICENSE_BSD3,
+    "mpl-2.0": _LICENSE_MPL2,
+    "unlicense": _LICENSE_UNLICENSE,
+}
+
+
+# ---------------------------------------------------------------------------
 # Platform files — written to .github/ or .gitlab/ based on --platform flag
 # ---------------------------------------------------------------------------
 
@@ -1658,6 +2155,40 @@ def prompt_for_platform() -> str:
         print("Invalid. Enter 1, 2, or 3.")
 
 
+def prompt_for_license() -> str:
+    print("\nLicense:")
+    print("  1) MIT             — permissive, short, very common")
+    print("  2) Apache-2.0      — permissive, patent grant included")
+    print("  3) GPL-3.0         — copyleft, strong")
+    print("  4) AGPL-3.0        — copyleft, network use triggers share-alike")
+    print("  5) BSD-2-Clause    — permissive, minimal")
+    print("  6) BSD-3-Clause    — permissive, no-endorsement clause")
+    print("  7) MPL-2.0         — weak copyleft, file-level")
+    print("  8) Unlicense       — public domain dedication")
+    print("  9) None            — skip LICENSE file")
+    choices = {
+        "1": "mit",
+        "2": "apache-2.0",
+        "3": "gpl-3.0",
+        "4": "agpl-3.0",
+        "5": "bsd-2-clause",
+        "6": "bsd-3-clause",
+        "7": "mpl-2.0",
+        "8": "unlicense",
+        "9": "none",
+    }
+    while True:
+        try:
+            value = input("Select [1-9, Enter to skip]: ").strip()
+        except EOFError:
+            raise SystemExit("No input provided; exiting.")
+        if not value:
+            return "none"
+        if value in choices:
+            return choices[value]
+        print("Invalid. Enter 1–9 or press Enter to skip.")
+
+
 def prompt_for_description() -> str:
     print("\nProject description (optional):")
     print("  A short sentence injected into context.md and agent instruction files.")
@@ -1675,6 +2206,7 @@ def render_template(
     description: str,
     governance_mode: str,
     platform: str,
+    license_id: str,
     agents: list[str],
     date: str,
 ) -> str:
@@ -1685,6 +2217,7 @@ def render_template(
         "{description}": description_rendered,
         "{governance_mode}": governance_mode,
         "{platform}": platform,
+        "{license}": license_id,
         "{agents_yaml}": agents_yaml,
         "{date}": date,
     }
@@ -1709,6 +2242,7 @@ def safe_write(dest: Path, content: str, force: bool) -> None:
 
 def ensure_required_directories(target_root: Path) -> None:
     required_dirs = [
+        target_root / ".collab" / "ideas",
         target_root / ".collab" / "audit",
         target_root / ".collab" / "initial-prompts" / "new-project",
         target_root / ".collab" / "initial-prompts" / "existing-project",
@@ -1749,6 +2283,16 @@ def main() -> None:
         help="Git platform: github, gitlab, or none. Default: none.",
     )
     parser.add_argument(
+        "--license",
+        metavar="LICENSE",
+        choices=LICENSE_CHOICES,
+        default=None,
+        help=(
+            "License to generate: mit, apache-2.0, gpl-3.0, agpl-3.0, "
+            "bsd-2-clause, bsd-3-clause, mpl-2.0, unlicense, or none. Default: none."
+        ),
+    )
+    parser.add_argument(
         "--agent",
         metavar="AGENT",
         choices=(*AGENT_NAMES, "all"),
@@ -1782,6 +2326,7 @@ def main() -> None:
         target_root = (Path(args.path).expanduser().resolve() / project_name).resolve()
         governance_mode = args.governance or "standard"
         platform = args.platform or "none"
+        license_id = args.license or "none"
         description = args.description
     else:
         print("Project Initialize")
@@ -1803,6 +2348,7 @@ def main() -> None:
 
         governance_mode = args.governance or prompt_for_governance()
         platform = args.platform or prompt_for_platform()
+        license_id = args.license or prompt_for_license()
         description = args.description or prompt_for_description()
 
     # .gitignore fallback
@@ -1819,6 +2365,7 @@ def main() -> None:
         description=description,
         governance_mode=governance_mode,
         platform=platform,
+        license_id=license_id,
         agents=selected_agents,
         date=timestamp,
     )
@@ -1832,6 +2379,7 @@ def main() -> None:
         print(f"Name:       {project_name}")
     print(f"Governance: {governance_mode}")
     print(f"Platform:   {platform}")
+    print(f"License:    {license_id}")
     print(f"Agents:     {', '.join(selected_agents)}")
     print(f"Date:       {timestamp} (America/New_York)")
     if target_root.exists() and not args.force:
@@ -1848,6 +2396,8 @@ def main() -> None:
         print(f"  write {target_root / filename}")
     for rel_path in PLATFORM_FILES.get(platform, {}):
         print(f"  write {target_root / rel_path}")
+    if license_id != "none":
+        print(f"  write {target_root / 'LICENSE'}")
     if args.init_git:
         print(f"  git init {target_root}")
 
@@ -1882,6 +2432,9 @@ def main() -> None:
     for rel_path, content in PLATFORM_FILES.get(platform, {}).items():
         safe_write(target_root / rel_path, content, args.force)
 
+    if license_id != "none":
+        safe_write(target_root / "LICENSE", LICENSE_TEXTS[license_id], args.force)
+
     if args.init_git:
         print(f"\nRunning git init in {target_root} ...")
         result = subprocess.run(["git", "init"], cwd=target_root, capture_output=True, text=True)
@@ -1889,6 +2442,21 @@ def main() -> None:
             print(f"  {result.stdout.strip()}")
         else:
             print(f"  git init failed: {result.stderr.strip()}")
+
+    if mode == "existing":
+        print(f"""
+┌─ Ideas Directory ────────────────────────────────────────────────────────────┐
+│                                                                              │
+│  .collab/ideas/ is ready.                                                    │
+│                                                                              │
+│  If you have ideas already in your head or written down somewhere else,      │
+│  now is a great time to move them in. Use the template to get started:       │
+│                                                                              │
+│    .collab/ideas/idea-template.md                                            │
+│                                                                              │
+│  One file per idea. No rules. Workshop them with your agent when ready.      │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘""")
 
     prompt_file = "new-project" if mode == "new" else "existing-project"
     print(f"""
