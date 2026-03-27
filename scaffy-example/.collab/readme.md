@@ -18,9 +18,7 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
 - All agents: read `collab-contract.md`, `kanban-board.md`, and `context.md` before acting.
 - If the kanban board is empty, treat the project as newly initialized and wait for the user
   to describe goals before drafting plans or tasks.
-- Start your first session by pasting the prompt from `initial-prompt/`:
-  - `initial-prompt/new-project/initial-prompt.md` for brand-new repos
-  - `initial-prompt/existing-project/initial-prompt.md` for retrofitted repos
+- Start your first session by pasting the contents of `initial-prompt.md`.
 - Use `OPEN SESSION` at the start of each working session to resume context quickly.
 - Use `CLOSE SESSION` at the end of each session to save progress.
 - Write session summaries to `session-summaries/` on close.
@@ -33,9 +31,7 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
 - `kanban-board.md` — Task tracking (internal source of truth).
 - `context.md` — Stable project facts: tech stack, key files, conventions, dependencies.
 - `project.yaml` — Machine-readable project metadata (name, date, governance mode, agents).
-- `initial-prompt/` — Consolidated first-session onboarding prompt (paste on first launch).
-  - `new-project/initial-prompt.md` — First-session prompt for new projects.
-  - `existing-project/initial-prompt.md` — First-session prompt for existing projects.
+- `initial-prompt.md` — Consolidated first-session prompt (paste on first launch).
 - `session-summaries/` — Session summaries from all agents.
   Naming:
   - First summary of the day: `MM.DD.YYYY-agentname-summary.md`

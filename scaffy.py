@@ -128,9 +128,7 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
 - All agents: read `collab-contract.md`, `kanban-board.md`, and `context.md` before acting.
 - If the kanban board is empty, treat the project as newly initialized and wait for the user
   to describe goals before drafting plans or tasks.
-- Start your first session by pasting the prompt from `initial-prompt/`:
-  - `initial-prompt/new-project/initial-prompt.md` for brand-new repos
-  - `initial-prompt/existing-project/initial-prompt.md` for retrofitted repos
+- Start your first session by pasting the contents of `initial-prompt.md`.
 - Use `OPEN SESSION` at the start of each working session to resume context quickly.
 - Use `CLOSE SESSION` at the end of each session to save progress.
 - Write session summaries to `session-summaries/` on close.
@@ -143,9 +141,7 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
 - `kanban-board.md` — Task tracking (internal source of truth).
 - `context.md` — Stable project facts: tech stack, key files, conventions, dependencies.
 - `project.yaml` — Machine-readable project metadata (name, date, governance mode, agents).
-- `initial-prompt/` — Consolidated first-session onboarding prompt (paste on first launch).
-  - `new-project/initial-prompt.md` — First-session prompt for new projects.
-  - `existing-project/initial-prompt.md` — First-session prompt for existing projects.
+- `initial-prompt.md` — Consolidated first-session prompt (paste on first launch).
 - `session-summaries/` — Session summaries from all agents.
   Naming:
   - First summary of the day: `MM.DD.YYYY-agentname-summary.md`
@@ -455,157 +451,6 @@ agents:
 {agents_yaml}
 """,
 
-    ".collab/initial-prompt/new-project/initial-prompt.md": """\
-You are working in a newly initialized project with a structured `.collab/` collaboration
-directory. Before doing anything:
-
-1. Read `.collab/collab-contract.md` for rules, naming conventions, and logging requirements.
-2. Read `.collab/kanban-board.md` for current task status.
-3. Read `.collab/context.md` for stable project facts (fill in what you can from context).
-4. Check `.collab/session-summaries/` for any prior session summaries.
-5. The kanban board is empty — this is a newly initialized project. Wait for me to
-   describe goals before drafting plans or tasks.
-
----
-
-Now initialize your memory with these stable facts (use whatever persistent memory
-mechanism your agent supports):
-- Project name and one-sentence description
-- Tech stack: languages, frameworks, key dependencies
-- Key file paths: entry points, config files, test directories
-- Naming and style conventions
-- Hard constraints or guardrails (e.g., "never commit credentials")
-
-Report back:
-- What you saved to memory
-- Which fields in `context.md` are empty and should be filled in before work begins
-
-Do not start any work tasks until these steps are complete.
-
----
-
-## Session Protocols
-
-### OPEN SESSION
-
-When I type exactly:
-
-    OPEN SESSION
-
-Immediately execute the Session Open Protocol:
-
-1. Read the most recent 1-2 session summaries in `.collab/session-summaries/`.
-2. Read `.collab/kanban-board.md` for current task state.
-3. Read `.collab/context.md`.
-4. Deliver a concise session resume:
-   - What was accomplished last session
-   - What is currently In Progress or Blocked
-   - What is up next
-   - Any open questions or flags from the last session
-
-Do not re-read `collab-contract.md`. Focus on current state, not process rules.
-
-### CLOSE SESSION
-
-When I type exactly:
-
-    CLOSE SESSION
-
-Immediately execute the Session Close Protocol:
-
-1. Write a session summary to `.collab/session-summaries/`:
-   - First of the day: `MM.DD.YYYY-agentname-summary.md`
-   - Additional same-day: `MM.DD.YYYY-##-agentname-summary.md` (zero-padded: `02`, `03`, …)
-   - Use the template at `.collab/session-summaries/session-summary-template.md`
-2. Update `.collab/kanban-board.md`:
-   - Move completed tasks to **Done**
-   - Update in-progress task statuses
-   - Add newly discovered tasks to **Inbox** or **Backlog**
-3. Confirm completion to me.
-""",
-
-    ".collab/initial-prompt/existing-project/initial-prompt.md": """\
-You are working in an **existing project**. This project may already contain code,
-configuration, history, and decisions made before this structure was in place.
-
-Before doing anything:
-
-1. Read `.collab/collab-contract.md` for rules, naming conventions, and logging requirements.
-2. Read `.collab/kanban-board.md` for current task status.
-3. Read `.collab/context.md` for stable project facts (if it exists and has content).
-4. Check `.collab/session-summaries/` for any prior session summaries.
-5. Perform a brief, non-destructive reconnaissance of the repository:
-   - Identify the apparent purpose of the project.
-   - Identify primary languages, frameworks, and entry points.
-   - Identify build/test commands if discoverable.
-   - Note any existing documentation (README, docs/, etc.).
-6. Do **not** restructure, refactor, rename, or reorganize anything unless explicitly instructed.
-7. If the kanban board is empty, treat this as a retrofit scenario:
-   - Add initial tasks to **Inbox** or **Backlog**: repo mapping, architecture understanding,
-     build/test validation.
-   - Wait for my approval before making structural changes.
-
-Your first responsibility is to **understand and document the current state**, not change it.
-
----
-
-Now initialize your memory. Using what you discovered during reconnaissance, save:
-- What this project is and what it does
-- Tech stack: languages, frameworks, key dependencies
-- Key file paths: entry points, config files, test directories
-- Naming and style conventions already in use
-- Any constraints or guardrails apparent from the codebase
-
-Use whatever persistent memory mechanism your agent supports.
-
-Report back:
-- What you saved to memory
-- What you updated or could not determine in `context.md`
-- Any immediate risks or concerns observed during reconnaissance
-
-Do not start any work tasks until these steps are complete.
-
----
-
-## Session Protocols
-
-### OPEN SESSION
-
-When I type exactly:
-
-    OPEN SESSION
-
-Immediately execute the Session Open Protocol:
-
-1. Read the most recent 1-2 session summaries in `.collab/session-summaries/`.
-2. Read `.collab/kanban-board.md` for current task state.
-3. Read `.collab/context.md`.
-4. Deliver a concise session resume:
-   - What was accomplished last session
-   - What is currently In Progress or Blocked
-   - What is up next
-   - Any open questions or flags from the last session
-
-Do not re-read `collab-contract.md`. Focus on current state, not process rules.
-
-### CLOSE SESSION
-
-When I type exactly:
-
-    CLOSE SESSION
-
-Immediately execute the Session Close Protocol:
-
-1. Write a session summary to `.collab/session-summaries/`:
-   - First of the day: `MM.DD.YYYY-agentname-summary.md`
-   - Additional same-day: `MM.DD.YYYY-##-agentname-summary.md` (zero-padded: `02`, `03`, …)
-   - Use the template at `.collab/session-summaries/session-summary-template.md`
-2. Update `.collab/kanban-board.md`:
-   - Move completed tasks to **Done**
-   - Update in-progress task statuses
-   - Add newly discovered tasks to **Inbox** or **Backlog**
-3. Confirm completion to me.
-""",
 
     ".collab/session-summaries/session-summary-template.md": """\
 ---
@@ -1783,6 +1628,159 @@ Evidence (commands, screenshots, logs, links):
 - [ ] No sensitive data or secrets introduced
 """
 
+INITIAL_PROMPT_TEMPLATES: dict[str, str] = {
+    "new": """\
+You are working in a newly initialized project with a structured `.collab/` collaboration
+directory. Before doing anything:
+
+1. Read `.collab/collab-contract.md` for rules, naming conventions, and logging requirements.
+2. Read `.collab/kanban-board.md` for current task status.
+3. Read `.collab/context.md` for stable project facts (fill in what you can from context).
+4. Check `.collab/session-summaries/` for any prior session summaries.
+5. The kanban board is empty — this is a newly initialized project. Wait for me to
+   describe goals before drafting plans or tasks.
+
+---
+
+Now initialize your memory with these stable facts (use whatever persistent memory
+mechanism your agent supports):
+- Project name and one-sentence description
+- Tech stack: languages, frameworks, key dependencies
+- Key file paths: entry points, config files, test directories
+- Naming and style conventions
+- Hard constraints or guardrails (e.g., "never commit credentials")
+
+Report back:
+- What you saved to memory
+- Which fields in `context.md` are empty and should be filled in before work begins
+
+Do not start any work tasks until these steps are complete.
+
+---
+
+## Session Protocols
+
+### OPEN SESSION
+
+When I type exactly:
+
+    OPEN SESSION
+
+Immediately execute the Session Open Protocol:
+
+1. Read the most recent 1-2 session summaries in `.collab/session-summaries/`.
+2. Read `.collab/kanban-board.md` for current task state.
+3. Read `.collab/context.md`.
+4. Deliver a concise session resume:
+   - What was accomplished last session
+   - What is currently In Progress or Blocked
+   - What is up next
+   - Any open questions or flags from the last session
+
+Do not re-read `collab-contract.md`. Focus on current state, not process rules.
+
+### CLOSE SESSION
+
+When I type exactly:
+
+    CLOSE SESSION
+
+Immediately execute the Session Close Protocol:
+
+1. Write a session summary to `.collab/session-summaries/`:
+   - First of the day: `MM.DD.YYYY-agentname-summary.md`
+   - Additional same-day: `MM.DD.YYYY-##-agentname-summary.md` (zero-padded: `02`, `03`, …)
+   - Use the template at `.collab/session-summaries/session-summary-template.md`
+2. Update `.collab/kanban-board.md`:
+   - Move completed tasks to **Done**
+   - Update in-progress task statuses
+   - Add newly discovered tasks to **Inbox** or **Backlog**
+3. Confirm completion to me.
+""",
+    "existing": """\
+You are working in an **existing project**. This project may already contain code,
+configuration, history, and decisions made before this structure was in place.
+
+Before doing anything:
+
+1. Read `.collab/collab-contract.md` for rules, naming conventions, and logging requirements.
+2. Read `.collab/kanban-board.md` for current task status.
+3. Read `.collab/context.md` for stable project facts (if it exists and has content).
+4. Check `.collab/session-summaries/` for any prior session summaries.
+5. Perform a brief, non-destructive reconnaissance of the repository:
+   - Identify the apparent purpose of the project.
+   - Identify primary languages, frameworks, and entry points.
+   - Identify build/test commands if discoverable.
+   - Note any existing documentation (README, docs/, etc.).
+6. Do **not** restructure, refactor, rename, or reorganize anything unless explicitly instructed.
+7. If the kanban board is empty, treat this as a retrofit scenario:
+   - Add initial tasks to **Inbox** or **Backlog**: repo mapping, architecture understanding,
+     build/test validation.
+   - Wait for my approval before making structural changes.
+
+Your first responsibility is to **understand and document the current state**, not change it.
+
+---
+
+Now initialize your memory. Using what you discovered during reconnaissance, save:
+- What this project is and what it does
+- Tech stack: languages, frameworks, key dependencies
+- Key file paths: entry points, config files, test directories
+- Naming and style conventions already in use
+- Any constraints or guardrails apparent from the codebase
+
+Use whatever persistent memory mechanism your agent supports.
+
+Report back:
+- What you saved to memory
+- What you updated or could not determine in `context.md`
+- Any immediate risks or concerns observed during reconnaissance
+
+Do not start any work tasks until these steps are complete.
+
+---
+
+## Session Protocols
+
+### OPEN SESSION
+
+When I type exactly:
+
+    OPEN SESSION
+
+Immediately execute the Session Open Protocol:
+
+1. Read the most recent 1-2 session summaries in `.collab/session-summaries/`.
+2. Read `.collab/kanban-board.md` for current task state.
+3. Read `.collab/context.md`.
+4. Deliver a concise session resume:
+   - What was accomplished last session
+   - What is currently In Progress or Blocked
+   - What is up next
+   - Any open questions or flags from the last session
+
+Do not re-read `collab-contract.md`. Focus on current state, not process rules.
+
+### CLOSE SESSION
+
+When I type exactly:
+
+    CLOSE SESSION
+
+Immediately execute the Session Close Protocol:
+
+1. Write a session summary to `.collab/session-summaries/`:
+   - First of the day: `MM.DD.YYYY-agentname-summary.md`
+   - Additional same-day: `MM.DD.YYYY-##-agentname-summary.md` (zero-padded: `02`, `03`, …)
+   - Use the template at `.collab/session-summaries/session-summary-template.md`
+2. Update `.collab/kanban-board.md`:
+   - Move completed tasks to **Done**
+   - Update in-progress task statuses
+   - Add newly discovered tasks to **Inbox** or **Backlog**
+3. Confirm completion to me.
+""",
+}
+
 PLATFORM_FILES: dict[str, dict[str, str]] = {
     "github": {
         ".github/ISSUE_TEMPLATE/issue-template.md": _GITHUB_ISSUE_TEMPLATE,
@@ -2114,7 +2112,6 @@ def ensure_required_directories(target_root: Path, mode: str) -> None:
     required_dirs = [
         target_root / ".collab" / "ideas",
         target_root / ".collab" / "audit",
-        target_root / ".collab" / "initial-prompt" / (f"{mode}-project"),
         target_root / ".collab" / "git-management",
         target_root / ".collab" / "session-summaries",
     ]
@@ -2252,17 +2249,14 @@ def main() -> None:
     if target_root.exists() and not args.force:
         print("Notice: Target exists. Existing files will be skipped unless --force is used.")
 
-    excluded_prompt_dir = "existing-project" if mode == "new" else "new-project"
-
     if args.dry_run:
         print("\nPlanned actions:")
         for rel_path in TEMPLATE_FILES:
-            if rel_path.startswith(f".collab/initial-prompt/{excluded_prompt_dir}/"):
-                continue
             if rel_path == ".gitignore":
                 print(f"  write {effective_gitignore_dest}")
             else:
                 print(f"  write {target_root / rel_path}")
+        print(f"  write {target_root / '.collab/initial-prompt.md'}")
         for agent in selected_agents:
             filename, _ = AGENT_ROOT_FILES[agent]
             print(f"  write {target_root / filename}")
@@ -2288,13 +2282,14 @@ def main() -> None:
     ensure_required_directories(target_root, mode)
 
     for rel_path, content in TEMPLATE_FILES.items():
-        if rel_path.startswith(f".collab/initial-prompt/{excluded_prompt_dir}/"):
-            continue
         rendered = render_template(content, **render_kwargs)
         if rel_path == ".gitignore":
             safe_write(effective_gitignore_dest, rendered, args.force)
         else:
             safe_write(target_root / rel_path, rendered, args.force)
+
+    prompt_content = render_template(INITIAL_PROMPT_TEMPLATES[mode], **render_kwargs)
+    safe_write(target_root / ".collab/initial-prompt.md", prompt_content, args.force)
 
     for agent in selected_agents:
         filename, content = AGENT_ROOT_FILES[agent]
@@ -2330,9 +2325,6 @@ def main() -> None:
 │                                                                              │
 └──────────────────────────────────────────────────────────────────────────────┘""")
 
-    prompt_file = "new-project" if mode == "new" else "existing-project"
-    prompt_key = f".collab/initial-prompt/{prompt_file}/initial-prompt.md"
-    prompt_content = render_template(TEMPLATE_FILES[prompt_key], **render_kwargs)
     indented_prompt = "\n".join("  " + line for line in prompt_content.strip().splitlines())
     print(f"""
 Done. Scaffold installed at: {target_root}
@@ -2346,7 +2338,7 @@ First session — paste this to start:
 {indented_prompt}
   ─────────────────────────────────────────────────────────────
 
-  Also saved to: .collab/initial-prompt/{prompt_file}/initial-prompt.md
+  Also saved to: .collab/initial-prompt.md
 
 Tip: Start future sessions with OPEN SESSION to resume where you left off.
      End sessions with CLOSE SESSION to save your progress.
