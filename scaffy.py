@@ -2228,7 +2228,6 @@ def render_template(
 
 def safe_write(dest: Path, content: str, force: bool) -> None:
     if dest.exists() and not force:
-        print(f"  skip (exists): {dest}")
         return
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(content)
@@ -2237,22 +2236,19 @@ def safe_write(dest: Path, content: str, force: bool) -> None:
             dest.chmod(0o755)
         except OSError:
             pass
-    print(f"  write: {dest}")
 
 
-def ensure_required_directories(target_root: Path) -> None:
+def ensure_required_directories(target_root: Path, mode: str) -> None:
     required_dirs = [
         target_root / ".collab" / "ideas",
         target_root / ".collab" / "audit",
-        target_root / ".collab" / "initial-prompts" / "new-project",
-        target_root / ".collab" / "initial-prompts" / "existing-project",
+        target_root / ".collab" / "initial-prompts" / mode,
         target_root / ".collab" / "initial-prompts" / "agents",
         target_root / ".collab" / "git-management",
         target_root / ".collab" / "session-summaries",
     ]
     for path in required_dirs:
         path.mkdir(parents=True, exist_ok=True)
-        print(f"  mkdir: {path}")
 
 
 # ---------------------------------------------------------------------------
@@ -2385,23 +2381,26 @@ def main() -> None:
     if target_root.exists() and not args.force:
         print("Notice: Target exists. Existing files will be skipped unless --force is used.")
 
-    print("\nPlanned actions:")
-    for rel_path in TEMPLATE_FILES:
-        if rel_path == ".gitignore":
-            print(f"  write {effective_gitignore_dest}")
-        else:
-            print(f"  write {target_root / rel_path}")
-    for agent in selected_agents:
-        filename, _ = AGENT_ROOT_FILES[agent]
-        print(f"  write {target_root / filename}")
-    for rel_path in PLATFORM_FILES.get(platform, {}):
-        print(f"  write {target_root / rel_path}")
-    if license_id != "none":
-        print(f"  write {target_root / 'LICENSE'}")
-    if args.init_git:
-        print(f"  git init {target_root}")
+    excluded_prompt_dir = "existing-project" if mode == "new" else "new-project"
 
     if args.dry_run:
+        print("\nPlanned actions:")
+        for rel_path in TEMPLATE_FILES:
+            if rel_path.startswith(f".collab/initial-prompts/{excluded_prompt_dir}/"):
+                continue
+            if rel_path == ".gitignore":
+                print(f"  write {effective_gitignore_dest}")
+            else:
+                print(f"  write {target_root / rel_path}")
+        for agent in selected_agents:
+            filename, _ = AGENT_ROOT_FILES[agent]
+            print(f"  write {target_root / filename}")
+        for rel_path in PLATFORM_FILES.get(platform, {}):
+            print(f"  write {target_root / rel_path}")
+        if license_id != "none":
+            print(f"  write {target_root / 'LICENSE'}")
+        if args.init_git:
+            print(f"  git init {target_root}")
         print("\nDry run complete. No files written.")
         return
 
@@ -2415,9 +2414,11 @@ def main() -> None:
             return
 
     target_root.mkdir(parents=True, exist_ok=True)
-    ensure_required_directories(target_root)
+    ensure_required_directories(target_root, mode)
 
     for rel_path, content in TEMPLATE_FILES.items():
+        if rel_path.startswith(f".collab/initial-prompts/{excluded_prompt_dir}/"):
+            continue
         rendered = render_template(content, **render_kwargs)
         if rel_path == ".gitignore":
             safe_write(effective_gitignore_dest, rendered, args.force)
