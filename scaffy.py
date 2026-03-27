@@ -5,7 +5,7 @@ Self-contained initializer for multi-agent project scaffold.
 Usage:
     python scaffy.py [--name NAME] [--path PATH] [--force] [--dry-run]
                      [--governance MODE] [--platform PLATFORM] [--license LICENSE]
-                     [--agent AGENT [...]] [--init-git] [--description TEXT]
+                     [--init-git] [--description TEXT]
 
 If --name and --path are both provided, runs without interactive prompts.
 Otherwise uses interactive menus for mode/target/governance selection.
@@ -19,10 +19,8 @@ Options:
   --platform PLATFORM  Git platform: github, gitlab, or none. Default: none.
   --license LICENSE    License to generate: mit, apache-2.0, gpl-3.0, agpl-3.0,
                        bsd-2-clause, bsd-3-clause, mpl-2.0, unlicense, or none. Default: none.
-  --agent AGENT        Agent(s) to generate root instruction files for: claude, codex,
-                       gemini, or all. Can be specified multiple times. Default: all.
   --init-git           Run git init in the project root after scaffolding.
-  --description TEXT   Short project description injected into context.md and agent files.
+  --description TEXT   Short project description injected into context.md.
 
 Conventions:
 - Timezone: America/New_York. Dates use MM.DD.YYYY (no times).
@@ -42,7 +40,6 @@ from zoneinfo import ZoneInfo
 TZ = ZoneInfo("America/New_York")
 GOVERNANCE_MODES = ("lightweight", "standard", "strict")
 PLATFORM_MODES = ("github", "gitlab", "none")
-AGENT_NAMES = ("claude", "codex", "gemini")
 LICENSE_CHOICES = ("mit", "apache-2.0", "gpl-3.0", "agpl-3.0", "bsd-2-clause", "bsd-3-clause", "mpl-2.0", "unlicense", "none")
 
 
@@ -447,8 +444,6 @@ timezone: America/New_York
 governance_mode: {governance_mode}
 platform: {platform}
 license: {license}
-agents:
-{agents_yaml}
 """,
 
 
@@ -1795,116 +1790,6 @@ PLATFORM_FILES: dict[str, dict[str, str]] = {
 
 
 # ---------------------------------------------------------------------------
-# Agent root files — written to project root, conditioned on --agent flag
-# ---------------------------------------------------------------------------
-
-AGENT_ROOT_FILES: dict[str, tuple[str, str]] = {
-    "claude": (
-        "CLAUDE.md",
-        """\
-# {project_name}
-
-## Project Overview
-
-{description}
-
-## Tech Stack
-
-<!-- Languages, frameworks, key dependencies -->
-
-## Key Commands
-
-<!-- Build, test, lint, run commands -->
-
-## Conventions
-
-<!-- Naming conventions, code style, file organization -->
-
-## Collaboration
-
-This project uses a `.collab/` workspace for multi-agent coordination.
-Before acting in any session:
-
-- Read `.collab/collab-contract.md` — rules and logging requirements
-- Read `.collab/kanban-board.md` — current task state
-- Read `.collab/context.md` — stable project facts
-
-Use `OPEN SESSION` at the start of each working session to resume context.
-Use `CLOSE SESSION` at the end to save progress.
-""",
-    ),
-    "codex": (
-        "AGENTS.md",
-        """\
-# {project_name} — Agent Guidelines
-
-## Project Overview
-
-{description}
-
-## Tech Stack
-
-<!-- Languages, frameworks, key dependencies -->
-
-## Key Commands
-
-<!-- Build, test, lint, run commands -->
-
-## Conventions
-
-<!-- Naming conventions, code style, file organization -->
-
-## Collaboration
-
-This project uses a `.collab/` workspace for multi-agent coordination.
-Before acting in any session:
-
-- Read `.collab/collab-contract.md` — rules and logging requirements
-- Read `.collab/kanban-board.md` — current task state
-- Read `.collab/context.md` — stable project facts
-
-Use `OPEN SESSION` at the start of each working session to resume context.
-Use `CLOSE SESSION` at the end to save progress.
-""",
-    ),
-    "gemini": (
-        "GEMINI.md",
-        """\
-# {project_name} — Gemini Instructions
-
-## Project Overview
-
-{description}
-
-## Tech Stack
-
-<!-- Languages, frameworks, key dependencies -->
-
-## Key Commands
-
-<!-- Build, test, lint, run commands -->
-
-## Conventions
-
-<!-- Naming conventions, code style, file organization -->
-
-## Collaboration
-
-This project uses a `.collab/` workspace for multi-agent coordination.
-Before acting in any session:
-
-- Read `.collab/collab-contract.md` — rules and logging requirements
-- Read `.collab/kanban-board.md` — current task state
-- Read `.collab/context.md` — stable project facts
-
-Use `OPEN SESSION` at the start of each working session to resume context.
-Use `CLOSE SESSION` at the end to save progress.
-""",
-    ),
-}
-
-
-# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
@@ -2061,7 +1946,7 @@ def prompt_for_license() -> str:
 
 def prompt_for_description() -> str:
     print("\nProject description (optional):")
-    print("  A short sentence injected into context.md and agent instruction files.")
+    print("  A short sentence injected into context.md.")
     try:
         value = input("Description [Enter to skip]: ").strip()
     except EOFError:
@@ -2077,18 +1962,15 @@ def render_template(
     governance_mode: str,
     platform: str,
     license_id: str,
-    agents: list[str],
     date: str,
 ) -> str:
     description_rendered = description if description else "<!-- Add a brief description of this project -->"
-    agents_yaml = "\n".join(f"  - {a}" for a in agents)
     replacements = {
         "{project_name}": project_name,
         "{description}": description_rendered,
         "{governance_mode}": governance_mode,
         "{platform}": platform,
         "{license}": license_id,
-        "{agents_yaml}": agents_yaml,
         "{date}": date,
     }
     for placeholder, value in replacements.items():
@@ -2156,15 +2038,6 @@ def main() -> None:
             "bsd-2-clause, bsd-3-clause, mpl-2.0, unlicense, or none. Default: none."
         ),
     )
-    parser.add_argument(
-        "--agent",
-        metavar="AGENT",
-        choices=(*AGENT_NAMES, "all"),
-        action="append",
-        dest="agents",
-        default=None,
-        help="Agent(s) to generate root instruction files for. Can repeat. Default: all.",
-    )
     parser.add_argument("--init-git", action="store_true", help="Run git init in the project root after scaffolding.")
     parser.add_argument("--description", metavar="TEXT", default="", help="Short project description.")
     args = parser.parse_args()
@@ -2174,13 +2047,6 @@ def main() -> None:
             "Invalid --name. Use lowercase letters, numbers, and hyphens only; "
             "must start/end with alphanumeric. Example: my-project-1"
         )
-
-    # Resolve selected agents
-    raw_agents = args.agents or ["all"]
-    if "all" in raw_agents:
-        selected_agents = list(AGENT_NAMES)
-    else:
-        selected_agents = list(dict.fromkeys(raw_agents))  # deduplicate, preserve order
 
     fully_scripted = bool(args.name and args.path)
 
@@ -2230,7 +2096,6 @@ def main() -> None:
         governance_mode=governance_mode,
         platform=platform,
         license_id=license_id,
-        agents=selected_agents,
         date=timestamp,
     )
 
@@ -2244,7 +2109,6 @@ def main() -> None:
     print(f"Governance: {governance_mode}")
     print(f"Platform:   {platform}")
     print(f"License:    {license_id}")
-    print(f"Agents:     {', '.join(selected_agents)}")
     print(f"Date:       {timestamp} (America/New_York)")
     if target_root.exists() and not args.force:
         print("Notice: Target exists. Existing files will be skipped unless --force is used.")
@@ -2257,9 +2121,6 @@ def main() -> None:
             else:
                 print(f"  write {target_root / rel_path}")
         print(f"  write {target_root / '.collab/initial-prompt.md'}")
-        for agent in selected_agents:
-            filename, _ = AGENT_ROOT_FILES[agent]
-            print(f"  write {target_root / filename}")
         for rel_path in PLATFORM_FILES.get(platform, {}):
             print(f"  write {target_root / rel_path}")
         if license_id != "none":
@@ -2290,11 +2151,6 @@ def main() -> None:
 
     prompt_content = render_template(INITIAL_PROMPT_TEMPLATES[mode], **render_kwargs)
     safe_write(target_root / ".collab/initial-prompt.md", prompt_content, args.force)
-
-    for agent in selected_agents:
-        filename, content = AGENT_ROOT_FILES[agent]
-        rendered = render_template(content, **render_kwargs)
-        safe_write(target_root / filename, rendered, args.force)
 
     for rel_path, content in PLATFORM_FILES.get(platform, {}).items():
         safe_write(target_root / rel_path, content, args.force)

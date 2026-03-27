@@ -4,7 +4,3 @@ timezone: America/New_York
 governance_mode: standard
 platform: github
 license: none
-agents:
-  - claude
-  - codex
-  - gemini
