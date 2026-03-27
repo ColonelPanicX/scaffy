@@ -128,10 +128,9 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
 - All agents: read `collab-contract.md`, `kanban-board.md`, and `context.md` before acting.
 - If the kanban board is empty, treat the project as newly initialized and wait for the user
   to describe goals before drafting plans or tasks.
-- Start sessions by using the relevant sequence from `initial-prompts/`:
-  - `initial-prompts/new-project/` for brand-new repos
-  - `initial-prompts/existing-project/` for retrofitted repos
-  - `initial-prompts/agents/` for agent-specific supplements
+- Start your first session by pasting the prompt from `initial-prompt/`:
+  - `initial-prompt/new-project/initial-prompt.md` for brand-new repos
+  - `initial-prompt/existing-project/initial-prompt.md` for retrofitted repos
 - Use `OPEN SESSION` at the start of each working session to resume context quickly.
 - Use `CLOSE SESSION` at the end of each session to save progress.
 - Write session summaries to `session-summaries/` on close.
@@ -144,14 +143,9 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
 - `kanban-board.md` — Task tracking (internal source of truth).
 - `context.md` — Stable project facts: tech stack, key files, conventions, dependencies.
 - `project.yaml` — Machine-readable project metadata (name, date, governance mode, agents).
-- `initial-prompts/` — Onboarding prompt sequences for first and subsequent sessions.
-  - `new-project/00-onboard.md` — First-session cold start for new projects.
-  - `new-project/01-context-build.md` — Memory/context initialization after onboarding.
-  - `existing-project/00-onboard.md` — First-session cold start for existing projects.
-  - `existing-project/01-context-build.md` — Memory/context initialization after onboarding.
-  - `agents/claude.md` — Claude Code-specific supplement.
-  - `agents/codex.md` — Codex-specific supplement.
-  - `agents/gemini.md` — Gemini-specific supplement.
+- `initial-prompt/` — Consolidated first-session onboarding prompt (paste on first launch).
+  - `new-project/initial-prompt.md` — First-session prompt for new projects.
+  - `existing-project/initial-prompt.md` — First-session prompt for existing projects.
 - `session-summaries/` — Session summaries from all agents.
   Naming:
   - First summary of the day: `MM.DD.YYYY-agentname-summary.md`
@@ -461,13 +455,7 @@ agents:
 {agents_yaml}
 """,
 
-    ".collab/initial-prompts/new-project/00-onboard.md": """\
-# First Session — New Project
-
-Paste the block below when starting your first agent session in this project.
-
----
-
+    ".collab/initial-prompt/new-project/initial-prompt.md": """\
 You are working in a newly initialized project with a structured `.collab/` collaboration
 directory. Before doing anything:
 
@@ -475,10 +463,24 @@ directory. Before doing anything:
 2. Read `.collab/kanban-board.md` for current task status.
 3. Read `.collab/context.md` for stable project facts (fill in what you can from context).
 4. Check `.collab/session-summaries/` for any prior session summaries.
-5. The kanban board is empty — this is a newly initialized project. Wait for the user to
+5. The kanban board is empty — this is a newly initialized project. Wait for me to
    describe goals before drafting plans or tasks.
 
-If your agent type has a supplement in `.collab/initial-prompts/agents/`, read it now.
+---
+
+Now initialize your memory with these stable facts (use whatever persistent memory
+mechanism your agent supports):
+- Project name and one-sentence description
+- Tech stack: languages, frameworks, key dependencies
+- Key file paths: entry points, config files, test directories
+- Naming and style conventions
+- Hard constraints or guardrails (e.g., "never commit credentials")
+
+Report back:
+- What you saved to memory
+- Which fields in `context.md` are empty and should be filled in before work begins
+
+Do not start any work tasks until these steps are complete.
 
 ---
 
@@ -486,7 +488,7 @@ If your agent type has a supplement in `.collab/initial-prompts/agents/`, read i
 
 ### OPEN SESSION
 
-When the user types exactly:
+When I type exactly:
 
     OPEN SESSION
 
@@ -505,7 +507,7 @@ Do not re-read `collab-contract.md`. Focus on current state, not process rules.
 
 ### CLOSE SESSION
 
-When the user types exactly:
+When I type exactly:
 
     CLOSE SESSION
 
@@ -519,44 +521,10 @@ Immediately execute the Session Close Protocol:
    - Move completed tasks to **Done**
    - Update in-progress task statuses
    - Add newly discovered tasks to **Inbox** or **Backlog**
-3. Confirm completion to the user.
+3. Confirm completion to me.
 """,
 
-    ".collab/initial-prompts/new-project/01-context-build.md": """\
-# Context Build — Paste After First Onboarding
-
-Use this prompt immediately after `00-onboard.md` to seed memory and context
-before the first real work session begins.
-
----
-
-Now that you have oriented to the project structure:
-
-1. Read `.collab/context.md`. Note any fields that are empty or incomplete.
-
-2. Initialize your project memory with the following stable facts (use whatever
-   persistent memory mechanism your agent supports):
-   - Project name and one-sentence description
-   - Tech stack: languages, frameworks, key dependencies
-   - Key file paths: entry points, config files, test directories
-   - Naming and style conventions
-   - Hard constraints or guardrails (e.g., "never commit credentials")
-
-3. Report back to the user:
-   - What you saved to memory
-   - Which fields in `context.md` are empty and should be filled in before work begins
-
-Do not start any work tasks until this step is complete.
-""",
-
-    ".collab/initial-prompts/existing-project/00-onboard.md": """\
-# First Session — Existing Project
-
-Paste the block below when starting your first agent session in an existing project
-that has been retrofitted with a `.collab/` collaboration directory.
-
----
-
+    ".collab/initial-prompt/existing-project/initial-prompt.md": """\
 You are working in an **existing project**. This project may already contain code,
 configuration, history, and decisions made before this structure was in place.
 
@@ -575,11 +543,27 @@ Before doing anything:
 7. If the kanban board is empty, treat this as a retrofit scenario:
    - Add initial tasks to **Inbox** or **Backlog**: repo mapping, architecture understanding,
      build/test validation.
-   - Wait for user approval before making structural changes.
+   - Wait for my approval before making structural changes.
 
 Your first responsibility is to **understand and document the current state**, not change it.
 
-If your agent type has a supplement in `.collab/initial-prompts/agents/`, read it now.
+---
+
+Now initialize your memory. Using what you discovered during reconnaissance, save:
+- What this project is and what it does
+- Tech stack: languages, frameworks, key dependencies
+- Key file paths: entry points, config files, test directories
+- Naming and style conventions already in use
+- Any constraints or guardrails apparent from the codebase
+
+Use whatever persistent memory mechanism your agent supports.
+
+Report back:
+- What you saved to memory
+- What you updated or could not determine in `context.md`
+- Any immediate risks or concerns observed during reconnaissance
+
+Do not start any work tasks until these steps are complete.
 
 ---
 
@@ -587,7 +571,7 @@ If your agent type has a supplement in `.collab/initial-prompts/agents/`, read i
 
 ### OPEN SESSION
 
-When the user types exactly:
+When I type exactly:
 
     OPEN SESSION
 
@@ -606,7 +590,7 @@ Do not re-read `collab-contract.md`. Focus on current state, not process rules.
 
 ### CLOSE SESSION
 
-When the user types exactly:
+When I type exactly:
 
     CLOSE SESSION
 
@@ -620,119 +604,7 @@ Immediately execute the Session Close Protocol:
    - Move completed tasks to **Done**
    - Update in-progress task statuses
    - Add newly discovered tasks to **Inbox** or **Backlog**
-3. Confirm completion to the user.
-""",
-
-    ".collab/initial-prompts/existing-project/01-context-build.md": """\
-# Context Build — Paste After First Onboarding
-
-Use this prompt immediately after `00-onboard.md` to seed memory and document
-the current project state before any work begins.
-
----
-
-Now that you have completed your initial reconnaissance:
-
-1. Read `.collab/context.md`. Note any fields that are empty or out of date.
-
-2. Using what you discovered during reconnaissance, fill in or verify:
-   - What this project is and what it does
-   - Tech stack: languages, frameworks, key dependencies
-   - Key file paths: entry points, config files, test directories
-   - Naming and style conventions already in use
-   - Any constraints or guardrails apparent from the codebase
-
-3. Initialize your project memory with these stable facts (use whatever persistent
-   memory mechanism your agent supports).
-
-4. Report back to the user:
-   - What you saved to memory
-   - What you updated or could not determine in `context.md`
-   - Any immediate risks or concerns observed during reconnaissance
-
-Do not start any work tasks until this step is complete.
-""",
-
-    ".collab/initial-prompts/agents/claude.md": """\
-# Claude Code — Agent Supplement
-
-Read this in addition to the standard onboarding prompt for your session type
-(`initial-prompts/new-project/00-onboard.md` or `existing-project/00-onboard.md`).
-
----
-
-## Claude Code-Specific Setup
-
-1. **`CLAUDE.md`** — If a `CLAUDE.md` exists at the project root, it is your primary
-   project instruction file and takes precedence over generic guidance. Read it before
-   or alongside `collab-contract.md`.
-
-2. **Project memory** — Claude Code supports persistent memory. On your first session,
-   use your memory tools to store stable project facts:
-   - Project name and one-sentence purpose
-   - Tech stack and key dependencies
-   - Key file paths and entry points
-   - Naming conventions and hard guardrails
-   On subsequent sessions, `OPEN SESSION` is your fast-path to current state — memory
-   gives you the stable foundation so you do not need to re-read everything from scratch.
-
-3. **MCP servers** — If `.claude/` settings reference MCP servers, confirm they are
-   available before starting work that depends on them. If a server is unavailable,
-   report it to the user before proceeding.
-
-4. **Hooks** — Claude Code hooks may run automatically on tool calls. If a hook blocks
-   an action, investigate the cause before retrying. Do not use `--no-verify` or other
-   bypass flags without explicit user approval.
-""",
-
-    ".collab/initial-prompts/agents/codex.md": """\
-# Codex — Agent Supplement
-
-Read this in addition to the standard onboarding prompt for your session type
-(`initial-prompts/new-project/00-onboard.md` or `existing-project/00-onboard.md`).
-
----
-
-## Codex-Specific Setup
-
-1. **`AGENTS.md`** — If an `AGENTS.md` exists at the project root, it is your primary
-   project instruction file. Read it before or alongside `collab-contract.md`.
-
-2. **Memory** — Codex does not have a built-in persistent memory system. Rely on
-   session summaries in `.collab/session-summaries/` and `.collab/context.md` to
-   reconstruct project context at the start of each session. Keep both up to date.
-
-3. **Handoff board** — If a `.collab/handoff-board.yaml` exists, check it for
-   cross-agent task assignments before acting. Do not modify files owned by other agents
-   without explicit instruction.
-
-4. **Session hygiene** — Because you have no memory persistence, your session summaries
-   are especially important. Write detailed `## What Happened` and `## Next Steps`
-   sections so the next agent (or your own next session) can resume without ambiguity.
-""",
-
-    ".collab/initial-prompts/agents/gemini.md": """\
-# Gemini — Agent Supplement
-
-Read this in addition to the standard onboarding prompt for your session type
-(`initial-prompts/new-project/00-onboard.md` or `existing-project/00-onboard.md`).
-
----
-
-## Gemini-Specific Setup
-
-1. **`GEMINI.md`** — If a `GEMINI.md` exists at the project root, it is your primary
-   project instruction file. Read it before or alongside `collab-contract.md`.
-
-2. **Memory** — Rely on session summaries in `.collab/session-summaries/` and
-   `.collab/context.md` to reconstruct project context at the start of each session.
-
-3. **Tool use** — Follow the permissions and guardrails in `collab-contract.md` for all
-   function/tool calls. Prefer safe, local tools (e.g., file reads, grep) over network
-   calls unless explicitly required.
-
-4. **Session hygiene** — Write thorough session summaries at close so subsequent agents
-   or sessions can resume with full context.
+3. Confirm completion to me.
 """,
 
     ".collab/session-summaries/session-summary-template.md": """\
@@ -2242,8 +2114,7 @@ def ensure_required_directories(target_root: Path, mode: str) -> None:
     required_dirs = [
         target_root / ".collab" / "ideas",
         target_root / ".collab" / "audit",
-        target_root / ".collab" / "initial-prompts" / mode,
-        target_root / ".collab" / "initial-prompts" / "agents",
+        target_root / ".collab" / "initial-prompt" / (f"{mode}-project"),
         target_root / ".collab" / "git-management",
         target_root / ".collab" / "session-summaries",
     ]
@@ -2386,7 +2257,7 @@ def main() -> None:
     if args.dry_run:
         print("\nPlanned actions:")
         for rel_path in TEMPLATE_FILES:
-            if rel_path.startswith(f".collab/initial-prompts/{excluded_prompt_dir}/"):
+            if rel_path.startswith(f".collab/initial-prompt/{excluded_prompt_dir}/"):
                 continue
             if rel_path == ".gitignore":
                 print(f"  write {effective_gitignore_dest}")
@@ -2417,7 +2288,7 @@ def main() -> None:
     ensure_required_directories(target_root, mode)
 
     for rel_path, content in TEMPLATE_FILES.items():
-        if rel_path.startswith(f".collab/initial-prompts/{excluded_prompt_dir}/"):
+        if rel_path.startswith(f".collab/initial-prompt/{excluded_prompt_dir}/"):
             continue
         rendered = render_template(content, **render_kwargs)
         if rel_path == ".gitignore":
@@ -2460,6 +2331,9 @@ def main() -> None:
 └──────────────────────────────────────────────────────────────────────────────┘""")
 
     prompt_file = "new-project" if mode == "new" else "existing-project"
+    prompt_key = f".collab/initial-prompt/{prompt_file}/initial-prompt.md"
+    prompt_content = render_template(TEMPLATE_FILES[prompt_key], **render_kwargs)
+    indented_prompt = "\n".join("  " + line for line in prompt_content.strip().splitlines())
     print(f"""
 Done. Scaffold installed at: {target_root}
 
@@ -2469,12 +2343,10 @@ Next steps:
 
 First session — paste this to start:
   ─────────────────────────────────────────────────────────────
-  Read .collab/collab-contract.md, kanban-board.md, and context.md.
-  {'This is a new project — wait for me to describe goals.' if mode == 'new' else 'This is an existing project — perform reconnaissance before acting.'}
-  See .collab/initial-prompts/{prompt_file}/ for the full onboarding sequence.
+{indented_prompt}
   ─────────────────────────────────────────────────────────────
 
-Then paste .collab/initial-prompts/{prompt_file}/01-context-build.md to seed memory.
+  Also saved to: .collab/initial-prompt/{prompt_file}/initial-prompt.md
 
 Tip: Start future sessions with OPEN SESSION to resume where you left off.
      End sessions with CLOSE SESSION to save your progress.

@@ -18,10 +18,9 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
 - All agents: read `collab-contract.md`, `kanban-board.md`, and `context.md` before acting.
 - If the kanban board is empty, treat the project as newly initialized and wait for the user
   to describe goals before drafting plans or tasks.
-- Start sessions by using the relevant sequence from `initial-prompts/`:
-  - `initial-prompts/new-project/` for brand-new repos
-  - `initial-prompts/existing-project/` for retrofitted repos
-  - `initial-prompts/agents/` for agent-specific supplements
+- Start your first session by pasting the prompt from `initial-prompt/`:
+  - `initial-prompt/new-project/initial-prompt.md` for brand-new repos
+  - `initial-prompt/existing-project/initial-prompt.md` for retrofitted repos
 - Use `OPEN SESSION` at the start of each working session to resume context quickly.
 - Use `CLOSE SESSION` at the end of each session to save progress.
 - Write session summaries to `session-summaries/` on close.
@@ -34,14 +33,9 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
 - `kanban-board.md` — Task tracking (internal source of truth).
 - `context.md` — Stable project facts: tech stack, key files, conventions, dependencies.
 - `project.yaml` — Machine-readable project metadata (name, date, governance mode, agents).
-- `initial-prompts/` — Onboarding prompt sequences for first and subsequent sessions.
-  - `new-project/00-onboard.md` — First-session cold start for new projects.
-  - `new-project/01-context-build.md` — Memory/context initialization after onboarding.
-  - `existing-project/00-onboard.md` — First-session cold start for existing projects.
-  - `existing-project/01-context-build.md` — Memory/context initialization after onboarding.
-  - `agents/claude.md` — Claude Code-specific supplement.
-  - `agents/codex.md` — Codex-specific supplement.
-  - `agents/gemini.md` — Gemini-specific supplement.
+- `initial-prompt/` — Consolidated first-session onboarding prompt (paste on first launch).
+  - `new-project/initial-prompt.md` — First-session prompt for new projects.
+  - `existing-project/initial-prompt.md` — First-session prompt for existing projects.
 - `session-summaries/` — Session summaries from all agents.
   Naming:
   - First summary of the day: `MM.DD.YYYY-agentname-summary.md`
