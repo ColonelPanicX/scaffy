@@ -10,13 +10,12 @@ Initialize a project with a standard `.collab/` workspace scaffold for multi-age
 - `.collab/kanban-board.md` — Task tracking board
 - `.collab/context.md` — Stable project facts: tech stack, key files, conventions
 - `.collab/project.yaml` — Machine-readable project metadata
+- `.collab/initial-prompt.md` — First-session onboarding prompt (paste on first launch)
 - `.collab/ideas/` — Idea incubator: persistent thinking space for pre-ticket concepts
-- `.collab/initial-prompts/` — Onboarding prompt sequences for new and existing projects
 - `.collab/session-summaries/` — Session summary directory with template
 - `.collab/audit/` — Analysis reports and planning documents
 - `.collab/git-management/` — Git governance templates
-- `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` — Agent instruction files (root-level, tracked in git)
-- `.gitignore` — Sane defaults (per-machine agent dirs excluded; agent instruction files tracked)
+- `.gitignore` — Sane defaults (`.collab/` and agent dirs excluded from version control)
 
 ## Usage
 
@@ -31,7 +30,6 @@ python3 scaffy.py --name my-project --path /path/to/base
 python3 scaffy.py --name my-project --path /path/to/base \
   --governance strict \
   --platform github \
-  --agent claude --agent codex \
   --description "Automates AWS resource exports to Excel" \
   --init-git
 
@@ -50,9 +48,8 @@ python3 scaffy.py --dry-run
 | `--governance MODE` | `lightweight`, `standard`, or `strict` | interactive (`standard`) |
 | `--platform PLATFORM` | `github`, `gitlab`, or `none` — writes platform-native issue and PR/MR templates | interactive (`none`) |
 | `--license LICENSE` | `mit`, `apache-2.0`, `gpl-3.0`, `agpl-3.0`, `bsd-2-clause`, `bsd-3-clause`, `mpl-2.0`, `unlicense`, or `none` — writes a `LICENSE` file | interactive (`none`) |
-| `--agent AGENT` | Agent(s) to generate root files for: `claude`, `codex`, `gemini`, `all`. Repeatable. | `all` |
 | `--init-git` | Run `git init` in the project root after scaffolding | off |
-| `--description TEXT` | Short description injected into `context.md` and agent files | interactive (optional) |
+| `--description TEXT` | Short description injected into `context.md` | interactive (optional) |
 
 ## Governance Modes
 
@@ -62,9 +59,15 @@ python3 scaffy.py --dry-run
 | `standard` | Most active projects (recommended default) |
 | `strict` | Compliance, regulated, or high-risk work |
 
+## First Session
+
+After scaffolding, the terminal prints the full onboarding prompt between separator lines — copy it and paste it directly into your agent on first launch. The same prompt is saved to `.collab/initial-prompt.md` as a backup.
+
+The prompt orients the agent to the `.collab/` structure, initializes its memory with stable project facts, and installs the OPEN/CLOSE SESSION protocols for all future sessions.
+
 ## Session Protocols
 
-The scaffold installs two trigger phrases into all agent contracts:
+The scaffold installs two trigger phrases into the agent contract and initial prompt:
 
 - **`OPEN SESSION`** — Agent reads the latest session summary, kanban board, and context,
   then delivers a concise resume of where things stand. Use at the start of every session.
@@ -98,8 +101,6 @@ you already have written down or in your head into the new directory.
 - Otherwise prompts for: mode (new/existing), target directory, project name, governance mode,
   and description.
 - Existing `.gitignore` is not overwritten — template is written to `.collab/.gitignore.template` instead.
-- Agent instruction files (`CLAUDE.md`, etc.) are written to the project root and are **not** gitignored
-  by default — they are intended to be tracked in version control.
 - Uses `America/New_York` and `MM.DD.YYYY` date formatting in generated templates.
 
 ## Make `scaffy` Available Everywhere
