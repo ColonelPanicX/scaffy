@@ -2078,7 +2078,7 @@ def main() -> None:
 
         governance_mode = args.governance or prompt_for_governance()
         platform = args.platform or prompt_for_platform()
-        license_id = args.license or prompt_for_license()
+        license_id = args.license or ("none" if platform == "none" else prompt_for_license())
         description = args.description or prompt_for_description()
 
     # .gitignore fallback
