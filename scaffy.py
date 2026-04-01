@@ -38,7 +38,7 @@ from zoneinfo import ZoneInfo
 
 
 TZ = ZoneInfo("America/New_York")
-GOVERNANCE_MODES = ("lightweight", "standard", "strict")
+GOVERNANCE_MODES = ("none", "lightweight", "standard", "strict")
 PLATFORM_MODES = ("github", "gitlab", "none")
 LICENSE_CHOICES = ("mit", "apache-2.0", "gpl-3.0", "agpl-3.0", "bsd-2-clause", "bsd-3-clause", "mpl-2.0", "unlicense", "none")
 
@@ -1793,14 +1793,28 @@ PLATFORM_FILES: dict[str, dict[str, str]] = {
 # Helpers
 # ---------------------------------------------------------------------------
 
+WINDOWS_RESERVED_NAMES = frozenset({
+    "CON", "PRN", "AUX", "NUL",
+    *(f"COM{i}" for i in range(1, 10)),
+    *(f"LPT{i}" for i in range(1, 10)),
+})
+INVALID_FOLDER_CHARS = re.compile(r'[\\/:*?"<>|]')
+
+
 def valid_project_name(name: str) -> bool:
-    return bool(re.fullmatch(r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?", name))
+    if not name or not name.strip():
+        return False
+    if INVALID_FOLDER_CHARS.search(name):
+        return False
+    if name.upper() in WINDOWS_RESERVED_NAMES:
+        return False
+    if name.endswith(" ") or name.endswith("."):
+        return False
+    return True
 
 
 def suggest_project_name_from_target(target_root: Path) -> str:
-    candidate = target_root.name.strip().lower()
-    candidate = re.sub(r"[^a-z0-9-]+", "-", candidate)
-    candidate = re.sub(r"-{2,}", "-", candidate).strip("-")
+    candidate = INVALID_FOLDER_CHARS.sub("-", target_root.name).strip(". ")
     if valid_project_name(candidate):
         return candidate
     return "my-project"
@@ -1867,8 +1881,8 @@ def prompt_for_new_project_name(default_name: str) -> str:
             return default_name
         if not valid_project_name(name):
             print(
-                "Invalid name. Use lowercase letters, numbers, and hyphens only; "
-                "must start/end with alphanumeric. Example: my-project-1"
+                'Invalid name. Folder names cannot contain \\ / : * ? " < > | '
+                "or be Windows reserved names (CON, PRN, NUL, etc.)."
             )
             continue
         return name
@@ -1982,7 +1996,7 @@ def safe_write(dest: Path, content: str, force: bool) -> None:
     if dest.exists() and not force:
         return
     dest.parent.mkdir(parents=True, exist_ok=True)
-    dest.write_text(content)
+    dest.write_text(content, encoding="utf-8")
     if dest.suffix in {".sh", ".py"}:
         try:
             dest.chmod(0o755)
@@ -2044,8 +2058,8 @@ def main() -> None:
 
     if args.name and not valid_project_name(args.name):
         parser.error(
-            "Invalid --name. Use lowercase letters, numbers, and hyphens only; "
-            "must start/end with alphanumeric. Example: my-project-1"
+            'Invalid --name. Folder names cannot contain \\ / : * ? " < > | '
+            "or be Windows reserved names (CON, PRN, NUL, etc.)."
         )
 
     fully_scripted = bool(args.name and args.path)
