@@ -127,6 +127,7 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
   to describe goals before drafting plans or tasks.
 - Start your first session by pasting the contents of `initial-prompt.md`.
 - Use `OPEN SESSION` at the start of each working session to resume context quickly.
+- Use `SAVE SESSION` mid-session to checkpoint progress without ending the session.
 - Use `CLOSE SESSION` at the end of each session to save progress.
 - Write session summaries to `session-summaries/` on close.
 - Keep `kanban-board.md` current — it is the internal source of truth for task status.
@@ -266,6 +267,29 @@ Immediately execute the Session Open Protocol — do not wait for additional ins
    - Any open questions or flags left from the last session
 
 Do **not** re-read `collab-contract.md` — focus on current state, not process rules.
+
+### SAVE SESSION
+
+When the user types exactly:
+
+    SAVE SESSION
+
+Immediately execute the Session Save Protocol — do not wait for additional instructions:
+
+1. Write a session summary to `.collab/session-summaries/` using the same naming
+   convention as CLOSE SESSION (always a new file — never overwrite an existing one):
+   - `MM.DD.YYYY-agentname-summary.md` for the first summary that day.
+   - `MM.DD.YYYY-##-agentname-summary.md` for additional same-day saves/closes
+     (use zero-padded sequence like `02`, `03`, etc.).
+   - Use the template at `.collab/session-summaries/session-summary-template.md`.
+2. Update `.collab/kanban-board.md` to reflect current task state:
+   - Move completed tasks to **Done**.
+   - Update statuses of in-progress tasks.
+   - Add newly discovered tasks to **Inbox** or **Backlog**.
+3. Confirm the checkpoint was saved. **Do not end the session** — continue working.
+
+> Use `SAVE SESSION` as a mid-session checkpoint. If the session is interrupted
+> unexpectedly, the last save can be used to reconstruct context on next `OPEN SESSION`.
 
 ### CLOSE SESSION
 
@@ -1674,6 +1698,24 @@ Immediately execute the Session Open Protocol:
 
 Do not re-read `collab-contract.md`. Focus on current state, not process rules.
 
+### SAVE SESSION
+
+When I type exactly:
+
+    SAVE SESSION
+
+Immediately execute the Session Save Protocol (always a new file — never overwrite):
+
+1. Write a session summary to `.collab/session-summaries/`:
+   - First of the day: `MM.DD.YYYY-agentname-summary.md`
+   - Additional same-day: `MM.DD.YYYY-##-agentname-summary.md` (zero-padded: `02`, `03`, …)
+   - Use the template at `.collab/session-summaries/session-summary-template.md`
+2. Update `.collab/kanban-board.md`:
+   - Move completed tasks to **Done**
+   - Update in-progress task statuses
+   - Add newly discovered tasks to **Inbox** or **Backlog**
+3. Confirm the checkpoint was saved. **Do not end the session** — continue working.
+
 ### CLOSE SESSION
 
 When I type exactly:
@@ -1755,6 +1797,24 @@ Immediately execute the Session Open Protocol:
    - Any open questions or flags from the last session
 
 Do not re-read `collab-contract.md`. Focus on current state, not process rules.
+
+### SAVE SESSION
+
+When I type exactly:
+
+    SAVE SESSION
+
+Immediately execute the Session Save Protocol (always a new file — never overwrite):
+
+1. Write a session summary to `.collab/session-summaries/`:
+   - First of the day: `MM.DD.YYYY-agentname-summary.md`
+   - Additional same-day: `MM.DD.YYYY-##-agentname-summary.md` (zero-padded: `02`, `03`, …)
+   - Use the template at `.collab/session-summaries/session-summary-template.md`
+2. Update `.collab/kanban-board.md`:
+   - Move completed tasks to **Done**
+   - Update in-progress task statuses
+   - Add newly discovered tasks to **Inbox** or **Backlog**
+3. Confirm the checkpoint was saved. **Do not end the session** — continue working.
 
 ### CLOSE SESSION
 
@@ -2211,6 +2271,7 @@ First session — paste this to start:
   Also saved to: .collab/initial-prompt.md
 
 Tip: Start future sessions with OPEN SESSION to resume where you left off.
+     Use SAVE SESSION mid-session to checkpoint without ending.
      End sessions with CLOSE SESSION to save your progress.
 """)
 
