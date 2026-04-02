@@ -6,6 +6,7 @@ Usage:
     python scaffy.py [--name NAME] [--path PATH] [--force] [--dry-run]
                      [--governance MODE] [--platform PLATFORM] [--license LICENSE]
                      [--init-git] [--description TEXT]
+    python scaffy.py --upgrade [--path PATH] [--force] [--dry-run]
 
 If --name and --path are both provided, runs without interactive prompts.
 Otherwise uses interactive menus for mode/target/governance selection.
@@ -13,12 +14,14 @@ Otherwise uses interactive menus for mode/target/governance selection.
 Options:
   --name NAME          Project name (lowercase, hyphen-separated).
   --path PATH          Target directory where scaffold files will be installed.
+                       For --upgrade: the project root (defaults to current directory).
   --force              Overwrite existing files.
   --dry-run            Show planned actions and exit without writing anything.
   --governance MODE    Governance mode: lightweight, standard, or strict. Default: standard.
   --platform PLATFORM  Git platform: github, gitlab, or none. Default: none.
   --license LICENSE    License to generate: mit, apache-2.0, gpl-3.0, agpl-3.0,
                        bsd-2-clause, bsd-3-clause, mpl-2.0, unlicense, or none. Default: none.
+  --upgrade            Upgrade an existing .collab/ scaffold to the latest templates.
   --init-git           Run git init in the project root after scaffolding.
   --description TEXT   Short project description injected into context.md.
 
@@ -1937,6 +1940,157 @@ def ensure_required_directories(target_root: Path, mode: str) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Upgrade
+# ---------------------------------------------------------------------------
+
+def _parse_project_yaml(yaml_path: Path) -> dict[str, str]:
+    """Minimal YAML parser for project.yaml (key: value, one per line)."""
+    data: dict[str, str] = {}
+    for line in yaml_path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if ":" in line:
+            key, _, value = line.partition(":")
+            data[key.strip()] = value.strip()
+    return data
+
+
+def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
+    """Upgrade an existing .collab/ scaffold to the latest templates."""
+    collab_dir = target_root / ".collab"
+    yaml_path = collab_dir / "project.yaml"
+
+    if not collab_dir.is_dir():
+        print(f"Error: No .collab/ directory found in {target_root}")
+        print("Use 'scaffy' without --upgrade to create a new scaffold.")
+        return
+
+    if not yaml_path.is_file():
+        print(f"Error: No project.yaml found in {collab_dir}")
+        print("Cannot determine original scaffold settings. Aborting.")
+        return
+
+    meta = _parse_project_yaml(yaml_path)
+    project_name = meta.get("project", target_root.name)
+    governance_mode = meta.get("governance_mode", "standard")
+    platform = meta.get("platform", "none")
+    license_id = meta.get("license", "none")
+
+    timestamp = meta.get("created", now_tz().strftime("%m.%d.%Y"))
+    description = ""
+
+    render_kwargs = dict(
+        project_name=project_name,
+        description=description,
+        governance_mode=governance_mode,
+        platform=platform,
+        license_id=license_id,
+        date=timestamp,
+    )
+
+    # Determine the mode based on whether .collab/ was a new or existing project.
+    # For upgrade purposes, we always treat it as existing (project already has files).
+    mode = "existing"
+
+    # Build the full file manifest that scaffy would generate today
+    files_to_check: dict[Path, str] = {}
+
+    for rel_path, content in TEMPLATE_FILES.items():
+        rendered = render_template(content, **render_kwargs)
+        if rel_path == ".gitignore":
+            # During upgrade, never touch an existing .gitignore
+            gitignore_dest = target_root / ".gitignore"
+            if gitignore_dest.exists():
+                files_to_check[collab_dir / ".gitignore.template"] = rendered
+            else:
+                files_to_check[gitignore_dest] = rendered
+        else:
+            files_to_check[target_root / rel_path] = rendered
+
+    # Initial prompt
+    prompt_content = render_template(INITIAL_PROMPT_TEMPLATES[mode], **render_kwargs)
+    files_to_check[collab_dir / "initial-prompt.md"] = prompt_content
+
+    # Platform files
+    for rel_path, content in PLATFORM_FILES.get(platform, {}).items():
+        files_to_check[target_root / rel_path] = content
+
+    # License
+    if license_id != "none":
+        files_to_check[target_root / "LICENSE"] = LICENSE_TEXTS[license_id]
+
+    # Directories
+    required_dirs = [
+        collab_dir / "ideas",
+        collab_dir / "audit",
+        collab_dir / "git-management",
+        collab_dir / "session-summaries",
+        collab_dir / "supporting-artifacts",
+    ]
+
+    # Execute
+    added_dirs: list[str] = []
+    added_files: list[str] = []
+    skipped_files: list[str] = []
+    updated_files: list[str] = []
+
+    print(f"\nUpgrading scaffold in: {target_root}")
+    print(f"  Settings from project.yaml: governance={governance_mode}, "
+          f"platform={platform}, license={license_id}")
+    print()
+
+    for d in required_dirs:
+        if not d.exists():
+            if dry_run:
+                added_dirs.append(f"  mkdir  {d.relative_to(target_root)}/")
+            else:
+                d.mkdir(parents=True, exist_ok=True)
+                added_dirs.append(f"  mkdir  {d.relative_to(target_root)}/")
+
+    for dest, content in files_to_check.items():
+        rel = dest.relative_to(target_root) if dest.is_relative_to(target_root) else dest
+        if dest.exists():
+            if force:
+                if dry_run:
+                    updated_files.append(f"  update {rel}")
+                else:
+                    dest.write_text(content, encoding="utf-8")
+                    updated_files.append(f"  update {rel}")
+            else:
+                skipped_files.append(f"  skip   {rel}")
+        else:
+            if dry_run:
+                added_files.append(f"  add    {rel}")
+            else:
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                dest.write_text(content, encoding="utf-8")
+                added_files.append(f"  add    {rel}")
+
+    # Report
+    if added_dirs:
+        print("New directories:")
+        print("\n".join(added_dirs))
+    if added_files:
+        print("New files:")
+        print("\n".join(added_files))
+    if updated_files:
+        print("Updated files (--force):")
+        print("\n".join(updated_files))
+    if skipped_files:
+        print("Skipped (already exist):")
+        print("\n".join(skipped_files))
+
+    if not added_dirs and not added_files and not updated_files:
+        print("Everything is up to date. Nothing to do.")
+    elif dry_run:
+        print("\nDry run complete. No files written.")
+    else:
+        total = len(added_dirs) + len(added_files) + len(updated_files)
+        print(f"\nUpgrade complete. {total} item(s) added/updated.")
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -1973,9 +2127,17 @@ def main() -> None:
             "bsd-2-clause, bsd-3-clause, mpl-2.0, unlicense, or none. Default: none."
         ),
     )
+    parser.add_argument("--upgrade", action="store_true",
+                        help="Upgrade an existing .collab/ scaffold to the latest templates.")
     parser.add_argument("--init-git", action="store_true", help="Run git init in the project root after scaffolding.")
     parser.add_argument("--description", metavar="TEXT", default="", help="Short project description.")
     args = parser.parse_args()
+
+    # --- Upgrade mode ---
+    if args.upgrade:
+        target = Path(args.path).expanduser().resolve() if args.path else Path.cwd()
+        upgrade_scaffold(target, force=args.force, dry_run=args.dry_run)
+        return
 
     if args.name and not valid_project_name(args.name):
         parser.error(
