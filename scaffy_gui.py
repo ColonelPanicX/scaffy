@@ -8,6 +8,7 @@ Requires scaffy.py to be in the same directory (or bundled alongside by PyInstal
 
 from __future__ import annotations
 
+import base64
 import io
 import os
 import pathlib
@@ -16,11 +17,39 @@ import queue
 import re
 import subprocess
 import sys
+import tempfile
 import threading
 import tkinter as tk
 from tkinter import filedialog, scrolledtext, ttk
 
 import scaffy
+
+# 16x16 house icon (ICO format, base64-encoded)
+_HOUSE_ICON_B64 = (
+    "AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAQAQAAAAAAAAA"
+    "AAAAAAAAAAAAAABktGT/ZLRk/2S0ZP9ktGT/ZLRk/2S0ZP9ktGT/ZLRk/2S0ZP9ktG"
+    "T/ZLRk/2S0ZP9ktGT/ZLRk/2S0ZP9ktGT/ZLRk/2S0ZP9ktGT/ZLRk/2S0ZP9ktGT/"
+    "ZLRk/2S0ZP9ktGT/ZLRk/2S0ZP9ktGT/ZLRk/2S0ZP9ktGT/ZLRk/wAAAAAAAAAAAAAA"
+    "AADc3Ob/3Nzm/9zc5v9aeLT/Wni0/1p4tP9aeLT/3Nzm/9zc5v/c3Ob/AAAAAAAAAAAA"
+    "AAAAAAAAAAAAAAAAAAAAAAAc3Ob/3Nzm/9zc5v9aeLT/Wni0/1p4tP9aeLT/3Nzm/9zc"
+    "5v/c3Ob/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA3Nzm/9zc5v/c3Ob/Wni0/1p4tP9a"
+    "eLT/Wni0/9zc5v/c3Ob/3Nzm/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANzc5v/c3Ob/"
+    "3Nzm/1p4tP9aeLT/Wni0/1p4tP/c3Ob/3Nzm/9zc5v8AAAAAAAAAAAAAAAAAAAAAAAAA"
+    "AAAAANzc5v/c3Ob/3Nzm/9zc5v/c3Ob/3Nzm/9zc5v/c3Ob/3Nzm/9zc5v8AAAAAAAA"
+    "AAAAAAAAAAAAAAAAAAAAAAAAA3Nzm/9zc5v/c3Ob/3Nzm/9zc5v/c3Ob/3Nzm/9zc5v/"
+    "c3Ob/3Nzm/wAAAAAAAAAAAAAAAAAAAAA8UIz/PFCM/zxQjP88UIz/PFCM/zxQjP88UIz/"
+    "PFCM/zxQjP88UIz/PFCM/zxQjP88UIz/PFCM/wAAAAAAAAAAAAAAADxQjP88UIz/PFCM"
+    "/zxQjP88UIz/PFCM/zxQjP88UIz/PFCM/zxQjP88UIz/PFCM/wAAAAAAAAAAAAAAAAAA"
+    "AAAAAAA8UIz/PFCM/zxQjP88UIz/PFCM/zxQjP88UIz/PFCM/zxQjP88UIz/AAAAAAAA"
+    "AAAAAAAAAAAAAAAAAAAAAAAAADxQjP88UIz/PFCM/zxQjP88UIz/PFCM/zxQjP88UIz/"
+    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPFCM/zxQjP88UIz/PFCM/zxQjP"
+    "88UIz/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPFCM/zxQjP88"
+    "UIz/PFCM/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    "PFCM/zxQjP8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    "AAAAAAAAAAAAAAAAAAAAAA=="
+)
 
 WINDOWS_RESERVED_NAMES = frozenset({
     "CON", "PRN", "AUX", "NUL",
@@ -156,6 +185,7 @@ class ScaffyApp(tk.Tk):
         self.title("scaffy")
         self.resizable(True, True)
         self.minsize(620, 580)
+        self._set_icon()
 
         self._output_queue: queue.Queue = queue.Queue()
         self._running = False
@@ -163,6 +193,19 @@ class ScaffyApp(tk.Tk):
 
         self._build_ui()
         self._poll_output()
+
+    def _set_icon(self) -> None:
+        """Set the window icon from the embedded ICO data."""
+        try:
+            ico_data = base64.b64decode(_HOUSE_ICON_B64)
+            # Write to a temp file — tkinter needs a file path for iconbitmap
+            tmp = tempfile.NamedTemporaryFile(suffix=".ico", delete=False)
+            tmp.write(ico_data)
+            tmp.close()
+            self.iconbitmap(tmp.name)
+            os.unlink(tmp.name)
+        except Exception:
+            pass  # Fall back to default icon silently
 
     # ------------------------------------------------------------------
     # UI construction
@@ -400,9 +443,6 @@ class ScaffyApp(tk.Tk):
         else:
             self._target_root = os.path.normpath(path)
 
-        self._clear_output()
-        self._set_running(True)
-
         args = [
             "--name", name,
             "--path", path if mode == "new" else os.path.dirname(os.path.normpath(path)),
@@ -417,8 +457,64 @@ class ScaffyApp(tk.Tk):
         if self._force_var.get():
             args.append("--force")
 
-        thread = threading.Thread(target=self._run_scaffy, args=(args,), daemon=True)
-        thread.start()
+        # Capture dry-run output for the confirmation popup
+        dry_args = args + ["--dry-run"]
+        old_stdout, old_stderr, old_argv = sys.stdout, sys.stderr, sys.argv
+        capture = io.StringIO()
+        sys.stdout = capture
+        sys.stderr = capture
+        sys.argv = ["scaffy"] + dry_args
+        try:
+            scaffy.main()
+        except SystemExit:
+            pass
+        finally:
+            sys.stdout = old_stdout
+            sys.stderr = old_stderr
+            sys.argv = old_argv
+
+        preview = capture.getvalue()
+        self._show_confirm_popup(preview, args)
+
+    def _show_confirm_popup(self, preview: str, args: list[str]) -> None:
+        """Show a preview of planned actions and ask for confirmation."""
+        popup = tk.Toplevel(self)
+        popup.title("Confirm Build")
+        popup.minsize(520, 380)
+        popup.transient(self)
+        popup.grab_set()
+
+        frame = ttk.Frame(popup, padding=12)
+        frame.pack(fill="both", expand=True)
+
+        ttk.Label(
+            frame, text="The following files and directories will be created:",
+            font=("", 10, "bold"),
+        ).pack(anchor="w", pady=(0, 8))
+
+        text_widget = scrolledtext.ScrolledText(
+            frame, wrap="word", font=("Courier New", 9), height=16,
+        )
+        text_widget.pack(fill="both", expand=True)
+        text_widget.insert("1.0", preview)
+        text_widget.configure(state="disabled")
+
+        btn_frame = ttk.Frame(frame)
+        btn_frame.pack(fill="x", pady=(12, 0))
+
+        def on_confirm() -> None:
+            popup.destroy()
+            self._clear_output()
+            self._set_running(True)
+            thread = threading.Thread(
+                target=self._run_scaffy, args=(args,), daemon=True,
+            )
+            thread.start()
+
+        ttk.Button(btn_frame, text="No", command=popup.destroy).pack(side="left")
+        build_btn = ttk.Button(btn_frame, text="Yes, Build!", command=on_confirm)
+        build_btn.pack(side="right")
+        build_btn.focus_set()
 
     def _run_scaffy(self, args: list[str]) -> None:
         old_stdout = sys.stdout

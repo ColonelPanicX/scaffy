@@ -20,6 +20,7 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
   to describe goals before drafting plans or tasks.
 - Start your first session by pasting the contents of `initial-prompt.md`.
 - Use `OPEN SESSION` at the start of each working session to resume context quickly.
+- Use `SAVE SESSION` mid-session to checkpoint progress without ending the session.
 - Use `CLOSE SESSION` at the end of each session to save progress.
 - Write session summaries to `session-summaries/` on close.
 - Keep `kanban-board.md` current — it is the internal source of truth for task status.
@@ -40,8 +41,30 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
 - `ideas/` — Idea incubator: persistent thinking space for pre-ticket concepts and proposals.
   - `idea-template.md` — Starter template for new idea files.
 - `audit/` — Analysis reports, planning documents, and progress tracking artifacts.
+- `supporting-artifacts/` — Adjacent project materials: diagrams, research notes, specs,
+  reference docs, exported data, and anything else that supports the work but isn't
+  source code. Keep the project root clean — if it belongs to the project but isn't
+  code, it probably belongs here.
 - `git-management/` — Optional VCS platform governance templates.
   Includes: `git-guidelines.md`, `issue-template.md`, `pull-request-template.md`
+
+## Supporting Artifacts Guidance
+
+Use `supporting-artifacts/` for anything adjacent to the project that isn't source code,
+config, or documentation that belongs in the repo. The goal is to keep the project root
+clean and consolidate everything the AI and user need in one place.
+
+Examples of what belongs here:
+- Architecture diagrams and wireframes
+- Research notes, vendor comparisons, and technical spikes
+- Specification drafts and design documents
+- Reference material, exports, and sample data
+- Scratch files and working notes from active sessions
+
+Conventions:
+- Filenames should be lowercase, hyphen-separated.
+- Subdirectories are encouraged for organization (e.g., `diagrams/`, `specs/`, `research/`).
+- Prefix date when time-sensitive: `MM.DD.YYYY-filename.md`
 
 ## Ideas Directory Guidance
 

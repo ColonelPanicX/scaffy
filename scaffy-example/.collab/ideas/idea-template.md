@@ -1,6 +1,6 @@
 # Idea Title
 
-_Started: 03.27.2026_
+_Started: 04.02.2026_
 _Status: drafting_
 
 <!-- Status values: drafting | workshopping | parked | graduated -->

@@ -79,6 +79,29 @@ Immediately execute the Session Open Protocol — do not wait for additional ins
 
 Do **not** re-read `collab-contract.md` — focus on current state, not process rules.
 
+### SAVE SESSION
+
+When the user types exactly:
+
+    SAVE SESSION
+
+Immediately execute the Session Save Protocol — do not wait for additional instructions:
+
+1. Write a session summary to `.collab/session-summaries/` using the same naming
+   convention as CLOSE SESSION (always a new file — never overwrite an existing one):
+   - `MM.DD.YYYY-agentname-summary.md` for the first summary that day.
+   - `MM.DD.YYYY-##-agentname-summary.md` for additional same-day saves/closes
+     (use zero-padded sequence like `02`, `03`, etc.).
+   - Use the template at `.collab/session-summaries/session-summary-template.md`.
+2. Update `.collab/kanban-board.md` to reflect current task state:
+   - Move completed tasks to **Done**.
+   - Update statuses of in-progress tasks.
+   - Add newly discovered tasks to **Inbox** or **Backlog**.
+3. Confirm the checkpoint was saved. **Do not end the session** — continue working.
+
+> Use `SAVE SESSION` as a mid-session checkpoint. If the session is interrupted
+> unexpectedly, the last save can be used to reconstruct context on next `OPEN SESSION`.
+
 ### CLOSE SESSION
 
 When the user types exactly:
