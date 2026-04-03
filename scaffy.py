@@ -46,7 +46,7 @@ from zoneinfo import ZoneInfo
 
 TZ = ZoneInfo("America/New_York")
 GOVERNANCE_MODES = ("none", "lightweight", "standard", "strict")
-PLATFORM_MODES = ("github", "gitlab", "none")
+PLATFORM_MODES = ("github", "gitlab", "azure-devops", "none")
 LICENSE_CHOICES = ("mit", "apache-2.0", "gpl-3.0", "agpl-3.0", "bsd-2-clause", "bsd-3-clause", "mpl-2.0", "unlicense", "none")
 
 
@@ -1703,6 +1703,51 @@ Your first responsibility is to understand the current state, not change it.
 """,
 }
 
+_ADO_PR_TEMPLATE = """\
+## Summary
+
+<!-- What changed, in plain language? -->
+
+-
+
+## Why
+
+<!-- Why this change is needed (bug fix, feature, risk reduction, maintenance). -->
+
+-
+
+## Linked Work Item(s)
+
+AB#
+
+## Validation
+
+How was this verified?
+
+- [ ] Unit tests
+- [ ] Integration/end-to-end tests
+- [ ] Manual verification
+- [ ] CI/pipeline checks passed
+
+Evidence (commands, screenshots, logs, links):
+
+```text
+```
+
+## Risk Assessment
+
+- Functional regression: low / medium / high
+- Security impact: none / low / medium / high
+- Deployment risk: low / medium / high
+
+## Reviewer Checklist
+
+- [ ] Scope matches linked work item intent
+- [ ] Acceptance criteria satisfied
+- [ ] Test evidence adequate for risk level
+- [ ] No sensitive data or secrets introduced
+"""
+
 PLATFORM_FILES: dict[str, dict[str, str]] = {
     "github": {
         ".github/ISSUE_TEMPLATE/issue-template.md": _GITHUB_ISSUE_TEMPLATE,
@@ -1711,6 +1756,9 @@ PLATFORM_FILES: dict[str, dict[str, str]] = {
     "gitlab": {
         ".gitlab/issue_templates/issue-template.md": _GITLAB_ISSUE_TEMPLATE,
         ".gitlab/merge_request_templates/merge-request-template.md": _GITLAB_MR_TEMPLATE,
+    },
+    "azure-devops": {
+        ".azuredevops/pull_request_template.md": _ADO_PR_TEMPLATE,
     },
     "none": {},
 }
@@ -1840,18 +1888,19 @@ def prompt_for_platform() -> str:
     print("\nGit platform:")
     print("  1) GitHub")
     print("  2) GitLab")
-    print("  3) None / other")
-    choices = {"1": "github", "2": "gitlab", "3": "none"}
+    print("  3) Azure DevOps")
+    print("  4) None / other")
+    choices = {"1": "github", "2": "gitlab", "3": "azure-devops", "4": "none"}
     while True:
         try:
-            value = input("Select [1-3, Enter to skip]: ").strip()
+            value = input("Select [1-4, Enter to skip]: ").strip()
         except EOFError:
             raise SystemExit("No input provided; exiting.")
         if not value:
             return "none"
         if value in choices:
             return choices[value]
-        print("Invalid. Enter 1, 2, or 3.")
+        print("Invalid. Enter 1, 2, 3, or 4.")
 
 
 def prompt_for_license() -> str:
@@ -2122,7 +2171,7 @@ def main() -> None:
         metavar="PLATFORM",
         choices=PLATFORM_MODES,
         default=None,
-        help="Git platform: github, gitlab, or none. Default: none.",
+        help="Git platform: github, gitlab, azure-devops, or none. Default: none.",
     )
     parser.add_argument(
         "--license",

@@ -78,7 +78,13 @@ def _default_path() -> str:
 
 
 GOVERNANCE_OPTIONS = ["None", "Lightweight", "Standard", "Strict"]
-PLATFORM_OPTIONS = ["None", "GitHub", "GitLab"]
+PLATFORM_OPTIONS = ["None", "GitHub", "GitLab", "Azure DevOps"]
+PLATFORM_CLI_VALUES = {
+    "None": "none",
+    "GitHub": "github",
+    "GitLab": "gitlab",
+    "Azure DevOps": "azure-devops",
+}
 LICENSE_OPTIONS = [
     "None", "MIT", "Apache-2.0", "GPL-3.0", "AGPL-3.0",
     "BSD-2-Clause", "BSD-3-Clause", "MPL-2.0", "Unlicense",
@@ -95,7 +101,8 @@ TOOLTIPS = {
     "path_upgrade": "Root directory of the project with an existing .collab/ to upgrade.",
     "description": "A short summary injected into the project context file.",
     "platform": "Git hosting platform. Generates issue/PR templates\n"
-                "for the selected platform, or None to skip.",
+                "for the selected platform, or None to skip.\n"
+                "Azure DevOps generates .azuredevops/pull_request_template.md.",
     "governance": "Controls how much process structure is scaffolded.\n"
                   "None: no governance rules.\n"
                   "Lightweight: minimal guardrails.\n"
@@ -487,7 +494,7 @@ class ScaffyApp(tk.Tk):
             "--name", name,
             "--path", path if mode == "new" else os.path.dirname(os.path.normpath(path)),
             "--governance", self._governance_var.get().lower(),
-            "--platform", self._platform_var.get().lower(),
+            "--platform", PLATFORM_CLI_VALUES[self._platform_var.get()],
             "--license", self._license_var.get().lower(),
         ]
         if self._desc_var.get().strip():
