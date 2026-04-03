@@ -86,11 +86,13 @@ LICENSE_OPTIONS = [
 
 TOOLTIPS = {
     "mode": "New: creates a project folder inside the target path.\n"
-            "Existing: installs .collab/ into an existing project folder.",
+            "Existing: installs .collab/ into an existing project folder.\n"
+            "Upgrade: updates an existing .collab/ to the latest templates.",
     "name": "The name for your new project folder.\n"
             'Cannot contain \\ / : * ? " < > |',
     "path_new": "Parent directory where your new project folder will be created.",
     "path_existing": "Root directory of the existing project to scaffold into.",
+    "path_upgrade": "Root directory of the project with an existing .collab/ to upgrade.",
     "description": "A short summary injected into the project context file.",
     "platform": "Git hosting platform. Generates issue/PR templates\n"
                 "for the selected platform, or None to skip.",
@@ -238,6 +240,10 @@ class ScaffyApp(tk.Tk):
         ttk.Radiobutton(
             mode_frame, text="Existing project", variable=self._mode_var,
             value="existing", command=self._on_mode_change,
+        ).pack(side="left", padx=(0, 12))
+        ttk.Radiobutton(
+            mode_frame, text="Upgrade scaffold", variable=self._mode_var,
+            value="upgrade", command=self._on_mode_change,
         ).pack(side="left")
         _help_label(root_frame, row, 3, TOOLTIPS["mode"])
         row += 1
@@ -389,16 +395,28 @@ class ScaffyApp(tk.Tk):
     # ------------------------------------------------------------------
 
     def _on_mode_change(self) -> None:
-        is_new = self._mode_var.get() == "new"
+        mode = self._mode_var.get()
+        is_new = mode == "new"
+        is_upgrade = mode == "upgrade"
+
         self._name_entry.configure(state="normal" if is_new else "disabled")
         if not is_new:
             self._name_var.set("")
 
+        # Disable options that upgrade reads from project.yaml
+        option_state = "disabled" if is_upgrade else "readonly"
+        self._platform_combo.configure(state=option_state)
+        self._governance_combo.configure(state=option_state)
+        self._license_combo.configure(state=option_state)
+
+        # Update button label
+        self._run_btn.configure(text="Upgrade!" if is_upgrade else "Build!")
+
         # Swap path tooltip
-        tip_text = TOOLTIPS["path_new"] if is_new else TOOLTIPS["path_existing"]
+        tip_key = "path_new" if is_new else ("path_upgrade" if is_upgrade else "path_existing")
         self._path_help.unbind("<Enter>")
         self._path_help.unbind("<Leave>")
-        Tooltip(self._path_help, tip_text)
+        Tooltip(self._path_help, TOOLTIPS[tip_key])
 
     def _on_platform_change(self, _event: tk.Event) -> None:
         if self._platform_var.get() == "None":
@@ -425,6 +443,28 @@ class ScaffyApp(tk.Tk):
             self._append_output("Error: Target Path is required.\n")
             return
 
+        # --- Upgrade mode ---
+        if mode == "upgrade":
+            target = os.path.normpath(path)
+            self._target_root = target
+            collab_dir = os.path.join(target, ".collab")
+            if not os.path.isdir(collab_dir):
+                self._append_output(
+                    f"Error: No .collab/ directory found in {target}\n"
+                    "Select a project that has already been scaffolded.\n"
+                )
+                return
+
+            args = ["--upgrade", "--path", target]
+            if self._force_var.get():
+                args.append("--force")
+
+            # Capture dry-run preview
+            preview = self._capture_dry_run(args + ["--dry-run"])
+            self._show_confirm_popup(preview, args)
+            return
+
+        # --- New / Existing mode ---
         if mode == "new":
             name = self._name_var.get().strip()
             if not name:
@@ -457,8 +497,11 @@ class ScaffyApp(tk.Tk):
         if self._force_var.get():
             args.append("--force")
 
-        # Capture dry-run output for the confirmation popup
-        dry_args = args + ["--dry-run"]
+        preview = self._capture_dry_run(args + ["--dry-run"])
+        self._show_confirm_popup(preview, args)
+
+    def _capture_dry_run(self, dry_args: list[str]) -> str:
+        """Run scaffy with the given args and capture stdout."""
         old_stdout, old_stderr, old_argv = sys.stdout, sys.stderr, sys.argv
         capture = io.StringIO()
         sys.stdout = capture
@@ -472,9 +515,12 @@ class ScaffyApp(tk.Tk):
             sys.stdout = old_stdout
             sys.stderr = old_stderr
             sys.argv = old_argv
-
-        preview = capture.getvalue()
-        self._show_confirm_popup(preview, args)
+        # Strip the trailing "Dry run complete" line — not needed in the GUI preview
+        text = capture.getvalue()
+        lines = text.rstrip().splitlines()
+        if lines and "dry run complete" in lines[-1].lower():
+            lines.pop()
+        return "\n".join(lines) + "\n" if lines else text
 
     def _show_confirm_popup(self, preview: str, args: list[str]) -> None:
         """Show a preview of planned actions and ask for confirmation."""
@@ -511,8 +557,10 @@ class ScaffyApp(tk.Tk):
             )
             thread.start()
 
+        is_upgrade = "--upgrade" in args
+        confirm_text = "Yes, Upgrade!" if is_upgrade else "Yes, Build!"
         ttk.Button(btn_frame, text="No", command=popup.destroy).pack(side="left")
-        build_btn = ttk.Button(btn_frame, text="Yes, Build!", command=on_confirm)
+        build_btn = ttk.Button(btn_frame, text=confirm_text, command=on_confirm)
         build_btn.pack(side="right")
         build_btn.focus_set()
 
@@ -624,9 +672,11 @@ class ScaffyApp(tk.Tk):
 
     def _set_running(self, running: bool) -> None:
         self._running = running
+        is_upgrade = self._mode_var.get() == "upgrade"
+        idle_text = "Upgrade!" if is_upgrade else "Build!"
         self._run_btn.configure(
             state="disabled" if running else "normal",
-            text="Running\u2026" if running else "Build!",
+            text="Running\u2026" if running else idle_text,
         )
 
 
