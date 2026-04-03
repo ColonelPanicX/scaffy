@@ -1762,8 +1762,10 @@ def prompt_for_mode() -> str:
     print("\nWhat are you initializing?")
     print("  1) New project")
     print("  2) Existing project")
-    choice = prompt_choice("Select [1-2]: ", {"1", "2"})
-    return "new" if choice == "1" else "existing"
+    print("  3) Upgrade existing scaffold")
+    choices = {"1": "new", "2": "existing", "3": "upgrade"}
+    choice = prompt_choice("Select [1-3]: ", set(choices))
+    return choices[choice]
 
 
 def prompt_for_target_root() -> Path:
@@ -1817,20 +1819,21 @@ def prompt_for_new_project_name(default_name: str) -> str:
 
 def prompt_for_governance() -> str:
     print("\nGovernance mode:")
-    print("  1) Lightweight — minimal process, fast iteration (prototypes, solo work)")
-    print("  2) Standard    — balanced workflow, recommended for most projects")
-    print("  3) Strict      — full process gates, for compliance/regulated work")
-    choices = {"1": "lightweight", "2": "standard", "3": "strict"}
+    print("  1) None        — no governance rules or process structure")
+    print("  2) Lightweight — minimal process, fast iteration (prototypes, solo work)")
+    print("  3) Standard    — balanced workflow, recommended for most projects")
+    print("  4) Strict      — full process gates, for compliance/regulated work")
+    choices = {"1": "none", "2": "lightweight", "3": "standard", "4": "strict"}
     while True:
         try:
-            value = input("Select [1-3, Enter for standard]: ").strip()
+            value = input("Select [1-4, Enter for standard]: ").strip()
         except EOFError:
             raise SystemExit("No input provided; exiting.")
         if not value:
             return "standard"
         if value in choices:
             return choices[value]
-        print("Invalid. Enter 1, 2, or 3.")
+        print("Invalid. Enter 1, 2, 3, or 4.")
 
 
 def prompt_for_platform() -> str:
@@ -2166,6 +2169,10 @@ def main() -> None:
 
         mode = "new" if args.name else prompt_for_mode()
         selected_root = Path(args.path).expanduser().resolve() if args.path else prompt_for_target_root()
+
+        if mode == "upgrade":
+            upgrade_scaffold(selected_root, force=args.force, dry_run=args.dry_run)
+            return
 
         if mode == "new":
             default_name = suggest_project_name_from_target(selected_root)
