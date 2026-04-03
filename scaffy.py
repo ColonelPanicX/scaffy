@@ -1762,8 +1762,10 @@ def prompt_for_mode() -> str:
     print("\nWhat are you initializing?")
     print("  1) New project")
     print("  2) Existing project")
-    choice = prompt_choice("Select [1-2]: ", {"1", "2"})
-    return "new" if choice == "1" else "existing"
+    print("  3) Upgrade existing scaffold")
+    choices = {"1": "new", "2": "existing", "3": "upgrade"}
+    choice = prompt_choice("Select [1-3]: ", set(choices))
+    return choices[choice]
 
 
 def prompt_for_target_root() -> Path:
@@ -1817,20 +1819,21 @@ def prompt_for_new_project_name(default_name: str) -> str:
 
 def prompt_for_governance() -> str:
     print("\nGovernance mode:")
-    print("  1) Lightweight — minimal process, fast iteration (prototypes, solo work)")
-    print("  2) Standard    — balanced workflow, recommended for most projects")
-    print("  3) Strict      — full process gates, for compliance/regulated work")
-    choices = {"1": "lightweight", "2": "standard", "3": "strict"}
+    print("  1) None        — no governance rules or process structure")
+    print("  2) Lightweight — minimal process, fast iteration (prototypes, solo work)")
+    print("  3) Standard    — balanced workflow, recommended for most projects")
+    print("  4) Strict      — full process gates, for compliance/regulated work")
+    choices = {"1": "none", "2": "lightweight", "3": "standard", "4": "strict"}
     while True:
         try:
-            value = input("Select [1-3, Enter for standard]: ").strip()
+            value = input("Select [1-4, Enter for standard]: ").strip()
         except EOFError:
             raise SystemExit("No input provided; exiting.")
         if not value:
             return "standard"
         if value in choices:
             return choices[value]
-        print("Invalid. Enter 1, 2, or 3.")
+        print("Invalid. Enter 1, 2, 3, or 4.")
 
 
 def prompt_for_platform() -> str:
@@ -2167,6 +2170,10 @@ def main() -> None:
         mode = "new" if args.name else prompt_for_mode()
         selected_root = Path(args.path).expanduser().resolve() if args.path else prompt_for_target_root()
 
+        if mode == "upgrade":
+            upgrade_scaffold(selected_root, force=args.force, dry_run=args.dry_run)
+            return
+
         if mode == "new":
             default_name = suggest_project_name_from_target(selected_root)
             print("\nNew project details")
@@ -2211,23 +2218,31 @@ def main() -> None:
     print(f"Platform:   {platform}")
     print(f"License:    {license_id}")
     print(f"Date:       {timestamp} (America/New_York)")
-    if target_root.exists() and not args.force:
-        print("Notice: Target exists. Existing files will be skipped unless --force is used.")
+    if target_root.exists() and not args.dry_run and not args.force:
+        print("Notice: Target exists. Existing files will be skipped. Use --force to overwrite.")
 
     if args.dry_run:
+        def _dry_action(dest: Path) -> str:
+            if dest.exists():
+                return "overwrite" if args.force else "skip     "
+            return "write    "
+
         print("\nPlanned actions:")
         for rel_path in TEMPLATE_FILES:
-            if rel_path == ".gitignore":
-                print(f"  write {effective_gitignore_dest}")
-            else:
-                print(f"  write {target_root / rel_path}")
-        print(f"  write {target_root / '.collab/initial-prompt.md'}")
+            dest = effective_gitignore_dest if rel_path == ".gitignore" else target_root / rel_path
+            print(f"  {_dry_action(dest)} {dest}")
+        dest = target_root / ".collab/initial-prompt.md"
+        print(f"  {_dry_action(dest)} {dest}")
         for rel_path in PLATFORM_FILES.get(platform, {}):
-            print(f"  write {target_root / rel_path}")
+            dest = target_root / rel_path
+            print(f"  {_dry_action(dest)} {dest}")
         if license_id != "none":
-            print(f"  write {target_root / 'LICENSE'}")
+            dest = target_root / "LICENSE"
+            print(f"  {_dry_action(dest)} {dest}")
         if args.init_git:
-            print(f"  git init {target_root}")
+            print(f"  git init  {target_root}")
+        if not args.force and target_root.exists():
+            print("\nNote: 'skip' entries already exist and will not be changed. Use --force to overwrite.")
         print("\nDry run complete. No files written.")
         return
 
