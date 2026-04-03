@@ -2218,23 +2218,31 @@ def main() -> None:
     print(f"Platform:   {platform}")
     print(f"License:    {license_id}")
     print(f"Date:       {timestamp} (America/New_York)")
-    if target_root.exists() and not args.force:
-        print("Notice: Target exists. Existing files will be skipped unless --force is used.")
+    if target_root.exists() and not args.dry_run and not args.force:
+        print("Notice: Target exists. Existing files will be skipped. Use --force to overwrite.")
 
     if args.dry_run:
+        def _dry_action(dest: Path) -> str:
+            if dest.exists():
+                return "overwrite" if args.force else "skip     "
+            return "write    "
+
         print("\nPlanned actions:")
         for rel_path in TEMPLATE_FILES:
-            if rel_path == ".gitignore":
-                print(f"  write {effective_gitignore_dest}")
-            else:
-                print(f"  write {target_root / rel_path}")
-        print(f"  write {target_root / '.collab/initial-prompt.md'}")
+            dest = effective_gitignore_dest if rel_path == ".gitignore" else target_root / rel_path
+            print(f"  {_dry_action(dest)} {dest}")
+        dest = target_root / ".collab/initial-prompt.md"
+        print(f"  {_dry_action(dest)} {dest}")
         for rel_path in PLATFORM_FILES.get(platform, {}):
-            print(f"  write {target_root / rel_path}")
+            dest = target_root / rel_path
+            print(f"  {_dry_action(dest)} {dest}")
         if license_id != "none":
-            print(f"  write {target_root / 'LICENSE'}")
+            dest = target_root / "LICENSE"
+            print(f"  {_dry_action(dest)} {dest}")
         if args.init_git:
-            print(f"  git init {target_root}")
+            print(f"  git init  {target_root}")
+        if not args.force and target_root.exists():
+            print("\nNote: 'skip' entries already exist and will not be changed. Use --force to overwrite.")
         print("\nDry run complete. No files written.")
         return
 
