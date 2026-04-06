@@ -41,7 +41,7 @@ python3 scaffy.py --dry-run
 
 | Flag | Description | Default |
 |---|---|---|
-| `--name NAME` | Project name (lowercase, hyphen-separated) | interactive |
+| `--name NAME` | Project name (lowercase, hyphen-separated recommended) | interactive |
 | `--path PATH` | Base directory for scaffold installation | interactive |
 | `--force` | Overwrite existing files | off |
 | `--dry-run` | Show planned actions without writing | off |
