@@ -11,8 +11,8 @@ Initialize a project with a standard `.collab/` workspace scaffold for multi-age
 3. Fill in **Project Name** and **Target Path**, adjust options, click **Build!**
 4. When the build completes, a popup shows the initial prompt — copy it and paste into your AI agent to start your first session
 
-<!-- Replace the line below with your screenshot once captured -->
-<!-- ![scaffy GUI](docs/scaffy-gui.png) -->
+<img width="642" height="750" alt="image" src="https://github.com/user-attachments/assets/ebaf4f61-7a5d-45de-8e01-378a531e9da3" />
+
 
 ---
 
