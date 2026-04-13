@@ -22,7 +22,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install pyinstaller tzdata
+          pip install pyinstaller tzdata customtkinter
 
       - name: Build EXE
         run: |

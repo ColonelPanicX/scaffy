@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-scaffy GUI — tkinter front-end for scaffy.py
+scaffy GUI — CustomTkinter front-end for scaffy.py
 
-Wraps scaffy's scaffold logic in a point-and-click interface.
-Requires scaffy.py to be in the same directory (or bundled alongside by PyInstaller).
+Dark-mode GUI wrapper for scaffy's scaffold logic.
+Requires scaffy.py in the same directory (or bundled alongside by PyInstaller).
 """
 
 from __future__ import annotations
@@ -12,17 +12,20 @@ import base64
 import io
 import os
 import pathlib
-import platform
 import queue
 import re
-import subprocess
 import sys
 import tempfile
 import threading
 import tkinter as tk
-from tkinter import filedialog, scrolledtext, ttk
+from tkinter import filedialog
+
+import customtkinter as ctk
 
 import scaffy
+
+ctk.set_appearance_mode("dark")
+ctk.set_default_color_theme("blue")
 
 # 16x16 house icon (ICO format, base64-encoded)
 _HOUSE_ICON_B64 = (
@@ -118,11 +121,15 @@ TOOLTIPS = {
                    "after a successful build.",
 }
 
+# Dark-mode tooltip colors
+_TIP_BG = "#1e1e2e"
+_TIP_FG = "#cdd6f4"
+
 
 class Tooltip:
-    """Hover tooltip for any tkinter widget."""
+    """Hover tooltip for any widget."""
 
-    def __init__(self, widget: tk.Widget, text: str) -> None:
+    def __init__(self, widget: tk.BaseWidget, text: str) -> None:
         self._widget = widget
         self._text = text
         self._tip_window: tk.Toplevel | None = None
@@ -137,9 +144,10 @@ class Tooltip:
         self._tip_window = tw = tk.Toplevel(self._widget)
         tw.wm_overrideredirect(True)
         tw.wm_geometry(f"+{x}+{y}")
+        tw.configure(bg=_TIP_BG)
         label = tk.Label(
             tw, text=self._text, justify="left",
-            background="#ffffe0", foreground="#333",
+            background=_TIP_BG, foreground=_TIP_FG,
             relief="solid", borderwidth=1,
             font=("TkDefaultFont", 9), padx=6, pady=4,
         )
@@ -151,11 +159,14 @@ class Tooltip:
             self._tip_window = None
 
 
-def _help_label(parent: ttk.Frame, row: int, col: int, tip_text: str) -> tk.Label:
+def _help_label(parent: ctk.CTkFrame, row: int, col: int, tip_text: str) -> ctk.CTkLabel:
     """Place a small '?' label with a hover tooltip."""
-    lbl = tk.Label(
-        parent, text="?", font=("TkDefaultFont", 9, "bold"),
-        foreground="#555", cursor="question_arrow",
+    lbl = ctk.CTkLabel(
+        parent, text="?",
+        font=ctk.CTkFont(size=10, weight="bold"),
+        text_color="#7f849c",
+        cursor="question_arrow",
+        width=16,
     )
     lbl.grid(row=row, column=col, sticky="w", padx=(4, 0))
     Tooltip(lbl, tip_text)
@@ -178,22 +189,16 @@ class QueueWriter(io.TextIOBase):
 
 
 def _open_folder(path: str) -> None:
-    """Open a folder in the platform's native file explorer."""
-    system = platform.system()
-    if system == "Windows":
-        os.startfile(path)
-    elif system == "Darwin":
-        subprocess.Popen(["open", path])
-    else:
-        subprocess.Popen(["xdg-open", path])
+    """Open a folder in Windows Explorer."""
+    os.startfile(path)
 
 
-class ScaffyApp(tk.Tk):
+class ScaffyApp(ctk.CTk):
     def __init__(self) -> None:
         super().__init__()
         self.title("scaffy")
         self.resizable(True, True)
-        self.minsize(620, 580)
+        self.minsize(640, 600)
         self._set_icon()
 
         self._output_queue: queue.Queue = queue.Queue()
@@ -204,51 +209,51 @@ class ScaffyApp(tk.Tk):
         self._poll_output()
 
     def _set_icon(self) -> None:
-        """Set the window icon from the embedded ICO data."""
         try:
             ico_data = base64.b64decode(_HOUSE_ICON_B64)
-            # Write to a temp file — tkinter needs a file path for iconbitmap
             tmp = tempfile.NamedTemporaryFile(suffix=".ico", delete=False)
             tmp.write(ico_data)
             tmp.close()
             self.iconbitmap(tmp.name)
             os.unlink(tmp.name)
         except Exception:
-            pass  # Fall back to default icon silently
+            pass
 
     # ------------------------------------------------------------------
     # UI construction
     # ------------------------------------------------------------------
 
     def _build_ui(self) -> None:
-        root_frame = ttk.Frame(self, padding=12)
-        root_frame.grid(row=0, column=0, sticky="nsew")
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
+
+        root_frame = ctk.CTkFrame(self, fg_color="transparent")
+        root_frame.grid(row=0, column=0, sticky="nsew", padx=16, pady=16)
         root_frame.columnconfigure(1, weight=1)
 
         row = 0
 
         # ── Section: Project Setup ────────────────────────────────────
-        ttk.Label(root_frame, text="Project Setup", font=("", 10, "bold")).grid(
-            row=row, column=0, columnspan=4, sticky="w", pady=(0, 4)
-        )
+        ctk.CTkLabel(
+            root_frame, text="Project Setup",
+            font=ctk.CTkFont(size=13, weight="bold"),
+        ).grid(row=row, column=0, columnspan=4, sticky="w", pady=(0, 6))
         row += 1
 
         # Mode toggle
-        ttk.Label(root_frame, text="Mode").grid(row=row, column=0, sticky="w", pady=2)
-        mode_frame = ttk.Frame(root_frame)
+        ctk.CTkLabel(root_frame, text="Mode").grid(row=row, column=0, sticky="w", pady=3)
+        mode_frame = ctk.CTkFrame(root_frame, fg_color="transparent")
         mode_frame.grid(row=row, column=1, columnspan=2, sticky="w", padx=(8, 0))
         self._mode_var = tk.StringVar(value="new")
-        ttk.Radiobutton(
+        ctk.CTkRadioButton(
             mode_frame, text="New project", variable=self._mode_var,
             value="new", command=self._on_mode_change,
         ).pack(side="left", padx=(0, 12))
-        ttk.Radiobutton(
+        ctk.CTkRadioButton(
             mode_frame, text="Existing project", variable=self._mode_var,
             value="existing", command=self._on_mode_change,
         ).pack(side="left", padx=(0, 12))
-        ttk.Radiobutton(
+        ctk.CTkRadioButton(
             mode_frame, text="Upgrade scaffold", variable=self._mode_var,
             value="upgrade", command=self._on_mode_change,
         ).pack(side="left")
@@ -256,143 +261,149 @@ class ScaffyApp(tk.Tk):
         row += 1
 
         # Project Name
-        self._name_label = ttk.Label(root_frame, text="Project Name")
-        self._name_label.grid(row=row, column=0, sticky="w", pady=2)
+        self._name_label = ctk.CTkLabel(root_frame, text="Project Name")
+        self._name_label.grid(row=row, column=0, sticky="w", pady=3)
         self._name_var = tk.StringVar()
-        self._name_entry = ttk.Entry(root_frame, textvariable=self._name_var)
+        self._name_entry = ctk.CTkEntry(root_frame, textvariable=self._name_var)
         self._name_entry.grid(row=row, column=1, columnspan=2, sticky="ew", padx=(8, 0))
         _help_label(root_frame, row, 3, TOOLTIPS["name"])
         row += 1
 
         # Target Path
-        self._path_label = ttk.Label(root_frame, text="Target Path")
-        self._path_label.grid(row=row, column=0, sticky="w", pady=2)
+        self._path_label = ctk.CTkLabel(root_frame, text="Target Path")
+        self._path_label.grid(row=row, column=0, sticky="w", pady=3)
         self._path_var = tk.StringVar(value=_default_path())
-        ttk.Entry(root_frame, textvariable=self._path_var).grid(
+        ctk.CTkEntry(root_frame, textvariable=self._path_var).grid(
             row=row, column=1, sticky="ew", padx=(8, 4)
         )
-        ttk.Button(root_frame, text="Browse\u2026", command=self._browse_path).grid(
-            row=row, column=2, sticky="ew"
-        )
+        ctk.CTkButton(
+            root_frame, text="Browse\u2026", command=self._browse_path, width=90,
+        ).grid(row=row, column=2, sticky="ew")
         self._path_help = _help_label(root_frame, row, 3, TOOLTIPS["path_new"])
         row += 1
 
         # Description
-        ttk.Label(root_frame, text="Description").grid(row=row, column=0, sticky="w", pady=2)
+        ctk.CTkLabel(root_frame, text="Description").grid(row=row, column=0, sticky="w", pady=3)
         self._desc_var = tk.StringVar()
-        ttk.Entry(root_frame, textvariable=self._desc_var).grid(
+        ctk.CTkEntry(root_frame, textvariable=self._desc_var).grid(
             row=row, column=1, columnspan=2, sticky="ew", padx=(8, 0)
         )
         _help_label(root_frame, row, 3, TOOLTIPS["description"])
         row += 1
 
-        ttk.Separator(root_frame, orient="horizontal").grid(
-            row=row, column=0, columnspan=4, sticky="ew", pady=8
+        # Separator
+        ctk.CTkFrame(root_frame, height=2, fg_color=("gray70", "gray25")).grid(
+            row=row, column=0, columnspan=4, sticky="ew", pady=10
         )
         row += 1
 
         # ── Section: Options ─────────────────────────────────────────
-        ttk.Label(root_frame, text="Options", font=("", 10, "bold")).grid(
-            row=row, column=0, columnspan=4, sticky="w", pady=(0, 4)
-        )
+        ctk.CTkLabel(
+            root_frame, text="Options",
+            font=ctk.CTkFont(size=13, weight="bold"),
+        ).grid(row=row, column=0, columnspan=4, sticky="w", pady=(0, 6))
         row += 1
 
-        # Platform (first — drives auto-fill)
-        ttk.Label(root_frame, text="Platform").grid(row=row, column=0, sticky="w", pady=2)
+        # Platform
+        ctk.CTkLabel(root_frame, text="Platform").grid(row=row, column=0, sticky="w", pady=3)
         self._platform_var = tk.StringVar(value="None")
-        self._platform_combo = ttk.Combobox(
-            root_frame, textvariable=self._platform_var,
-            values=PLATFORM_OPTIONS, state="readonly", width=20,
+        self._platform_combo = ctk.CTkComboBox(
+            root_frame, values=PLATFORM_OPTIONS, variable=self._platform_var,
+            command=self._on_platform_change, state="readonly", width=180,
         )
         self._platform_combo.grid(row=row, column=1, sticky="w", padx=(8, 0))
-        self._platform_combo.bind("<<ComboboxSelected>>", self._on_platform_change)
         _help_label(root_frame, row, 3, TOOLTIPS["platform"])
         row += 1
 
         # Governance
-        ttk.Label(root_frame, text="Governance").grid(row=row, column=0, sticky="w", pady=2)
+        ctk.CTkLabel(root_frame, text="Governance").grid(row=row, column=0, sticky="w", pady=3)
         self._governance_var = tk.StringVar(value="Standard")
-        self._governance_combo = ttk.Combobox(
-            root_frame, textvariable=self._governance_var,
-            values=GOVERNANCE_OPTIONS, state="readonly", width=20,
+        self._governance_combo = ctk.CTkComboBox(
+            root_frame, values=GOVERNANCE_OPTIONS, variable=self._governance_var,
+            state="readonly", width=180,
         )
         self._governance_combo.grid(row=row, column=1, sticky="w", padx=(8, 0))
         _help_label(root_frame, row, 3, TOOLTIPS["governance"])
         row += 1
 
         # License
-        ttk.Label(root_frame, text="License").grid(row=row, column=0, sticky="w", pady=2)
+        ctk.CTkLabel(root_frame, text="License").grid(row=row, column=0, sticky="w", pady=3)
         self._license_var = tk.StringVar(value="None")
-        self._license_combo = ttk.Combobox(
-            root_frame, textvariable=self._license_var,
-            values=LICENSE_OPTIONS, state="readonly", width=20,
+        self._license_combo = ctk.CTkComboBox(
+            root_frame, values=LICENSE_OPTIONS, variable=self._license_var,
+            state="readonly", width=180,
         )
         self._license_combo.grid(row=row, column=1, sticky="w", padx=(8, 0))
         _help_label(root_frame, row, 3, TOOLTIPS["license"])
         row += 1
 
-        ttk.Separator(root_frame, orient="horizontal").grid(
-            row=row, column=0, columnspan=4, sticky="ew", pady=8
+        # Separator
+        ctk.CTkFrame(root_frame, height=2, fg_color=("gray70", "gray25")).grid(
+            row=row, column=0, columnspan=4, sticky="ew", pady=10
         )
         row += 1
 
         # ── Section: Flags ───────────────────────────────────────────
-        flag_frame = ttk.Frame(root_frame)
+        flag_frame = ctk.CTkFrame(root_frame, fg_color="transparent")
         flag_frame.grid(row=row, column=0, columnspan=4, sticky="w")
 
         self._init_git_var = tk.BooleanVar(value=False)
-        ttk.Checkbutton(
-            flag_frame, text="Initialize git repo", variable=self._init_git_var
+        ctk.CTkCheckBox(
+            flag_frame, text="Initialize git repo", variable=self._init_git_var,
         ).pack(side="left")
-        git_help = tk.Label(
-            flag_frame, text="?", font=("TkDefaultFont", 9, "bold"),
-            foreground="#555", cursor="question_arrow",
+        git_help = ctk.CTkLabel(
+            flag_frame, text="?", font=ctk.CTkFont(size=10, weight="bold"),
+            text_color="#7f849c", cursor="question_arrow", width=16,
         )
         git_help.pack(side="left", padx=(4, 16))
         Tooltip(git_help, TOOLTIPS["init_git"])
 
         self._force_var = tk.BooleanVar(value=False)
-        ttk.Checkbutton(
-            flag_frame, text="Force overwrite", variable=self._force_var
+        ctk.CTkCheckBox(
+            flag_frame, text="Force overwrite", variable=self._force_var,
         ).pack(side="left")
-        force_help = tk.Label(
-            flag_frame, text="?", font=("TkDefaultFont", 9, "bold"),
-            foreground="#555", cursor="question_arrow",
+        force_help = ctk.CTkLabel(
+            flag_frame, text="?", font=ctk.CTkFont(size=10, weight="bold"),
+            text_color="#7f849c", cursor="question_arrow", width=16,
         )
         force_help.pack(side="left", padx=(4, 16))
         Tooltip(force_help, TOOLTIPS["force"])
 
         self._open_folder_var = tk.BooleanVar(value=False)
-        ttk.Checkbutton(
-            flag_frame, text="Open folder after build", variable=self._open_folder_var
+        ctk.CTkCheckBox(
+            flag_frame, text="Open folder after build", variable=self._open_folder_var,
         ).pack(side="left")
-        open_help = tk.Label(
-            flag_frame, text="?", font=("TkDefaultFont", 9, "bold"),
-            foreground="#555", cursor="question_arrow",
+        open_help = ctk.CTkLabel(
+            flag_frame, text="?", font=ctk.CTkFont(size=10, weight="bold"),
+            text_color="#7f849c", cursor="question_arrow", width=16,
         )
         open_help.pack(side="left", padx=(4, 0))
         Tooltip(open_help, TOOLTIPS["open_folder"])
         row += 1
 
-        ttk.Separator(root_frame, orient="horizontal").grid(
-            row=row, column=0, columnspan=4, sticky="ew", pady=8
+        # Separator
+        ctk.CTkFrame(root_frame, height=2, fg_color=("gray70", "gray25")).grid(
+            row=row, column=0, columnspan=4, sticky="ew", pady=10
         )
         row += 1
 
         # ── Build button ─────────────────────────────────────────────
-        self._run_btn = ttk.Button(root_frame, text="Build!", command=self._on_scaffold)
-        self._run_btn.grid(row=row, column=0, columnspan=4, sticky="ew", ipady=4)
+        self._run_btn = ctk.CTkButton(
+            root_frame, text="Build!", command=self._on_scaffold, height=40,
+            font=ctk.CTkFont(size=14, weight="bold"),
+        )
+        self._run_btn.grid(row=row, column=0, columnspan=4, sticky="ew")
         row += 1
 
-        ttk.Label(root_frame, text="Output", font=("", 10, "bold")).grid(
-            row=row, column=0, columnspan=4, sticky="w", pady=(12, 4)
-        )
+        ctk.CTkLabel(
+            root_frame, text="Output",
+            font=ctk.CTkFont(size=13, weight="bold"),
+        ).grid(row=row, column=0, columnspan=4, sticky="w", pady=(14, 4))
         row += 1
 
         # ── Output panel ─────────────────────────────────────────────
-        self._output = scrolledtext.ScrolledText(
-            root_frame, height=12, state="disabled",
-            wrap="word", font=("Courier New", 9),
+        self._output = ctk.CTkTextbox(
+            root_frame, wrap="word", font=("Courier New", 10), state="disabled",
         )
         self._output.grid(row=row, column=0, columnspan=4, sticky="nsew")
         root_frame.rowconfigure(row, weight=1)
@@ -410,23 +421,20 @@ class ScaffyApp(tk.Tk):
         if not is_new:
             self._name_var.set("")
 
-        # Disable options that upgrade reads from project.yaml
         option_state = "disabled" if is_upgrade else "readonly"
         self._platform_combo.configure(state=option_state)
         self._governance_combo.configure(state=option_state)
         self._license_combo.configure(state=option_state)
 
-        # Update button label
         self._run_btn.configure(text="Upgrade!" if is_upgrade else "Build!")
 
-        # Swap path tooltip
         tip_key = "path_new" if is_new else ("path_upgrade" if is_upgrade else "path_existing")
         self._path_help.unbind("<Enter>")
         self._path_help.unbind("<Leave>")
         Tooltip(self._path_help, TOOLTIPS[tip_key])
 
-    def _on_platform_change(self, _event: tk.Event) -> None:
-        if self._platform_var.get() == "None":
+    def _on_platform_change(self, value: str) -> None:
+        if value == "None":
             self._governance_var.set("None")
             self._license_var.set("None")
 
@@ -450,7 +458,6 @@ class ScaffyApp(tk.Tk):
             self._append_output("Error: Target Path is required.\n")
             return
 
-        # --- Upgrade mode ---
         if mode == "upgrade":
             target = os.path.normpath(path)
             self._target_root = target
@@ -466,12 +473,10 @@ class ScaffyApp(tk.Tk):
             if self._force_var.get():
                 args.append("--force")
 
-            # Capture dry-run preview
             preview = self._capture_dry_run(args + ["--dry-run"])
             self._show_confirm_popup(preview, args)
             return
 
-        # --- New / Existing mode ---
         if mode == "new":
             name = self._name_var.get().strip()
             if not name:
@@ -484,7 +489,6 @@ class ScaffyApp(tk.Tk):
         else:
             name = os.path.basename(os.path.normpath(path))
 
-        # Resolve the target root so we can open it after build
         if mode == "new":
             self._target_root = os.path.join(os.path.normpath(path), name)
         else:
@@ -508,7 +512,6 @@ class ScaffyApp(tk.Tk):
         self._show_confirm_popup(preview, args)
 
     def _capture_dry_run(self, dry_args: list[str]) -> str:
-        """Run scaffy with the given args and capture stdout."""
         old_stdout, old_stderr, old_argv = sys.stdout, sys.stderr, sys.argv
         capture = io.StringIO()
         sys.stdout = capture
@@ -522,7 +525,6 @@ class ScaffyApp(tk.Tk):
             sys.stdout = old_stdout
             sys.stderr = old_stderr
             sys.argv = old_argv
-        # Strip the trailing "Dry run complete" line — not needed in the GUI preview
         text = capture.getvalue()
         lines = text.rstrip().splitlines()
         if lines and "dry run complete" in lines[-1].lower():
@@ -530,29 +532,27 @@ class ScaffyApp(tk.Tk):
         return "\n".join(lines) + "\n" if lines else text
 
     def _show_confirm_popup(self, preview: str, args: list[str]) -> None:
-        """Show a preview of planned actions and ask for confirmation."""
-        popup = tk.Toplevel(self)
+        popup = ctk.CTkToplevel(self)
         popup.title("Confirm Build")
-        popup.minsize(520, 380)
+        popup.minsize(540, 400)
         popup.transient(self)
-        popup.grab_set()
+        popup.after(50, popup.grab_set)
 
-        frame = ttk.Frame(popup, padding=12)
-        frame.pack(fill="both", expand=True)
+        frame = ctk.CTkFrame(popup, fg_color="transparent")
+        frame.pack(fill="both", expand=True, padx=16, pady=16)
 
-        ttk.Label(
-            frame, text="The following files and directories will be created:",
-            font=("", 10, "bold"),
+        ctk.CTkLabel(
+            frame,
+            text="The following files and directories will be created:",
+            font=ctk.CTkFont(size=12, weight="bold"),
         ).pack(anchor="w", pady=(0, 8))
 
-        text_widget = scrolledtext.ScrolledText(
-            frame, wrap="word", font=("Courier New", 9), height=16,
-        )
+        text_widget = ctk.CTkTextbox(frame, wrap="word", font=("Courier New", 10))
         text_widget.pack(fill="both", expand=True)
         text_widget.insert("1.0", preview)
         text_widget.configure(state="disabled")
 
-        btn_frame = ttk.Frame(frame)
+        btn_frame = ctk.CTkFrame(frame, fg_color="transparent")
         btn_frame.pack(fill="x", pady=(12, 0))
 
         def on_confirm() -> None:
@@ -566,8 +566,8 @@ class ScaffyApp(tk.Tk):
 
         is_upgrade = "--upgrade" in args
         confirm_text = "Yes, Upgrade!" if is_upgrade else "Yes, Build!"
-        ttk.Button(btn_frame, text="No", command=popup.destroy).pack(side="left")
-        build_btn = ttk.Button(btn_frame, text=confirm_text, command=on_confirm)
+        ctk.CTkButton(btn_frame, text="No", command=popup.destroy, width=80).pack(side="left")
+        build_btn = ctk.CTkButton(btn_frame, text=confirm_text, command=on_confirm, width=120)
         build_btn.pack(side="right")
         build_btn.focus_set()
 
@@ -607,7 +607,6 @@ class ScaffyApp(tk.Tk):
         if self._open_folder_var.get() and os.path.isdir(self._target_root):
             _open_folder(self._target_root)
 
-        # Show initial prompt popup
         prompt_path = os.path.join(self._target_root, ".collab", "initial-prompt.md")
         if os.path.isfile(prompt_path):
             with open(prompt_path, encoding="utf-8") as f:
@@ -615,28 +614,26 @@ class ScaffyApp(tk.Tk):
             self._show_prompt_popup(prompt_text)
 
     def _show_prompt_popup(self, text: str) -> None:
-        popup = tk.Toplevel(self)
+        popup = ctk.CTkToplevel(self)
         popup.title("Initial Prompt")
-        popup.minsize(500, 350)
+        popup.minsize(520, 380)
         popup.transient(self)
 
-        frame = ttk.Frame(popup, padding=12)
-        frame.pack(fill="both", expand=True)
+        frame = ctk.CTkFrame(popup, fg_color="transparent")
+        frame.pack(fill="both", expand=True, padx=16, pady=16)
 
-        ttk.Label(
+        ctk.CTkLabel(
             frame,
             text="Paste this into your AI agent to start your first session:",
-            wraplength=460,
+            wraplength=480,
         ).pack(anchor="w", pady=(0, 8))
 
-        text_widget = scrolledtext.ScrolledText(
-            frame, wrap="word", font=("Courier New", 9),
-        )
+        text_widget = ctk.CTkTextbox(frame, wrap="word", font=("Courier New", 10))
         text_widget.pack(fill="both", expand=True)
         text_widget.insert("1.0", text)
         text_widget.configure(state="disabled")
 
-        btn_frame = ttk.Frame(frame)
+        btn_frame = ctk.CTkFrame(frame, fg_color="transparent")
         btn_frame.pack(fill="x", pady=(8, 0))
 
         def copy_to_clipboard() -> None:
@@ -645,16 +642,15 @@ class ScaffyApp(tk.Tk):
             copy_btn.configure(text="Copied!")
             self.after(1500, lambda: copy_btn.configure(text="Copy to Clipboard"))
 
-        copy_btn = ttk.Button(btn_frame, text="Copy to Clipboard", command=copy_to_clipboard)
+        copy_btn = ctk.CTkButton(btn_frame, text="Copy to Clipboard", command=copy_to_clipboard)
         copy_btn.pack(side="left")
-        ttk.Button(btn_frame, text="Close", command=popup.destroy).pack(side="right")
+        ctk.CTkButton(btn_frame, text="Close", command=popup.destroy, width=80).pack(side="right")
 
     # ------------------------------------------------------------------
     # Output helpers
     # ------------------------------------------------------------------
 
     def _poll_output(self) -> None:
-        """Called every 50ms to drain the output queue into the text widget."""
         try:
             while True:
                 item = self._output_queue.get_nowait()
