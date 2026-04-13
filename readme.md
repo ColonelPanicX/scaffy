@@ -2,6 +2,44 @@
 
 Initialize a project with a standard `.collab/` workspace scaffold for multi-agent collaboration.
 
+## Quickstart
+
+### Windows — GUI (exe)
+
+1. Download `scaffy.exe` from the [latest release](https://github.com/ColonelPanicX/scaffy/releases/latest)
+2. Double-click to run — no install needed
+3. Fill in **Project Name** and **Target Path**, adjust options, click **Build!**
+4. When the build completes, a popup shows the initial prompt — copy it and paste into your AI agent to start your first session
+
+<!-- Replace the line below with your screenshot once captured -->
+<!-- ![scaffy GUI](docs/scaffy-gui.png) -->
+
+---
+
+### Python — CLI (Mac / Linux / Windows)
+
+Requires Python 3.9+. No dependencies to install.
+
+1. Download `scaffy.py` from the [latest release](https://github.com/ColonelPanicX/scaffy/releases/latest)
+2. Run it — scaffy will walk you through the rest:
+
+   ```bash
+   python3 scaffy.py
+   ```
+
+3. Follow the prompts: project name, target path, governance level, platform, and an optional description
+4. When scaffolding completes, the terminal prints the initial prompt — copy it and paste into your AI agent to start your first session
+
+To skip the prompts entirely:
+
+```bash
+python3 scaffy.py --name my-project --path /path/to/base \
+  --governance standard \
+  --platform github
+```
+
+---
+
 ## Purpose
 
 `scaffy.py` creates a collaboration scaffold with:
