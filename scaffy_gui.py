@@ -8,14 +8,12 @@ Requires scaffy.py in the same directory (or bundled alongside by PyInstaller).
 
 from __future__ import annotations
 
-import base64
 import io
 import os
 import pathlib
 import queue
 import re
 import sys
-import tempfile
 import threading
 import tkinter as tk
 from tkinter import filedialog
@@ -27,32 +25,6 @@ import scaffy
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
-# 16x16 house icon (ICO format, base64-encoded)
-_HOUSE_ICON_B64 = (
-    "AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAQAQAAAAAAAAA"
-    "AAAAAAAAAAAAAABktGT/ZLRk/2S0ZP9ktGT/ZLRk/2S0ZP9ktGT/ZLRk/2S0ZP9ktG"
-    "T/ZLRk/2S0ZP9ktGT/ZLRk/2S0ZP9ktGT/ZLRk/2S0ZP9ktGT/ZLRk/2S0ZP9ktGT/"
-    "ZLRk/2S0ZP9ktGT/ZLRk/2S0ZP9ktGT/ZLRk/2S0ZP9ktGT/ZLRk/wAAAAAAAAAAAAAA"
-    "AADc3Ob/3Nzm/9zc5v9aeLT/Wni0/1p4tP9aeLT/3Nzm/9zc5v/c3Ob/AAAAAAAAAAAA"
-    "AAAAAAAAAAAAAAAAAAAAAAAc3Ob/3Nzm/9zc5v9aeLT/Wni0/1p4tP9aeLT/3Nzm/9zc"
-    "5v/c3Ob/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA3Nzm/9zc5v/c3Ob/Wni0/1p4tP9a"
-    "eLT/Wni0/9zc5v/c3Ob/3Nzm/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANzc5v/c3Ob/"
-    "3Nzm/1p4tP9aeLT/Wni0/1p4tP/c3Ob/3Nzm/9zc5v8AAAAAAAAAAAAAAAAAAAAAAAAA"
-    "AAAAANzc5v/c3Ob/3Nzm/9zc5v/c3Ob/3Nzm/9zc5v/c3Ob/3Nzm/9zc5v8AAAAAAAA"
-    "AAAAAAAAAAAAAAAAAAAAAAAAA3Nzm/9zc5v/c3Ob/3Nzm/9zc5v/c3Ob/3Nzm/9zc5v/"
-    "c3Ob/3Nzm/wAAAAAAAAAAAAAAAAAAAAA8UIz/PFCM/zxQjP88UIz/PFCM/zxQjP88UIz/"
-    "PFCM/zxQjP88UIz/PFCM/zxQjP88UIz/PFCM/wAAAAAAAAAAAAAAADxQjP88UIz/PFCM"
-    "/zxQjP88UIz/PFCM/zxQjP88UIz/PFCM/zxQjP88UIz/PFCM/wAAAAAAAAAAAAAAAAAA"
-    "AAAAAAA8UIz/PFCM/zxQjP88UIz/PFCM/zxQjP88UIz/PFCM/zxQjP88UIz/AAAAAAAA"
-    "AAAAAAAAAAAAAAAAAAAAAAAAADxQjP88UIz/PFCM/zxQjP88UIz/PFCM/zxQjP88UIz/"
-    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPFCM/zxQjP88UIz/PFCM/zxQjP"
-    "88UIz/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPFCM/zxQjP88"
-    "UIz/PFCM/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-    "PFCM/zxQjP8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-    "AAAAAAAAAAAAAAAAAAAAAA=="
-)
 
 WINDOWS_RESERVED_NAMES = frozenset({
     "CON", "PRN", "AUX", "NUL",
@@ -210,12 +182,14 @@ class ScaffyApp(ctk.CTk):
 
     def _set_icon(self) -> None:
         try:
-            ico_data = base64.b64decode(_HOUSE_ICON_B64)
-            tmp = tempfile.NamedTemporaryFile(suffix=".ico", delete=False)
-            tmp.write(ico_data)
-            tmp.close()
-            self.iconbitmap(tmp.name)
-            os.unlink(tmp.name)
+            # Locate scaffy.ico next to the script, or in the PyInstaller bundle root
+            if getattr(sys, "frozen", False):
+                base = pathlib.Path(sys._MEIPASS)
+            else:
+                base = pathlib.Path(__file__).parent
+            ico_path = str(base / "scaffy.ico")
+            # Defer until after CTk finishes its own window init
+            self.after(10, lambda: self.iconbitmap(ico_path))
         except Exception:
             pass
 
