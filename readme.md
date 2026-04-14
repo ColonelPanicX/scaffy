@@ -49,9 +49,13 @@ python3 scaffy.py --name my-project --path /path/to/base \
 - `.collab/context.md` — Stable project facts: tech stack, key files, conventions
 - `.collab/project.yaml` — Machine-readable project metadata
 - `.collab/initial-prompt.md` — First-session onboarding prompt (paste on first launch)
-- `.collab/ideas/` — Idea incubator: persistent thinking space for pre-ticket concepts
+- `.collab/agent-profile.md` — Fill-in questionnaire for generating agent instructions (CLAUDE.md, AGENTS.md, etc.)
+- `.collab/brainstorm/` — Thinking space for pre-ticket concepts and proposals
 - `.collab/session-summaries/` — Session summary directory with template
 - `.collab/audit/` — Analysis reports and planning documents
+- `.collab/supporting-artifacts/` — Diagrams, specs, research, and other project-adjacent materials
+- `.collab/prompts/` — Reusable agent prompts, including the agent instructions generator
+- `.collab/playbooks/` — Reference playbooks; includes a generic coding standards playbook
 - `.collab/git-management/` — Git governance templates
 - `.gitignore` — Sane defaults (`.collab/` and agent dirs excluded from version control)
 
