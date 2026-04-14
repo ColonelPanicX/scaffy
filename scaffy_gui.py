@@ -8,7 +8,6 @@ Requires scaffy.py in the same directory (or bundled alongside by PyInstaller).
 
 from __future__ import annotations
 
-import atexit
 import base64
 import io
 import os
@@ -16,7 +15,6 @@ import pathlib
 import queue
 import re
 import sys
-import tempfile
 import threading
 import tkinter as tk
 from tkinter import filedialog
@@ -28,31 +26,14 @@ import scaffy
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
-# 16x16 house icon (ICO, base64-encoded — embedded to avoid bundle path uncertainty)
+# 16x16 house icon (PNG, base64-encoded)
+# iconphoto()+PhotoImage is used instead of iconbitmap() — CTk's Windows
+# title-bar initialization overrides iconbitmap regardless of delay.
 _HOUSE_ICON_B64 = (
-    "AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAQAQAAAAAAAAA"
-    "AAAAAAAAAAAAAABktGT/ZLRk/2S0ZP9ktGT/ZLRk/2S0ZP9ktGT/ZLRk/2S0ZP9ktG"
-    "T/ZLRk/2S0ZP9ktGT/ZLRk/2S0ZP9ktGT/ZLRk/2S0ZP9ktGT/ZLRk/2S0ZP9ktGT/"
-    "ZLRk/2S0ZP9ktGT/ZLRk/2S0ZP9ktGT/ZLRk/2S0ZP9ktGT/ZLRk/wAAAAAAAAAAAAAA"
-    "AADc3Ob/3Nzm/9zc5v9aeLT/Wni0/1p4tP9aeLT/3Nzm/9zc5v/c3Ob/AAAAAAAAAAAA"
-    "AAAAAAAAAAAAAAAAAAAAAAAc3Ob/3Nzm/9zc5v9aeLT/Wni0/1p4tP9aeLT/3Nzm/9zc"
-    "5v/c3Ob/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA3Nzm/9zc5v/c3Ob/Wni0/1p4tP9a"
-    "eLT/Wni0/9zc5v/c3Ob/3Nzm/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANzc5v/c3Ob/"
-    "3Nzm/1p4tP9aeLT/Wni0/1p4tP/c3Ob/3Nzm/9zc5v8AAAAAAAAAAAAAAAAAAAAAAAAA"
-    "AAAAANzc5v/c3Ob/3Nzm/9zc5v/c3Ob/3Nzm/9zc5v/c3Ob/3Nzm/9zc5v8AAAAAAAA"
-    "AAAAAAAAAAAAAAAAAAAAAAAAA3Nzm/9zc5v/c3Ob/3Nzm/9zc5v/c3Ob/3Nzm/9zc5v/"
-    "c3Ob/3Nzm/wAAAAAAAAAAAAAAAAAAAAA8UIz/PFCM/zxQjP88UIz/PFCM/zxQjP88UIz/"
-    "PFCM/zxQjP88UIz/PFCM/zxQjP88UIz/PFCM/wAAAAAAAAAAAAAAADxQjP88UIz/PFCM"
-    "/zxQjP88UIz/PFCM/zxQjP88UIz/PFCM/zxQjP88UIz/PFCM/wAAAAAAAAAAAAAAAAAA"
-    "AAAAAAA8UIz/PFCM/zxQjP88UIz/PFCM/zxQjP88UIz/PFCM/zxQjP88UIz/AAAAAAAA"
-    "AAAAAAAAAAAAAAAAAAAAAAAAADxQjP88UIz/PFCM/zxQjP88UIz/PFCM/zxQjP88UIz/"
-    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPFCM/zxQjP88UIz/PFCM/zxQjP"
-    "88UIz/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPFCM/zxQjP88"
-    "UIz/PFCM/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-    "PFCM/zxQjP8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-    "AAAAAAAAAAAAAAAAAAAAAA=="
+    "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAe0lEQVR4nGNgoAGw"
+    "+d8TYPO/J4AoxUxYNGNj4wSM6AI9ATb/sSks2XAEQy02AwjZeoSxZAOKALIXiHEy"
+    "hhq4C3A5HReAeYmJHM3IelDC4NmdO0QZJKWiAteHHo0kAxZcEufm1KHwjVKasKqj"
+    "2AUDbwBjypYUkqOQqi4AALZOJk36a5wCAAAAAElFTkSuQmCC"
 )
 
 
@@ -212,16 +193,12 @@ class ScaffyApp(ctk.CTk):
 
     def _set_icon(self) -> None:
         try:
-            # Write icon to a temp file that lives for the app's lifetime.
-            # CTk's Windows init runs after __init__, so we defer 500ms to let it settle.
-            # The temp file must not be deleted early — tkinter may read it lazily on Windows.
-            ico_data = base64.b64decode(_HOUSE_ICON_B64)
-            tmp = tempfile.NamedTemporaryFile(suffix=".ico", delete=False)
-            tmp.write(ico_data)
-            tmp.close()
-            self._ico_tmp = tmp.name  # keep reference alive for app lifetime
-            atexit.register(os.unlink, tmp.name)
-            self.after(500, lambda: self.iconbitmap(self._ico_tmp))
+            # iconphoto()+PhotoImage is used instead of iconbitmap().
+            # CTk's Windows title-bar init overrides iconbitmap regardless of delay;
+            # iconphoto uses a different code path that survives it.
+            # The PhotoImage reference must be kept alive on self or it gets GC'd.
+            self._icon_image = tk.PhotoImage(data=_HOUSE_ICON_B64)
+            self.after(500, lambda: self.iconphoto(True, self._icon_image))
         except Exception:
             pass
 
