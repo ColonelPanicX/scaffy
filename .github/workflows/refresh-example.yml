@@ -40,5 +40,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add scaffy-example/
+          git add -f scaffy-example/.collab/
           git commit -m "chore: auto-refresh scaffy-example to match current scaffold output"
           git push
