@@ -132,7 +132,7 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
 - All agents: read `collab-contract.md`, `kanban-board.md`, and `context.md` before acting.
 - If the kanban board is empty, treat the project as newly initialized and wait for the user
   to describe goals before drafting plans or tasks.
-- Start your first session by pasting the contents of `initial-prompt.md`.
+- Start your first session by pasting the contents of `prompts/initial-prompt.md`.
 - Use `OPEN SESSION` at the start of each working session to resume context quickly.
 - Use `SAVE SESSION` mid-session to checkpoint progress without ending the session.
 - Use `CLOSE SESSION` at the end of each session to save progress.
@@ -146,7 +146,6 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
 - `kanban-board.md` — Task tracking (internal source of truth).
 - `context.md` — Stable project facts: tech stack, key files, conventions, dependencies.
 - `project.yaml` — Machine-readable project metadata (name, date, governance mode, agents).
-- `initial-prompt.md` — Consolidated first-session prompt (paste on first launch).
 - `session-summaries/` — Session summaries from all agents.
   Naming:
   - First summary of the day: `MM.DD.YYYY-agentname-summary.md`
@@ -159,6 +158,11 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
   reference docs, exported data, and anything else that supports the work but isn't
   source code. Keep the project root clean — if it belongs to the project but isn't
   code, it probably belongs here.
+- `prompts/` — Reusable agent prompts and supporting inputs.
+  - `initial-prompt.md` — First-session onboarding prompt (paste on first launch).
+  - `agent-profile.md` — Fill-in questionnaire for generating agent instruction files.
+  - `agent-md-prompt.md` — Prompt to generate CLAUDE.md / AGENTS.md from the profile.
+- `playbooks/` — Reference playbooks; includes a generic coding standards playbook.
 - `git-management/` — Optional VCS platform governance templates.
   Includes: `git-guidelines.md`, `issue-template.md`, `pull-request-template.md`
 
@@ -458,13 +462,13 @@ _Status: drafting_
 <!-- When graduated: Graduated → Issue #__ on [date] -->
 """,
 
-    ".collab/agent-profile.md": """\
+    ".collab/prompts/agent-profile.md": """\
 # Agent Profile
 
 _Fill this out before generating your agent instructions file. Free text — write however feels
 natural. Your AI agent will read this to produce a tailored CLAUDE.md, AGENTS.md, or equivalent._
 
-_See `.collab/prompts/agent-md-prompt.md` for the prompt to paste into your agent when ready._
+_See `agent-md-prompt.md` (same directory) for the prompt to paste into your agent when ready._
 
 ---
 
@@ -515,11 +519,11 @@ high-level direction, detailed review, something else?
     ".collab/prompts/agent-md-prompt.md": """\
 # Agent Instructions Generator
 
-_Paste this into your AI agent after filling out `.collab/agent-profile.md`._
+_Paste this into your AI agent after filling out `agent-profile.md` (same directory)._
 
 ---
 
-I've filled out `.collab/agent-profile.md` for this project.
+I've filled out `.collab/prompts/agent-profile.md` for this project.
 
 Read it carefully and generate an agent instructions file in the project root.
 Name it appropriately for the agent you are:
@@ -2468,7 +2472,7 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
 
     # Initial prompt
     prompt_content = render_template(INITIAL_PROMPT_TEMPLATES[mode], **render_kwargs)
-    files_to_check[collab_dir / "initial-prompt.md"] = prompt_content
+    files_to_check[collab_dir / "prompts" / "initial-prompt.md"] = prompt_content
 
     # Platform files
     for rel_path, content in PLATFORM_FILES.get(platform, {}).items():
@@ -2689,7 +2693,7 @@ def main() -> None:
         for rel_path in TEMPLATE_FILES:
             dest = effective_gitignore_dest if rel_path == ".gitignore" else target_root / rel_path
             print(f"  {_dry_action(dest)} {dest}")
-        dest = target_root / ".collab/initial-prompt.md"
+        dest = target_root / ".collab/prompts/initial-prompt.md"
         print(f"  {_dry_action(dest)} {dest}")
         for rel_path in PLATFORM_FILES.get(platform, {}):
             dest = target_root / rel_path
@@ -2724,7 +2728,7 @@ def main() -> None:
             safe_write(target_root / rel_path, rendered, args.force)
 
     prompt_content = render_template(INITIAL_PROMPT_TEMPLATES[mode], **render_kwargs)
-    safe_write(target_root / ".collab/initial-prompt.md", prompt_content, args.force)
+    safe_write(target_root / ".collab/prompts/initial-prompt.md", prompt_content, args.force)
 
     for rel_path, content in PLATFORM_FILES.get(platform, {}).items():
         safe_write(target_root / rel_path, content, args.force)
@@ -2768,7 +2772,7 @@ First session — paste this to start:
 {indented_prompt}
   ─────────────────────────────────────────────────────────────
 
-  Also saved to: .collab/initial-prompt.md
+  Also saved to: .collab/prompts/initial-prompt.md
 
 Tip: Start future sessions with OPEN SESSION to resume where you left off.
      Use SAVE SESSION mid-session to checkpoint without ending.

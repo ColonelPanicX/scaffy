@@ -18,7 +18,7 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
 - All agents: read `collab-contract.md`, `kanban-board.md`, and `context.md` before acting.
 - If the kanban board is empty, treat the project as newly initialized and wait for the user
   to describe goals before drafting plans or tasks.
-- Start your first session by pasting the contents of `initial-prompt.md`.
+- Start your first session by pasting the contents of `prompts/initial-prompt.md`.
 - Use `OPEN SESSION` at the start of each working session to resume context quickly.
 - Use `SAVE SESSION` mid-session to checkpoint progress without ending the session.
 - Use `CLOSE SESSION` at the end of each session to save progress.
@@ -32,7 +32,6 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
 - `kanban-board.md` — Task tracking (internal source of truth).
 - `context.md` — Stable project facts: tech stack, key files, conventions, dependencies.
 - `project.yaml` — Machine-readable project metadata (name, date, governance mode, agents).
-- `initial-prompt.md` — Consolidated first-session prompt (paste on first launch).
 - `session-summaries/` — Session summaries from all agents.
   Naming:
   - First summary of the day: `MM.DD.YYYY-agentname-summary.md`
@@ -45,6 +44,11 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
   reference docs, exported data, and anything else that supports the work but isn't
   source code. Keep the project root clean — if it belongs to the project but isn't
   code, it probably belongs here.
+- `prompts/` — Reusable agent prompts and supporting inputs.
+  - `initial-prompt.md` — First-session onboarding prompt (paste on first launch).
+  - `agent-profile.md` — Fill-in questionnaire for generating agent instruction files.
+  - `agent-md-prompt.md` — Prompt to generate CLAUDE.md / AGENTS.md from the profile.
+- `playbooks/` — Reference playbooks; includes a generic coding standards playbook.
 - `git-management/` — Optional VCS platform governance templates.
   Includes: `git-guidelines.md`, `issue-template.md`, `pull-request-template.md`
 

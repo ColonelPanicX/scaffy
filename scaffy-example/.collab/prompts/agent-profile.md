@@ -3,7 +3,7 @@
 _Fill this out before generating your agent instructions file. Free text — write however feels
 natural. Your AI agent will read this to produce a tailored CLAUDE.md, AGENTS.md, or equivalent._
 
-_See `.collab/prompts/agent-md-prompt.md` for the prompt to paste into your agent when ready._
+_See `agent-md-prompt.md` (same directory) for the prompt to paste into your agent when ready._
 
 ---
 

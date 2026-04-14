@@ -1,10 +1,10 @@
 # Agent Instructions Generator
 
-_Paste this into your AI agent after filling out `.collab/agent-profile.md`._
+_Paste this into your AI agent after filling out `agent-profile.md` (same directory)._
 
 ---
 
-I've filled out `.collab/agent-profile.md` for this project.
+I've filled out `.collab/prompts/agent-profile.md` for this project.
 
 Read it carefully and generate an agent instructions file in the project root.
 Name it appropriately for the agent you are:

@@ -48,8 +48,8 @@ python3 scaffy.py --name my-project --path /path/to/base \
 - `.collab/kanban-board.md` — Task tracking board
 - `.collab/context.md` — Stable project facts: tech stack, key files, conventions
 - `.collab/project.yaml` — Machine-readable project metadata
-- `.collab/initial-prompt.md` — First-session onboarding prompt (paste on first launch)
-- `.collab/agent-profile.md` — Fill-in questionnaire for generating agent instructions (CLAUDE.md, AGENTS.md, etc.)
+- `.collab/prompts/initial-prompt.md` — First-session onboarding prompt (paste on first launch)
+- `.collab/prompts/agent-profile.md` — Fill-in questionnaire for generating agent instructions (CLAUDE.md, AGENTS.md, etc.)
 - `.collab/brainstorm/` — Thinking space for pre-ticket concepts and proposals
 - `.collab/session-summaries/` — Session summary directory with template
 - `.collab/audit/` — Analysis reports and planning documents
@@ -103,7 +103,7 @@ python3 scaffy.py --dry-run
 
 ## First Session
 
-After scaffolding, the terminal prints the full onboarding prompt between separator lines — copy it and paste it directly into your agent on first launch. The same prompt is saved to `.collab/initial-prompt.md` as a backup.
+After scaffolding, the terminal prints the full onboarding prompt between separator lines — copy it and paste it directly into your agent on first launch. The same prompt is saved to `.collab/prompts/initial-prompt.md` as a backup.
 
 The prompt orients the agent to the `.collab/` structure, initializes its memory with stable project facts, and installs the OPEN/CLOSE SESSION protocols for all future sessions.
 
@@ -136,6 +136,27 @@ or be parked indefinitely. The point is keeping them on paper so they aren't los
 
 When scaffolding into an **existing project**, scaffy will print a reminder to migrate any ideas
 you already have written down or in your head into the new directory.
+
+## Additional Enhancements
+
+The scaffold includes two optional tools in `.collab/prompts/` to help you get more out of your agent setup:
+
+### Agent Instructions Generator
+
+`.collab/prompts/agent-profile.md` is a fill-in questionnaire that captures your project's
+tech stack, key commands, conventions, and guardrails — the things an agent needs to collaborate
+well with you. Once filled out, paste `.collab/prompts/agent-md-prompt.md` into your agent
+and it will generate a tailored `CLAUDE.md`, `AGENTS.md`, or equivalent instructions file
+for the project root.
+
+### Coding Playbook
+
+`.collab/playbooks/coding-playbook.md` is a pre-populated reference covering general software
+development best practices — code quality, testing, security, documentation, and more.
+It's a starting point: edit it down to what matters for your project, or leave it as a
+general reference for your agent to consult.
+
+---
 
 ## Behavior
 
