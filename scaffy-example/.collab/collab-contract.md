@@ -141,20 +141,20 @@ Immediately execute the Session Close Protocol — do not wait for additional in
 
 ---
 
-## Ideas Directory
+## Brainstorm Directory
 
-- **Location**: `.collab/ideas/`
+- **Location**: `.collab/brainstorm/`
 - **Purpose**: Persistent thinking space for ideas that aren't ready to become tickets.
   Use this directory to capture, workshop, and evolve ideas collaboratively before they
   enter the formal task pipeline.
 - **One file per idea cluster** — name files descriptively (lowercase, hyphen-separated).
-- **Use the template** at `.collab/ideas/idea-template.md` as a starting point.
-- **Nothing in `ideas/` is required to go anywhere.** Ideas can sit, evolve, or be parked
+- **Use the template** at `.collab/brainstorm/brainstorm-template.md` as a starting point.
+- **Nothing in `brainstorm/` is required to go anywhere.** Ideas can sit, evolve, or be parked
   indefinitely. The value is keeping them on paper so they aren't lost between sessions.
 
-### Agent Behavior in `ideas/`
+### Agent Behavior in `brainstorm/`
 
-When the user points you at a file in `.collab/ideas/`:
+When the user points you at a file in `.collab/brainstorm/`:
 
 1. Read the full file before responding.
 2. Engage honestly — assess whether the idea has merit, identify gaps, ask clarifying questions.
@@ -167,5 +167,5 @@ When the user points you at a file in `.collab/ideas/`:
 
 When an idea graduates to a formal ticket:
 
-- Add `Graduated → GitHub Issue #__ on MM.DD.YYYY` at the bottom of the file.
-- Leave the file in `ideas/` as a record — do not delete it.
+- Add `Graduated → Issue #__ on [date]` at the bottom of the file.
+- Leave the file in `brainstorm/` as a record — do not delete it.
