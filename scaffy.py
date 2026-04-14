@@ -2384,6 +2384,36 @@ def _parse_project_yaml(yaml_path: Path) -> dict[str, str]:
     return data
 
 
+def _migrate_ideas_to_brainstorm(collab_dir: Path, dry_run: bool) -> list[str]:
+    """Rename .collab/ideas/ → .collab/brainstorm/ if present. Returns log lines."""
+    ideas_dir = collab_dir / "ideas"
+    brainstorm_dir = collab_dir / "brainstorm"
+    log: list[str] = []
+
+    if not ideas_dir.exists():
+        return log
+
+    if brainstorm_dir.exists():
+        log.append("  note   ideas/ and brainstorm/ both exist — skipping auto-rename")
+        return log
+
+    old_template = ideas_dir / "idea-template.md"
+    new_template = ideas_dir / "brainstorm-template.md"  # inside ideas/ before rename
+
+    if not dry_run:
+        # Rename the template first (still inside ideas/)
+        if old_template.exists() and not new_template.exists():
+            old_template.rename(new_template)
+        # Then rename the directory
+        ideas_dir.rename(brainstorm_dir)
+
+    log.append("  rename .collab/ideas/ → .collab/brainstorm/")
+    if old_template.exists() or dry_run:
+        log.append("  rename .collab/brainstorm/idea-template.md → brainstorm-template.md")
+
+    return log
+
+
 def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
     """Upgrade an existing .collab/ scaffold to the latest templates."""
     collab_dir = target_root / ".collab"
@@ -2470,6 +2500,8 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
           f"platform={platform}, license={license_id}")
     print()
 
+    migrated = _migrate_ideas_to_brainstorm(collab_dir, dry_run)
+
     for d in required_dirs:
         if not d.exists():
             if dry_run:
@@ -2498,6 +2530,9 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
                 added_files.append(f"  add    {rel}")
 
     # Report
+    if migrated:
+        print("Migrated:")
+        print("\n".join(migrated))
     if added_dirs:
         print("New directories:")
         print("\n".join(added_dirs))
@@ -2511,13 +2546,13 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
         print("Skipped (already exist):")
         print("\n".join(skipped_files))
 
-    if not added_dirs and not added_files and not updated_files:
+    if not migrated and not added_dirs and not added_files and not updated_files:
         print("Everything is up to date. Nothing to do.")
     elif dry_run:
         print("\nDry run complete. No files written.")
     else:
-        total = len(added_dirs) + len(added_files) + len(updated_files)
-        print(f"\nUpgrade complete. {total} item(s) added/updated.")
+        total = len(migrated) + len(added_dirs) + len(added_files) + len(updated_files)
+        print(f"\nUpgrade complete. {total} item(s) added/updated/migrated.")
 
 
 # ---------------------------------------------------------------------------
