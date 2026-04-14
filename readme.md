@@ -112,22 +112,22 @@ The scaffold installs two trigger phrases into the agent contract and initial pr
 - **`CLOSE SESSION`** — Agent writes a session summary and updates the kanban board.
   Use at the end of every session.
 
-## Ideas Workflow
+## Brainstorm Workflow
 
-The `.collab/ideas/` directory is a persistent thinking space for ideas that aren't ready to
+The `.collab/brainstorm/` directory is a persistent thinking space for ideas that aren't ready to
 become formal tickets yet. It bridges the gap between "I had a thought" and "I opened an issue."
 
 **How it works:**
 
-1. Create a file for your idea: `.collab/ideas/my-idea-name.md`
-2. Use `.collab/ideas/idea-template.md` as a starting point
+1. Create a file for your idea: `.collab/brainstorm/my-idea-name.md`
+2. Use `.collab/brainstorm/brainstorm-template.md` as a starting point
 3. Brain dump freely — no rules, no required format in the idea body
 4. When ready, point your agent at the file: *"Hey, look at this idea — does it have legs?"*
 5. The agent will engage honestly, then append a dated summary to the **Discussion Log** section
 6. Ideas evolve over time. Status tracks the lifecycle: `drafting` → `workshopping` → `parked` or `graduated`
 7. When an idea becomes a ticket, note the issue number at the bottom and leave the file in place
 
-**Key property:** nothing in `ideas/` is required to go anywhere. Ideas can sit, evolve slowly,
+**Key property:** nothing in `brainstorm/` is required to go anywhere. Ideas can sit, evolve slowly,
 or be parked indefinitely. The point is keeping them on paper so they aren't lost when a session closes.
 
 When scaffolding into an **existing project**, scaffy will print a reminder to migrate any ideas
