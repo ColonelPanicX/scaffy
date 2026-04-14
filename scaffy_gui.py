@@ -197,11 +197,15 @@ def _open_folder(path: str) -> None:
 
 class ScaffyApp(ctk.CTk):
     def __init__(self) -> None:
+        # Must be set before super().__init__() — CTk schedules after(200) which
+        # calls _windows_set_titlebar_icon; our override needs _ico_tmp ready.
+        self._ico_tmp: str | None = None
+        self._prepare_icon()
+
         super().__init__()
         self.title("scaffy")
         self.resizable(True, True)
         self.minsize(640, 600)
-        self._set_icon()
 
         self._output_queue: queue.Queue = queue.Queue()
         self._running = False
@@ -210,21 +214,28 @@ class ScaffyApp(ctk.CTk):
         self._build_ui()
         self._poll_output()
 
-    def _set_icon(self) -> None:
+    def _prepare_icon(self) -> None:
+        """Write ICO data to a temp file so _windows_set_titlebar_icon can use it."""
         try:
-            # CTk checks self._iconbitmap_method_called at after(200) before setting
-            # its own icon — if True it skips. Calling iconbitmap() here (no delay,
-            # right after super().__init__()) sets that flag first and wins the race.
-            # The temp file must live for the app's lifetime; atexit handles cleanup.
             ico_data = base64.b64decode(_HOUSE_ICON_B64)
             tmp = tempfile.NamedTemporaryFile(suffix=".ico", delete=False)
             tmp.write(ico_data)
             tmp.close()
             self._ico_tmp = tmp.name
             atexit.register(os.unlink, tmp.name)
-            self.iconbitmap(self._ico_tmp)
         except Exception:
             pass
+
+    def _windows_set_titlebar_icon(self) -> None:
+        """Override CTk's scheduled icon setter — use the scaffy house icon instead."""
+        if self._ico_tmp:
+            try:
+                super().wm_iconbitmap(self._ico_tmp)
+                return
+            except Exception:
+                pass
+        # Fall back to CTk's default behaviour
+        super()._windows_set_titlebar_icon()
 
     # ------------------------------------------------------------------
     # UI construction
