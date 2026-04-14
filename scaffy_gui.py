@@ -8,17 +8,17 @@ Requires scaffy.py in the same directory (or bundled alongside by PyInstaller).
 
 from __future__ import annotations
 
-import atexit
 import base64
 import io
 import os
 import pathlib
 import queue
 import re
+import struct
 import sys
-import tempfile
 import threading
 import tkinter as tk
+import zlib
 from tkinter import filedialog
 
 import customtkinter as ctk
@@ -28,32 +28,56 @@ import scaffy
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
-# 16x16 house icon (ICO, base64-encoded)
-_HOUSE_ICON_B64 = (
-    "AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAQAQAAAAAAAAA"
-    "AAAAAAAAAAAAAABktGT/ZLRk/2S0ZP9ktGT/ZLRk/2S0ZP9ktGT/ZLRk/2S0ZP9ktG"
-    "T/ZLRk/2S0ZP9ktGT/ZLRk/2S0ZP9ktGT/ZLRk/2S0ZP9ktGT/ZLRk/2S0ZP9ktGT/"
-    "ZLRk/2S0ZP9ktGT/ZLRk/2S0ZP9ktGT/ZLRk/2S0ZP9ktGT/ZLRk/wAAAAAAAAAAAAAA"
-    "AADc3Ob/3Nzm/9zc5v9aeLT/Wni0/1p4tP9aeLT/3Nzm/9zc5v/c3Ob/AAAAAAAAAAAA"
-    "AAAAAAAAAAAAAAAAAAAAAAAc3Ob/3Nzm/9zc5v9aeLT/Wni0/1p4tP9aeLT/3Nzm/9zc"
-    "5v/c3Ob/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA3Nzm/9zc5v/c3Ob/Wni0/1p4tP9a"
-    "eLT/Wni0/9zc5v/c3Ob/3Nzm/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANzc5v/c3Ob/"
-    "3Nzm/1p4tP9aeLT/Wni0/1p4tP/c3Ob/3Nzm/9zc5v8AAAAAAAAAAAAAAAAAAAAAAAAA"
-    "AAAAANzc5v/c3Ob/3Nzm/9zc5v/c3Ob/3Nzm/9zc5v/c3Ob/3Nzm/9zc5v8AAAAAAAA"
-    "AAAAAAAAAAAAAAAAAAAAAAAAA3Nzm/9zc5v/c3Ob/3Nzm/9zc5v/c3Ob/3Nzm/9zc5v/"
-    "c3Ob/3Nzm/wAAAAAAAAAAAAAAAAAAAAA8UIz/PFCM/zxQjP88UIz/PFCM/zxQjP88UIz/"
-    "PFCM/zxQjP88UIz/PFCM/zxQjP88UIz/PFCM/wAAAAAAAAAAAAAAADxQjP88UIz/PFCM"
-    "/zxQjP88UIz/PFCM/zxQjP88UIz/PFCM/zxQjP88UIz/PFCM/wAAAAAAAAAAAAAAAAAA"
-    "AAAAAAA8UIz/PFCM/zxQjP88UIz/PFCM/zxQjP88UIz/PFCM/zxQjP88UIz/AAAAAAAA"
-    "AAAAAAAAAAAAAAAAAAAAAAAAADxQjP88UIz/PFCM/zxQjP88UIz/PFCM/zxQjP88UIz/"
-    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPFCM/zxQjP88UIz/PFCM/zxQjP"
-    "88UIz/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPFCM/zxQjP88"
-    "UIz/PFCM/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-    "PFCM/zxQjP8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-    "AAAAAAAAAAAAAAAAAAAAAA=="
-)
+
+def _make_house_png() -> bytes:
+    """
+    Build a 16×16 RGBA PNG of a house silhouette at runtime.
+    Uses only stdlib (struct + zlib) — no external image libraries needed.
+    Generating programmatically guarantees the PNG is structurally valid.
+    """
+    # fmt: off
+    # 1 = house pixel, 0 = transparent  (16 cols × 16 rows)
+    art = [
+        "0000011110000000",  # roof peak
+        "0000111111000000",
+        "0001111111100000",
+        "0011111111110000",
+        "0111111111111000",
+        "1111111111111100",  # roof base
+        "0011111111110000",  # walls begin
+        "0011111111110000",
+        "0011001001110000",  # windows
+        "0011001001110000",
+        "0011111111110000",
+        "0011111001110000",  # door
+        "0011111001110000",
+        "0011111001110000",
+        "0011111001110000",
+        "0011111111110000",  # foundation
+    ]
+    # fmt: on
+    R, G, B = 0x5F, 0x9E, 0xA0  # cadet blue — visible on both light and dark BGs
+
+    raw = bytearray()
+    for row_str in art:
+        raw.append(0)  # PNG filter byte: None
+        for ch in row_str:
+            if ch == "1":
+                raw.extend([R, G, B, 255])
+            else:
+                raw.extend([0, 0, 0, 0])
+
+    def _chunk(tag: bytes, data: bytes) -> bytes:
+        crc = zlib.crc32(tag + data) & 0xFFFFFFFF
+        return struct.pack(">I", len(data)) + tag + data + struct.pack(">I", crc)
+
+    ihdr = struct.pack(">IIBBBBB", 16, 16, 8, 6, 0, 0, 0)  # 16×16 RGBA
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + _chunk(b"IHDR", ihdr)
+        + _chunk(b"IDAT", zlib.compress(bytes(raw)))
+        + _chunk(b"IEND", b"")
+    )
 
 
 WINDOWS_RESERVED_NAMES = frozenset({
@@ -197,12 +221,23 @@ def _open_folder(path: str) -> None:
 
 class ScaffyApp(ctk.CTk):
     def __init__(self) -> None:
-        # Must be set before super().__init__() — CTk schedules after(200) which
-        # calls _windows_set_titlebar_icon; our override needs _ico_tmp ready.
-        self._ico_tmp: str | None = None
-        self._prepare_icon()
-
         super().__init__()
+
+        # Block CTk's scheduled after(200) callback from overriding the icon.
+        # The callback checks this flag and skips if True — set it immediately
+        # after super().__init__() so CTk never gets a chance to set its blue square.
+        self._iconbitmap_method_called = True
+
+        # Set the house icon via iconphoto (PNG-native; avoids ICO format issues).
+        # Keep a reference on self so the PhotoImage isn't garbage-collected.
+        self._icon_photo: tk.PhotoImage | None = None
+        try:
+            png_bytes = _make_house_png()
+            self._icon_photo = tk.PhotoImage(data=base64.b64encode(png_bytes).decode())
+            self.iconphoto(True, self._icon_photo)
+        except Exception:
+            pass
+
         self.title("scaffy")
         self.resizable(True, True)
         self.minsize(640, 600)
@@ -213,29 +248,6 @@ class ScaffyApp(ctk.CTk):
 
         self._build_ui()
         self._poll_output()
-
-    def _prepare_icon(self) -> None:
-        """Write ICO data to a temp file so _windows_set_titlebar_icon can use it."""
-        try:
-            ico_data = base64.b64decode(_HOUSE_ICON_B64)
-            tmp = tempfile.NamedTemporaryFile(suffix=".ico", delete=False)
-            tmp.write(ico_data)
-            tmp.close()
-            self._ico_tmp = tmp.name
-            atexit.register(os.unlink, tmp.name)
-        except Exception:
-            pass
-
-    def _windows_set_titlebar_icon(self) -> None:
-        """Override CTk's scheduled icon setter — use the scaffy house icon instead."""
-        if self._ico_tmp:
-            try:
-                super().wm_iconbitmap(self._ico_tmp)
-                return
-            except Exception:
-                pass
-        # Fall back to CTk's default behaviour
-        super()._windows_set_titlebar_icon()
 
     # ------------------------------------------------------------------
     # UI construction
