@@ -899,7 +899,7 @@ summary: "1-2 sentence outcome of the session."
 
 # Git Platform Governance & AI Agent Operating Guidelines
 
-**Version: v1.2.0 (Unified Template)**
+**Version: v1.3.0 (Unified Template)**
 
 ---
 
@@ -939,6 +939,11 @@ Use for most active product development.
 - Change request workflow is expected for shared branches.
 - Labeling and board updates are required for meaningful work.
 - Small docs/chore changes can be streamlined.
+
+**Solo maintainer exception:** If this project has a single maintainer, reviewer approval
+is not required to merge. Feature/fix branches and PRs are still expected for non-trivial work —
+the PR serves as a change record, not a review gate. Direct-to-main commits are acceptable
+only for trivial fixes (typos, comment edits, minor config tweaks).
 
 ### Lightweight Mode
 
