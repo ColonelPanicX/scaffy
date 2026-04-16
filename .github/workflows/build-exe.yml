@@ -24,20 +24,28 @@ jobs:
         run: |
           pip install pyinstaller tzdata customtkinter
 
-      - name: Build EXE
+      - name: Build scaffy EXE
         run: |
           pyinstaller --onefile --windowed --name scaffy --icon scaffy.ico --hidden-import tzdata scaffy_gui.py
 
-      - name: Upload artifact
+      - name: Build scafrag EXE
+        run: |
+          pyinstaller --onefile --name scafrag --hidden-import tzdata scafrag.py
+
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: scaffy-windows
-          path: dist/scaffy.exe
+          path: |
+            dist/scaffy.exe
+            dist/scafrag.exe
 
-      - name: Upload release asset
+      - name: Upload release assets
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
           files: |
             dist/scaffy.exe
+            dist/scafrag.exe
             scaffy.py
+            scafrag.py
