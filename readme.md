@@ -158,6 +158,40 @@ general reference for your agent to consult.
 
 ---
 
+## scafrag — Optional Companion Tool
+
+`scafrag.py` is a completely optional companion script that lives alongside `scaffy.py`. Nothing
+in scaffy requires it, and you won't miss anything by skipping it. But if you end up using
+scaffy across multiple projects, it becomes useful.
+
+**What it does:** indexes the `.collab/` workspaces across all your projects and lets you query
+them — searching for past decisions, checking cross-project status, or dumping full context for
+a project in one command.
+
+```bash
+# Build the index (point it at your projects root)
+python3 scafrag.py index --root ~/code
+
+# Search across all projects
+python3 scafrag.py query "authentication middleware"
+
+# Full context dump for one project
+python3 scafrag.py context my-project
+
+# Portfolio view — all projects with kanban lane counts
+python3 scafrag.py status
+
+# List all indexed projects
+python3 scafrag.py projects
+```
+
+All commands support `--format text` (default), `--format json`, and `--format markdown`.
+Output goes to stdout — pipe it wherever you want, including directly into an AI agent.
+
+**Requirements:** Python 3.9+. No external dependencies — same as `scaffy.py`.
+
+---
+
 ## Behavior
 
 - If `--name` and `--path` are both provided, runs non-interactively.
