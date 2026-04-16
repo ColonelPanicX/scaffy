@@ -190,6 +190,8 @@ Output goes to stdout — pipe it wherever you want, including directly into an 
 
 **Requirements:** Python 3.9+. No external dependencies — same as `scaffy.py`.
 
+Windows users: `scafrag.exe` is available in the [latest release](https://github.com/ColonelPanicX/scaffy/releases/latest) — no Python required. Run it from Command Prompt or PowerShell.
+
 ---
 
 ## Behavior
