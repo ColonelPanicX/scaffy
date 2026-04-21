@@ -230,3 +230,14 @@ If you move the script later, update the symlink:
 ```bash
 ln -sf /new/path/to/scaffy.py ~/.local/bin/scaffy
 ```
+
+---
+
+## See Also
+
+Tools and resources that pair well with the structured approach scaffy promotes. None are required.
+
+- **[GSD](https://github.com/gsd-build/gsd-2)** — Spec-driven development system for autonomous multi-phase agent work: research, planning, execution, and git management in a single pipeline.
+- **[MemPalace](https://github.com/MemPalace/mempalace/tree/main)** — Local-first AI memory with semantic search. Complements scaffy's session summaries with queryable, persistent long-term recall.
+- **[Caveman](https://github.com/JuliusBrussee/caveman)** — Claude Code skill that compresses agent output by ~75% using terse, technical language. Same accuracy, far fewer tokens.
+- **[Karpathy's LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)** — Pattern for building a personal knowledge base where an LLM incrementally maintains a persistent wiki synthesized from source documents.
