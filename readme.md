@@ -156,6 +156,33 @@ development best practices — code quality, testing, security, documentation, a
 It's a starting point: edit it down to what matters for your project, or leave it as a
 general reference for your agent to consult.
 
+### Agent Skills
+
+The [`skills/`](skills/) directory contains installable slash commands for Claude Code and Gemini CLI, and a passive skill for Codex CLI. Once installed, your agent knows how to run scaffy without you explaining it.
+
+| Agent | File | Type |
+|---|---|---|
+| Claude Code | `skills/claude/scaffy.md` | `/scaffy` slash command |
+| Gemini CLI | `skills/gemini/scaffy.toml` | `/scaffy` slash command |
+| Codex CLI | `skills/codex/scaffy/` | AI-activated (no slash command) |
+
+**Install (global):**
+
+```bash
+# Claude Code
+cp skills/claude/scaffy.md ~/.claude/commands/scaffy.md
+
+# Gemini CLI
+cp skills/gemini/scaffy.toml ~/.gemini/commands/scaffy.toml
+
+# Codex CLI
+cp -r skills/codex/scaffy ~/.codex/skills/scaffy
+```
+
+**Claude & Gemini:** type `/scaffy` to bootstrap a project — the agent gathers inputs and runs scaffy for you. Pass a project name or path as arguments to skip the prompts.
+
+**Codex:** no slash command — Codex pulls the skill in automatically when it detects a scaffolding need.
+
 ---
 
 ## scafrag — Optional Companion Tool
