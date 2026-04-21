@@ -156,6 +156,33 @@ development best practices — code quality, testing, security, documentation, a
 It's a starting point: edit it down to what matters for your project, or leave it as a
 general reference for your agent to consult.
 
+### Agent Skills
+
+The [`skills/`](skills/) directory contains installable slash commands for Claude Code and Gemini CLI, and a passive skill for Codex CLI. Once installed, your agent knows how to run scaffy without you explaining it.
+
+| Agent | File | Type |
+|---|---|---|
+| Claude Code | `skills/claude/scaffy.md` | `/scaffy` slash command |
+| Gemini CLI | `skills/gemini/scaffy.toml` | `/scaffy` slash command |
+| Codex CLI | `skills/codex/scaffy/` | AI-activated (no slash command) |
+
+**Install (global):**
+
+```bash
+# Claude Code
+cp skills/claude/scaffy.md ~/.claude/commands/scaffy.md
+
+# Gemini CLI
+cp skills/gemini/scaffy.toml ~/.gemini/commands/scaffy.toml
+
+# Codex CLI
+cp -r skills/codex/scaffy ~/.codex/skills/scaffy
+```
+
+**Claude & Gemini:** type `/scaffy` to bootstrap a project — the agent gathers inputs and runs scaffy for you. Pass a project name or path as arguments to skip the prompts.
+
+**Codex:** no slash command — Codex pulls the skill in automatically when it detects a scaffolding need.
+
 ---
 
 ## scafrag — Optional Companion Tool
@@ -230,3 +257,14 @@ If you move the script later, update the symlink:
 ```bash
 ln -sf /new/path/to/scaffy.py ~/.local/bin/scaffy
 ```
+
+---
+
+## See Also
+
+Tools and resources that pair well with the structured approach scaffy promotes. None are required.
+
+- **[GSD](https://github.com/gsd-build/gsd-2)** — Spec-driven development system for autonomous multi-phase agent work: research, planning, execution, and git management in a single pipeline.
+- **[MemPalace](https://github.com/MemPalace/mempalace/tree/main)** — Local-first AI memory with semantic search. Complements scaffy's session summaries with queryable, persistent long-term recall.
+- **[Caveman](https://github.com/JuliusBrussee/caveman)** — Claude Code skill that compresses agent output by ~75% using terse, technical language. Same accuracy, far fewer tokens.
+- **[Karpathy's LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)** — Pattern for building a personal knowledge base where an LLM incrementally maintains a persistent wiki synthesized from source documents.
