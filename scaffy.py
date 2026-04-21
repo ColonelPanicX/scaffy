@@ -39,12 +39,20 @@ if sys.version_info < (3, 9):
 import argparse
 import re
 import subprocess
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+try:
+    TZ = ZoneInfo("America/New_York")
+except KeyError:
+    print(
+        "Warning: timezone data not found. Dates will use UTC.\n"
+        "On Windows, run `pip install tzdata` to fix this.",
+        file=sys.stderr,
+    )
+    TZ = timezone.utc
 
-TZ = ZoneInfo("America/New_York")
 GOVERNANCE_MODES = ("none", "lightweight", "standard", "strict")
 PLATFORM_MODES = ("github", "gitlab", "azure-devops", "none")
 LICENSE_CHOICES = ("mit", "apache-2.0", "gpl-3.0", "agpl-3.0", "bsd-2-clause", "bsd-3-clause", "mpl-2.0", "unlicense", "none")
