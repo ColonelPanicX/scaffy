@@ -1,6 +1,57 @@
-Bootstrap a new `.collab/` collaboration workspace using scaffy. If $ARGUMENTS contains a project name or path, use them as a head start.
+scaffy skill — bootstrap a `.collab/` workspace, or run session protocols for an existing one.
 
-## What scaffy does
+## Dispatch on $ARGUMENTS
+
+Read $ARGUMENTS first and route accordingly:
+
+- `open session` → **Session Open Protocol** (see below)
+- `save session` → **Session Save Protocol** (see below)
+- `close session` → **Session Close Protocol** (see below)
+- anything else (project name, path, flags, or empty) → **Scaffold a new project** (see below)
+
+---
+
+## Session Open Protocol
+
+Execute immediately — do not wait for additional instructions:
+
+1. Find and read the most recent 1–2 session summaries in `.collab/session-summaries/` (sort by filename date, newest first; skip `session-summary-template.md`).
+2. Read `.collab/kanban-board.md` for current task state.
+3. Read `.collab/context.md` if it exists.
+4. Deliver a concise session resume covering:
+   - What was accomplished last session
+   - What is currently In Progress or Blocked on the board
+   - What is up next
+   - Any open questions or flags left from the last session
+
+Do not re-read `collab-contract.md` — focus on current state, not process rules.
+
+---
+
+## Session Save Protocol
+
+Execute immediately — do not wait for additional instructions:
+
+1. Write a session summary to `.collab/session-summaries/` (always a new file — never overwrite):
+   - First summary that day: `MM.DD.YYYY-claude-summary.md`
+   - Additional same-day saves: `MM.DD.YYYY-02-claude-summary.md`, `MM.DD.YYYY-03-claude-summary.md`, etc.
+   - Use the template at `.collab/session-summaries/session-summary-template.md`.
+2. Update `.collab/kanban-board.md` to reflect current task state.
+3. Confirm the checkpoint was saved. Do not end the session — continue working.
+
+---
+
+## Session Close Protocol
+
+Execute immediately — do not wait for additional instructions:
+
+1. Write a session summary to `.collab/session-summaries/` using the same naming convention as Save (always a new file).
+2. Update `.collab/kanban-board.md` to reflect current task state.
+3. Confirm completion to the user.
+
+---
+
+## Scaffold a new project
 
 scaffy generates a `.collab/` multi-agent workspace into any project directory: collab contract, kanban board, context file, session summary templates, git governance templates, and agent instruction files (CLAUDE.md, AGENTS.md, GEMINI.md).
 
