@@ -22,6 +22,7 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
 - Use `OPEN SESSION` at the start of each working session to resume context quickly.
 - Use `SAVE SESSION` mid-session to checkpoint progress without ending the session.
 - Use `CLOSE SESSION` at the end of each session to save progress.
+- Use `SAVE CHAT` to export the full session transcript to `chat-logs/`.
 - Write session summaries to `session-summaries/` on close.
 - Keep `kanban-board.md` current — it is the internal source of truth for task status.
 - Use `brainstorm/` to workshop pre-ticket concepts. See `collab-contract.md` for agent behavior rules.
@@ -37,6 +38,8 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
   - First summary of the day: `MM.DD.YYYY-agentname-summary.md`
   - Additional same-day summaries: `MM.DD.YYYY-##-agentname-summary.md`
     (use zero-padded sequence like `02`, `03`, etc.)
+- `chat-logs/` — Full session transcripts exported via `SAVE CHAT`.
+  Naming: `MM.DD.YYYY-claude-chat.md` (or `MM.DD.YYYY-##-claude-chat.md` for multiple per day).
 - `brainstorm/` — Thinking space for pre-ticket concepts and proposals.
   - `brainstorm-template.md` — Starter template for new brainstorm files.
 - `audit/` — Analysis reports, planning documents, and progress tracking artifacts.

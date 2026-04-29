@@ -121,6 +121,20 @@ Immediately execute the Session Close Protocol — do not wait for additional in
    - Add newly discovered tasks to **Inbox** or **Backlog**.
 3. Confirm completion to the user.
 
+### SAVE CHAT
+
+When the user types exactly:
+
+    SAVE CHAT
+
+Immediately execute the Chat Save Protocol — do not wait for additional instructions:
+
+1. Run from the project root:
+   - If scaffy is on PATH: `scaffy --save-chat`
+   - Otherwise: `python3 scaffy.py --save-chat`
+2. The tool saves the transcript to `.collab/chat-logs/` automatically.
+3. Confirm the filename and path to the user.
+
 ---
 
 ## Kanban Board
