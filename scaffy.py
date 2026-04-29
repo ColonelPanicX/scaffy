@@ -7,7 +7,7 @@ Usage:
                      [--governance MODE] [--platform PLATFORM] [--license LICENSE]
                      [--init-git] [--description TEXT]
     python scaffy.py --upgrade [--path PATH] [--force] [--dry-run]
-    python scaffy.py --save-chat [--path PATH] [--session-id UUID]
+    python scaffy.py --save-session [--path PATH] [--session-id UUID]
     python scaffy.py --list-sessions [--path PATH]
 
 If --name and --path are both provided, runs without interactive prompts.
@@ -366,8 +366,8 @@ When the user types exactly:
 Immediately execute the Chat Save Protocol — do not wait for additional instructions:
 
 1. Run from the project root:
-   - If scaffy is on PATH: `scaffy --save-chat`
-   - Otherwise: `python3 scaffy.py --save-chat`
+   - If scaffy is on PATH: `scaffy --save-session`
+   - Otherwise: `python3 scaffy.py --save-session`
 2. The tool saves the transcript to `.collab/chat-logs/` automatically.
 3. Confirm the filename and path to the user.
 
@@ -2801,18 +2801,18 @@ def main() -> None:
     )
     parser.add_argument("--upgrade", action="store_true",
                         help="Upgrade an existing .collab/ scaffold to the latest templates.")
-    parser.add_argument("--save-chat", action="store_true",
+    parser.add_argument("--save-session", action="store_true",
                         help="Export the current Claude Code session to .collab/chat-logs/.")
     parser.add_argument("--session-id", metavar="UUID",
-                        help="Session UUID prefix to export (--save-chat only). Default: most recent.")
+                        help="Session UUID prefix to export (--save-session only). Default: most recent.")
     parser.add_argument("--list-sessions", action="store_true",
-                        help="List recent Claude Code sessions for this project (--save-chat mode).")
+                        help="List recent Claude Code sessions for this project (--save-session mode).")
     parser.add_argument("--init-git", action="store_true", help="Run git init in the project root after scaffolding.")
     parser.add_argument("--description", metavar="TEXT", default="", help="Short project description.")
     args = parser.parse_args()
 
     # --- Save-chat mode ---
-    if args.save_chat or args.list_sessions:
+    if args.save_session or args.list_sessions:
         target = Path(args.path).expanduser().resolve() if args.path else Path.cwd()
         save_chat(target, session_id=args.session_id, list_sessions=args.list_sessions)
         return
