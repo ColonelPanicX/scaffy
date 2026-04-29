@@ -109,12 +109,17 @@ The prompt orients the agent to the `.collab/` structure, initializes its memory
 
 ## Session Protocols
 
-The scaffold installs two trigger phrases into the agent contract and initial prompt:
+The scaffold installs four trigger phrases into the agent contract and initial prompt:
 
 - **`OPEN SESSION`** — Agent reads the latest session summary, kanban board, and context,
   then delivers a concise resume of where things stand. Use at the start of every session.
+- **`SAVE SESSION`** — Mid-session checkpoint. Agent writes a summary and updates the kanban,
+  then continues working. Use any time you want to preserve progress without closing.
 - **`CLOSE SESSION`** — Agent writes a session summary and updates the kanban board.
   Use at the end of every session.
+- **`SAVE CHAT`** — Exports the full session transcript to `.collab/chat-logs/` as a markdown
+  file. Filename: `MM.DD.YYYY-claude-chat.md`. Session UUID preserved in the header for
+  traceability. **Currently Claude Code only — Gemini CLI and Codex CLI support coming soon.**
 
 ## Brainstorm Workflow
 
@@ -181,12 +186,13 @@ cp -r skills/codex/scaffy ~/.codex/skills/scaffy
 
 **Claude & Gemini:** type `/scaffy` to bootstrap a project — the agent gathers inputs and runs scaffy for you. Pass a project name or path as arguments to skip the prompts.
 
-The Claude skill also handles session protocols. If you use scaffy's OPEN/SAVE/CLOSE SESSION conventions in your projects, you can invoke them via the skill as a more reliable alternative to the plain-text trigger:
+The Claude skill also handles session protocols. If you use scaffy's session conventions in your projects, you can invoke them via the skill as a more reliable alternative to the plain-text trigger:
 
 ```
 /scaffy open session
 /scaffy save session
 /scaffy close session
+/scaffy save chat
 ```
 
 **Codex:** no slash command — Codex pulls the skill in automatically when it detects a scaffolding need.
