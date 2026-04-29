@@ -132,6 +132,7 @@ Immediately execute the Chat Save Protocol — do not wait for additional instru
 1. Run from the project root:
    - If scaffy is on PATH: `scaffy --save-session`
    - Otherwise: `python3 scaffy.py --save-session`
+   - scaffy auto-detects the running agent (Claude, Codex, Gemini). Override with `--cli {claude,codex,gemini}` if needed.
 2. The tool saves the transcript to `.collab/chat-logs/` automatically.
 3. Confirm the filename and path to the user.
 
