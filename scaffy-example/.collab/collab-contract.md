@@ -130,8 +130,8 @@ When the user types exactly:
 Immediately execute the Chat Save Protocol — do not wait for additional instructions:
 
 1. Run from the project root:
-   - If scaffy is on PATH: `scaffy --save-chat`
-   - Otherwise: `python3 scaffy.py --save-chat`
+   - If scaffy is on PATH: `scaffy --save-session`
+   - Otherwise: `python3 scaffy.py --save-session`
 2. The tool saves the transcript to `.collab/chat-logs/` automatically.
 3. Confirm the filename and path to the user.
 
