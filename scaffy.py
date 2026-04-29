@@ -7,8 +7,8 @@ Usage:
                      [--governance MODE] [--platform PLATFORM] [--license LICENSE]
                      [--init-git] [--description TEXT]
     python scaffy.py --upgrade [--path PATH] [--force] [--dry-run]
-    python scaffy.py --save-session [--path PATH] [--session-id UUID]
-    python scaffy.py --list-sessions [--path PATH]
+    python scaffy.py --save-session [--path PATH] [--session-id UUID] [--cli {claude,codex}]
+    python scaffy.py --list-sessions [--path PATH] [--cli {claude,codex}]
 
 If --name and --path are both provided, runs without interactive prompts.
 Otherwise uses interactive menus for mode/target/governance selection.
@@ -41,6 +41,7 @@ if sys.version_info < (3, 9):
 import argparse
 import json
 import re
+import sqlite3
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -365,9 +366,9 @@ When the user types exactly:
 
 Immediately execute the Chat Save Protocol — do not wait for additional instructions:
 
-1. Run from the project root:
-   - If scaffy is on PATH: `scaffy --save-session`
-   - Otherwise: `python3 scaffy.py --save-session`
+1. Run from the project root (add `--cli codex` or `--cli gemini` for non-Claude agents):
+   - If scaffy is on PATH: `scaffy --save-session [--cli {claude,codex,gemini}]`
+   - Otherwise: `python3 scaffy.py --save-session [--cli {claude,codex,gemini}]`
 2. The tool saves the transcript to `.collab/chat-logs/` automatically.
 3. Confirm the filename and path to the user.
 
@@ -2383,6 +2384,7 @@ def render_template(
 # ---------------------------------------------------------------------------
 
 _CLAUDE_PROJECTS_DIR = Path.home() / ".claude" / "projects"
+_CODEX_STATE_DB = Path.home() / ".codex" / "state_5.sqlite"
 
 
 def _find_claude_project_dir(cwd: Path) -> Path | None:
@@ -2545,6 +2547,163 @@ def save_chat(target_root: Path, session_id: str | None = None, list_sessions: b
 
     out_path.write_text(md, encoding="utf-8")
     print(f"Saved: {out_path}  ({len(md):,} chars, {len(entries)} entries)")
+
+
+def _load_codex_sessions(state_db: Path = _CODEX_STATE_DB) -> list[dict]:
+    """Return Codex sessions from state_5.sqlite, newest first."""
+    if not state_db.exists():
+        return []
+    conn = sqlite3.connect(state_db)
+    conn.row_factory = sqlite3.Row
+    rows = conn.execute(
+        """
+        select id, rollout_path, cwd, title, created_at_ms, updated_at_ms,
+               model, cli_version, first_user_message
+        from threads
+        where rollout_path is not null and rollout_path != ''
+        order by updated_at_ms desc, created_at_ms desc, id desc
+        """
+    ).fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+
+def _codex_iso_from_ms(value: int | None) -> str:
+    if value is None:
+        return "unknown"
+    return datetime.fromtimestamp(value / 1000, tz=timezone.utc).astimezone(TZ).strftime("%m.%d.%Y %H:%M %Z")
+
+
+def _codex_flatten_content(content: list[dict]) -> str:
+    parts: list[str] = []
+    for item in content:
+        t = item.get("type")
+        if t in ("input_text", "output_text"):
+            parts.append(str(item.get("text", "")))
+        else:
+            parts.append(json.dumps(item, ensure_ascii=False, indent=2))
+    return "\n".join(p for p in parts if p).strip()
+
+
+def _codex_rollout_to_markdown(session: dict, events: list[dict], max_output_chars: int = 6000) -> str:
+    lines: list[str] = [
+        "# Codex Session Transcript",
+        f"\n**Session:** `{session['id']}`",
+        f"**Started:** {_codex_iso_from_ms(session.get('created_at_ms'))}",
+        f"**Ended:** {_codex_iso_from_ms(session.get('updated_at_ms'))}",
+        f"**Model:** `{session.get('model') or 'unknown'}`",
+        f"**Working directory:** `{session.get('cwd') or 'unknown'}`",
+        "\n---\n",
+    ]
+
+    for event in events:
+        event_type = event.get("type")
+        payload = event.get("payload", {})
+
+        if event_type != "response_item":
+            continue
+
+        ptype = payload.get("type")
+
+        if ptype == "message":
+            role = payload.get("role", "unknown")
+            if role in ("system", "developer"):
+                continue
+            text = _codex_flatten_content(payload.get("content", []))
+            if not text:
+                continue
+            label = role.capitalize()
+            if payload.get("phase") and role == "assistant":
+                label = f"{label} ({payload['phase']})"
+            lines.extend([f"## {label}\n", text, ""])
+
+        elif ptype in ("function_call", "custom_tool_call"):
+            tool_name = payload.get("name", "unknown")
+            raw_input = payload.get("arguments") if ptype == "function_call" else payload.get("input")
+            if isinstance(raw_input, str):
+                try:
+                    raw_input = json.dumps(json.loads(raw_input), indent=2)
+                except json.JSONDecodeError:
+                    pass
+            elif raw_input is not None:
+                raw_input = json.dumps(raw_input, indent=2)
+            lines.extend([f"### Tool Call: `{tool_name}`\n", f"```json\n{raw_input or '(no input)'}\n```", ""])
+
+        elif ptype in ("function_call_output", "custom_tool_call_output"):
+            output = payload.get("output", "")
+            if isinstance(output, str):
+                try:
+                    loaded = json.loads(output)
+                    if not isinstance(loaded, str):
+                        output = json.dumps(loaded, indent=2)
+                except json.JSONDecodeError:
+                    pass
+            else:
+                output = json.dumps(output, indent=2)
+            if len(output) > max_output_chars:
+                omitted = len(output) - max_output_chars
+                output = f"{output[:max_output_chars].rstrip()}\n\n... [truncated {omitted} chars]"
+            lines.extend(["### Tool Output\n", f"```\n{output}\n```", ""])
+
+    return "\n".join(lines)
+
+
+def save_chat_codex(target_root: Path, session_id: str | None = None, list_sessions: bool = False) -> None:
+    """Export the most recent (or specified) Codex session to .collab/chat-logs/."""
+    if not _CODEX_STATE_DB.exists():
+        print(f"Error: Codex state DB not found: {_CODEX_STATE_DB}", file=sys.stderr)
+        print("Is Codex CLI installed and has it been run at least once?", file=sys.stderr)
+        sys.exit(1)
+
+    sessions = _load_codex_sessions()
+
+    if list_sessions:
+        if not sessions:
+            print("No Codex sessions found.")
+            return
+        print(f"Recent Codex sessions ({_CODEX_STATE_DB}):\n")
+        for s in sessions[:10]:
+            preview = (s.get("first_user_message") or "")[:80]
+            print(f"  {s['id']}  {_codex_iso_from_ms(s.get('created_at_ms'))}  {preview}")
+        return
+
+    if not sessions:
+        print("Error: No Codex sessions found.", file=sys.stderr)
+        sys.exit(1)
+
+    if session_id:
+        matches = [s for s in sessions if s["id"].startswith(session_id)]
+        if not matches:
+            print(f"Error: No Codex session matching '{session_id}'", file=sys.stderr)
+            sys.exit(1)
+        record = matches[0]
+    else:
+        record = sessions[0]
+
+    rollout_path = Path(record["rollout_path"])
+    if not rollout_path.exists():
+        print(f"Error: Rollout file not found: {rollout_path}", file=sys.stderr)
+        sys.exit(1)
+
+    events = _load_jsonl(rollout_path)
+    md = _codex_rollout_to_markdown(record, events)
+
+    chat_logs_dir = target_root / ".collab" / "chat-logs"
+    chat_logs_dir.mkdir(parents=True, exist_ok=True)
+
+    today = now_tz().strftime("%m.%d.%Y")
+    out_path = chat_logs_dir / f"{today}-codex-chat.md"
+    if out_path.exists():
+        seq = 2
+        while True:
+            candidate = chat_logs_dir / f"{today}-{seq:02d}-codex-chat.md"
+            if not candidate.exists():
+                out_path = candidate
+                break
+            seq += 1
+
+    out_path.write_text(md, encoding="utf-8")
+    print(f"Saved: {out_path}  ({len(md):,} chars, {len(events)} events)")
 
 
 def safe_write(dest: Path, content: str, force: bool) -> None:
@@ -2802,11 +2961,13 @@ def main() -> None:
     parser.add_argument("--upgrade", action="store_true",
                         help="Upgrade an existing .collab/ scaffold to the latest templates.")
     parser.add_argument("--save-session", action="store_true",
-                        help="Export the current Claude Code session to .collab/chat-logs/.")
+                        help="Export the current agent session to .collab/chat-logs/. Use --cli to specify the agent.")
     parser.add_argument("--session-id", metavar="UUID",
                         help="Session UUID prefix to export (--save-session only). Default: most recent.")
     parser.add_argument("--list-sessions", action="store_true",
-                        help="List recent Claude Code sessions for this project (--save-session mode).")
+                        help="List recent agent sessions (--save-session mode). Use --cli to specify the agent.")
+    parser.add_argument("--cli", choices=["claude", "codex"], default="claude",
+                        help="Agent CLI to export sessions from (--save-session mode). Default: claude.")
     parser.add_argument("--init-git", action="store_true", help="Run git init in the project root after scaffolding.")
     parser.add_argument("--description", metavar="TEXT", default="", help="Short project description.")
     args = parser.parse_args()
@@ -2814,7 +2975,10 @@ def main() -> None:
     # --- Save-chat mode ---
     if args.save_session or args.list_sessions:
         target = Path(args.path).expanduser().resolve() if args.path else Path.cwd()
-        save_chat(target, session_id=args.session_id, list_sessions=args.list_sessions)
+        if args.cli == "codex":
+            save_chat_codex(target, session_id=args.session_id, list_sessions=args.list_sessions)
+        else:
+            save_chat(target, session_id=args.session_id, list_sessions=args.list_sessions)
         return
 
     # --- Upgrade mode ---

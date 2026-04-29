@@ -1,11 +1,37 @@
 ---
 name: scaffy
-description: Use this skill when the user wants to bootstrap a new project workspace, initialize a .collab/ directory, scaffold a multi-agent collaboration setup, or set up a new project with scaffy.
+description: Use this skill when the user wants to bootstrap a new project workspace, initialize a .collab/ directory, scaffold a multi-agent collaboration setup, set up a new project with scaffy, or export a Codex session transcript via SAVE CHAT.
 ---
 
 # scaffy — .collab/ Workspace Bootstrapper
 
 scaffy generates a `.collab/` multi-agent workspace into any project directory: collab contract, kanban board, context file, session summary templates, git governance templates, and agent instruction files (CLAUDE.md, AGENTS.md, GEMINI.md).
+
+## Save Chat (SAVE CHAT)
+
+When the user types `SAVE CHAT`, export the current Codex session transcript:
+
+```bash
+# If scaffy is on PATH:
+scaffy --save-session --cli codex
+
+# Otherwise:
+python3 scaffy.py --save-session --cli codex
+```
+
+The transcript is saved to `.collab/chat-logs/MM.DD.YYYY-codex-chat.md` in the current project directory. Confirm the filename and path to the user.
+
+To list recent sessions:
+```bash
+scaffy --list-sessions --cli codex
+```
+
+To export a specific session by UUID prefix:
+```bash
+scaffy --save-session --cli codex --session-id <uuid-prefix>
+```
+
+---
 
 ## How to use
 
