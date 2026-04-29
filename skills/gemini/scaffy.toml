@@ -1,7 +1,29 @@
-description = "Bootstrap a new .collab/ collaboration workspace using scaffy."
+description = "Bootstrap a new .collab/ collaboration workspace using scaffy, or export a Gemini session transcript via SAVE CHAT."
 
 prompt = """
-Bootstrap a new `.collab/` collaboration workspace using scaffy. If {{args}} contains a project name or path, use them as a head start.
+Bootstrap a new `.collab/` collaboration workspace using scaffy, or export the current session transcript. If {{args}} is `save chat`, run the Save Chat protocol. If {{args}} contains a project name or path, use them as a head start for scaffolding.
+
+## Save Chat (SAVE CHAT)
+
+When the user types `SAVE CHAT`, export the current Gemini session:
+
+```bash
+scaffy --save-session
+```
+
+scaffy auto-detects Gemini CLI via the `GEMINI_CLI` environment variable. The transcript is saved to `.collab/chat-logs/MM.DD.YYYY-gemini-chat.md`. Confirm the filename and path to the user.
+
+To list recent Gemini sessions:
+```bash
+scaffy --list-sessions
+```
+
+To export a specific session by ID fragment:
+```bash
+scaffy --save-session --session-id <id-fragment>
+```
+
+---
 
 ## What scaffy does
 

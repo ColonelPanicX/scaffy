@@ -7,8 +7,8 @@ Usage:
                      [--governance MODE] [--platform PLATFORM] [--license LICENSE]
                      [--init-git] [--description TEXT]
     python scaffy.py --upgrade [--path PATH] [--force] [--dry-run]
-    python scaffy.py --save-session [--path PATH] [--session-id UUID] [--cli {claude,codex}]
-    python scaffy.py --list-sessions [--path PATH] [--cli {claude,codex}]
+    python scaffy.py --save-session [--path PATH] [--session-id UUID] [--cli {claude,codex,gemini}]
+    python scaffy.py --list-sessions [--path PATH] [--cli {claude,codex,gemini}]
 
 If --name and --path are both provided, runs without interactive prompts.
 Otherwise uses interactive menus for mode/target/governance selection.
@@ -39,7 +39,9 @@ if sys.version_info < (3, 9):
     sys.exit("scaffy requires Python 3.9+")
 
 import argparse
+import hashlib
 import json
+import os
 import re
 import sqlite3
 import subprocess
@@ -366,9 +368,10 @@ When the user types exactly:
 
 Immediately execute the Chat Save Protocol — do not wait for additional instructions:
 
-1. Run from the project root (add `--cli codex` or `--cli gemini` for non-Claude agents):
-   - If scaffy is on PATH: `scaffy --save-session [--cli {claude,codex,gemini}]`
-   - Otherwise: `python3 scaffy.py --save-session [--cli {claude,codex,gemini}]`
+1. Run from the project root:
+   - If scaffy is on PATH: `scaffy --save-session`
+   - Otherwise: `python3 scaffy.py --save-session`
+   - scaffy auto-detects the running agent (Claude, Codex, Gemini). Override with `--cli {claude,codex,gemini}` if needed.
 2. The tool saves the transcript to `.collab/chat-logs/` automatically.
 3. Confirm the filename and path to the user.
 
@@ -2385,6 +2388,37 @@ def render_template(
 
 _CLAUDE_PROJECTS_DIR = Path.home() / ".claude" / "projects"
 _CODEX_STATE_DB = Path.home() / ".codex" / "state_5.sqlite"
+_GEMINI_TMP_DIR = Path.home() / ".gemini" / "tmp"
+
+
+def _detect_agent() -> str:
+    """Detect which AI agent CLI is currently running scaffy."""
+    env = os.environ
+    if env.get("CLAUDECODE") or env.get("AI_AGENT", "").startswith("claude"):
+        return "claude"
+    if env.get("GEMINI_CLI") == "1":
+        return "gemini"
+    # Codex sets no env vars — walk parent process tree (Linux/macOS)
+    try:
+        pid = os.getppid()
+        visited: set[int] = set()
+        while pid and pid > 1 and pid not in visited:
+            visited.add(pid)
+            comm = Path(f"/proc/{pid}/comm")
+            if comm.exists() and "codex" in comm.read_text().lower():
+                return "codex"
+            status = Path(f"/proc/{pid}/status")
+            if not status.exists():
+                break
+            for line in status.read_text().splitlines():
+                if line.startswith("PPid:"):
+                    pid = int(line.split()[1])
+                    break
+            else:
+                break
+    except (OSError, ValueError):
+        pass
+    return "claude"
 
 
 def _find_claude_project_dir(cwd: Path) -> Path | None:
@@ -2706,6 +2740,130 @@ def save_chat_codex(target_root: Path, session_id: str | None = None, list_sessi
     print(f"Saved: {out_path}  ({len(md):,} chars, {len(events)} events)")
 
 
+def _find_gemini_session_files(cwd: Path) -> list[Path]:
+    """Return Gemini session JSONL files for cwd's project, newest first.
+    Checks both hash-based and name-based project dirs (Gemini changed formats)."""
+    if not _GEMINI_TMP_DIR.exists():
+        return []
+    project_hash = hashlib.sha256(str(cwd).encode()).hexdigest()
+    candidates: list[Path] = []
+    for d in _GEMINI_TMP_DIR.iterdir():
+        if not d.is_dir():
+            continue
+        if d.name in (project_hash, cwd.name):
+            candidates.extend(d.glob("chats/*.jsonl"))
+    return sorted(candidates, key=lambda f: f.stat().st_mtime, reverse=True)
+
+
+def _all_gemini_session_files() -> list[Path]:
+    """Return all Gemini session JSONL files across all projects, newest first."""
+    if not _GEMINI_TMP_DIR.exists():
+        return []
+    return sorted(
+        _GEMINI_TMP_DIR.glob("*/chats/*.jsonl"),
+        key=lambda f: f.stat().st_mtime,
+        reverse=True,
+    )
+
+
+def _gemini_session_to_markdown(events: list[dict], source: str) -> str:
+    sid, started = "unknown", "unknown"
+    for e in events:
+        if "sessionId" in e and "projectHash" in e:
+            sid = e.get("sessionId", "unknown")
+            started = e.get("startTime", "unknown")
+            break
+    lines: list[str] = [
+        "# Gemini Session Transcript",
+        f"\n**Session:** `{sid}`",
+        f"**Started:** {started}",
+        f"**Source:** `{source}`",
+        "\n---\n",
+    ]
+    for e in events:
+        etype = e.get("type")
+        if etype == "user":
+            text = "".join(c.get("text", "") for c in e.get("content", []) if "text" in c).strip()
+            if text:
+                lines.extend(["## User\n", text, ""])
+        elif etype == "gemini":
+            content = e.get("content", "")
+            if content:
+                lines.extend(["## Gemini\n", content, ""])
+            for tool in e.get("toolCalls", []):
+                name = tool.get("name", "unknown")
+                args = tool.get("args", {})
+                lines.extend([f"### Tool Call: `{name}`\n", f"```json\n{json.dumps(args, indent=2)}\n```", ""])
+    return "\n".join(lines)
+
+
+def save_chat_gemini(target_root: Path, session_id: str | None = None, list_sessions: bool = False) -> None:
+    """Export the most recent (or specified) Gemini session to .collab/chat-logs/."""
+    if not _GEMINI_TMP_DIR.exists():
+        print(f"Error: Gemini tmp dir not found: {_GEMINI_TMP_DIR}", file=sys.stderr)
+        print("Is Gemini CLI installed and has it been run at least once?", file=sys.stderr)
+        sys.exit(1)
+
+    if list_sessions:
+        all_files = _all_gemini_session_files()
+        if not all_files:
+            print("No Gemini sessions found.")
+            return
+        print(f"Recent Gemini sessions ({_GEMINI_TMP_DIR}):\n")
+        for f in all_files[:10]:
+            mtime = datetime.fromtimestamp(f.stat().st_mtime, tz=TZ).strftime("%m.%d.%Y %H:%M %Z")
+            preview = ""
+            try:
+                for line in f.open():
+                    try:
+                        e = json.loads(line)
+                        if e.get("type") == "user":
+                            preview = "".join(c.get("text", "") for c in e.get("content", []))[:80]
+                            break
+                    except json.JSONDecodeError:
+                        pass
+            except OSError:
+                pass
+            print(f"  {f.stem[:36]}  {mtime}  {preview}")
+        return
+
+    if session_id:
+        all_files = _all_gemini_session_files()
+        matches = [f for f in all_files if session_id in f.stem]
+        if not matches:
+            print(f"Error: No Gemini session matching '{session_id}'", file=sys.stderr)
+            sys.exit(1)
+        jsonl_path = matches[0]
+    else:
+        project_files = _find_gemini_session_files(target_root)
+        all_files = _all_gemini_session_files()
+        candidates = project_files or all_files
+        if not candidates:
+            print("Error: No Gemini sessions found.", file=sys.stderr)
+            sys.exit(1)
+        jsonl_path = candidates[0]
+
+    events = _load_jsonl(jsonl_path)
+    md = _gemini_session_to_markdown(events, str(jsonl_path))
+
+    chat_logs_dir = target_root / ".collab" / "chat-logs"
+    chat_logs_dir.mkdir(parents=True, exist_ok=True)
+
+    today = now_tz().strftime("%m.%d.%Y")
+    out_path = chat_logs_dir / f"{today}-gemini-chat.md"
+    if out_path.exists():
+        seq = 2
+        while True:
+            candidate = chat_logs_dir / f"{today}-{seq:02d}-gemini-chat.md"
+            if not candidate.exists():
+                out_path = candidate
+                break
+            seq += 1
+
+    out_path.write_text(md, encoding="utf-8")
+    print(f"Saved: {out_path}  ({len(md):,} chars, {len(events)} events)")
+
+
 def safe_write(dest: Path, content: str, force: bool) -> None:
     if dest.exists() and not force:
         return
@@ -2966,8 +3124,8 @@ def main() -> None:
                         help="Session UUID prefix to export (--save-session only). Default: most recent.")
     parser.add_argument("--list-sessions", action="store_true",
                         help="List recent agent sessions (--save-session mode). Use --cli to specify the agent.")
-    parser.add_argument("--cli", choices=["claude", "codex"], default="claude",
-                        help="Agent CLI to export sessions from (--save-session mode). Default: claude.")
+    parser.add_argument("--cli", choices=["claude", "codex", "gemini"], default=None,
+                        help="Agent CLI to export sessions from (--save-session mode). Auto-detected if omitted.")
     parser.add_argument("--init-git", action="store_true", help="Run git init in the project root after scaffolding.")
     parser.add_argument("--description", metavar="TEXT", default="", help="Short project description.")
     args = parser.parse_args()
@@ -2975,8 +3133,11 @@ def main() -> None:
     # --- Save-chat mode ---
     if args.save_session or args.list_sessions:
         target = Path(args.path).expanduser().resolve() if args.path else Path.cwd()
-        if args.cli == "codex":
+        cli = args.cli or _detect_agent()
+        if cli == "codex":
             save_chat_codex(target, session_id=args.session_id, list_sessions=args.list_sessions)
+        elif cli == "gemini":
+            save_chat_gemini(target, session_id=args.session_id, list_sessions=args.list_sessions)
         else:
             save_chat(target, session_id=args.session_id, list_sessions=args.list_sessions)
         return
