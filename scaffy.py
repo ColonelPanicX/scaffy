@@ -7,6 +7,8 @@ Usage:
                      [--governance MODE] [--platform PLATFORM] [--license LICENSE]
                      [--init-git] [--description TEXT]
     python scaffy.py --upgrade [--path PATH] [--force] [--dry-run]
+    python scaffy.py --save-chat [--path PATH] [--session-id UUID]
+    python scaffy.py --list-sessions [--path PATH]
 
 If --name and --path are both provided, runs without interactive prompts.
 Otherwise uses interactive menus for mode/target/governance selection.
@@ -37,6 +39,7 @@ if sys.version_info < (3, 9):
     sys.exit("scaffy requires Python 3.9+")
 
 import argparse
+import json
 import re
 import subprocess
 from datetime import datetime, timezone
@@ -144,6 +147,7 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
 - Use `OPEN SESSION` at the start of each working session to resume context quickly.
 - Use `SAVE SESSION` mid-session to checkpoint progress without ending the session.
 - Use `CLOSE SESSION` at the end of each session to save progress.
+- Use `SAVE CHAT` to export the full session transcript to `chat-logs/`.
 - Write session summaries to `session-summaries/` on close.
 - Keep `kanban-board.md` current — it is the internal source of truth for task status.
 - Use `brainstorm/` to workshop pre-ticket concepts. See `collab-contract.md` for agent behavior rules.
@@ -159,6 +163,8 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
   - First summary of the day: `MM.DD.YYYY-agentname-summary.md`
   - Additional same-day summaries: `MM.DD.YYYY-##-agentname-summary.md`
     (use zero-padded sequence like `02`, `03`, etc.)
+- `chat-logs/` — Full session transcripts exported via `SAVE CHAT`.
+  Naming: `MM.DD.YYYY-claude-chat.md` (or `MM.DD.YYYY-##-claude-chat.md` for multiple per day).
 - `brainstorm/` — Thinking space for pre-ticket concepts and proposals.
   - `brainstorm-template.md` — Starter template for new brainstorm files.
 - `audit/` — Analysis reports, planning documents, and progress tracking artifacts.
@@ -350,6 +356,20 @@ Immediately execute the Session Close Protocol — do not wait for additional in
    - Update statuses of in-progress tasks.
    - Add newly discovered tasks to **Inbox** or **Backlog**.
 3. Confirm completion to the user.
+
+### SAVE CHAT
+
+When the user types exactly:
+
+    SAVE CHAT
+
+Immediately execute the Chat Save Protocol — do not wait for additional instructions:
+
+1. Run from the project root:
+   - If scaffy is on PATH: `scaffy --save-chat`
+   - Otherwise: `python3 scaffy.py --save-chat`
+2. The tool saves the transcript to `.collab/chat-logs/` automatically.
+3. Confirm the filename and path to the user.
 
 ---
 
@@ -2070,7 +2090,7 @@ This project has a `.collab/` collaboration workspace. Before doing anything:
 1. Read everything in `.collab/`: start with `collab-contract.md`, then `kanban-board.md`,
    `context.md`, and any summaries in `session-summaries/`.
 2. Commit to memory the session trigger phrases and their protocols from `collab-contract.md`:
-   `OPEN SESSION`, `SAVE SESSION`, and `CLOSE SESSION`.
+   `OPEN SESSION`, `SAVE SESSION`, `CLOSE SESSION`, and `SAVE CHAT`.
 3. The kanban board is empty — this is a new project. Wait for my direction before
    drafting plans or tasks.
 """,
@@ -2080,7 +2100,7 @@ This project has a `.collab/` collaboration workspace. Before doing anything:
 1. Read everything in `.collab/`: start with `collab-contract.md`, then `kanban-board.md`,
    `context.md`, and any summaries in `session-summaries/`.
 2. Commit to memory the session trigger phrases and their protocols from `collab-contract.md`:
-   `OPEN SESSION`, `SAVE SESSION`, and `CLOSE SESSION`.
+   `OPEN SESSION`, `SAVE SESSION`, `CLOSE SESSION`, and `SAVE CHAT`.
 3. Do a brief, non-destructive recon of the repo: purpose, primary languages, entry points,
    build/test commands, and existing documentation. Do not restructure or rename anything.
 4. If the kanban board is empty, add initial recon tasks to **Inbox** and wait for my approval
@@ -2358,6 +2378,175 @@ def render_template(
     return content
 
 
+# ---------------------------------------------------------------------------
+# Save-chat — Claude Code session transcript export
+# ---------------------------------------------------------------------------
+
+_CLAUDE_PROJECTS_DIR = Path.home() / ".claude" / "projects"
+
+
+def _find_claude_project_dir(cwd: Path) -> Path | None:
+    slug = str(cwd).replace("/", "-")
+    candidate = _CLAUDE_PROJECTS_DIR / slug
+    return candidate if candidate.is_dir() else None
+
+
+def _load_jsonl(jsonl_path: Path) -> list[dict]:
+    entries: list[dict] = []
+    with open(jsonl_path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                try:
+                    entries.append(json.loads(line))
+                except json.JSONDecodeError:
+                    pass
+    return entries
+
+
+def _render_chat_content(content) -> str:
+    if isinstance(content, str):
+        return content.strip()
+    if not isinstance(content, list):
+        return str(content)
+    parts: list[str] = []
+    for block in content:
+        btype = block.get("type", "")
+        if btype == "text":
+            text = block.get("text", "").strip()
+            if text:
+                parts.append(text)
+        elif btype == "tool_result":
+            tool_id = block.get("tool_use_id", "?")
+            inner = block.get("content", "")
+            is_error = block.get("is_error", False)
+            label = "TOOL RESULT (error)" if is_error else "TOOL RESULT"
+            if isinstance(inner, str):
+                result_text = inner.strip()
+            elif isinstance(inner, list):
+                texts: list[str] = []
+                for ib in inner:
+                    if ib.get("type") == "text":
+                        texts.append(ib.get("text", "").strip())
+                    elif ib.get("type") == "tool_reference":
+                        texts.append(f"[tool_reference: {ib.get('tool_name', '?')}]")
+                result_text = "\n".join(texts)
+            else:
+                result_text = str(inner)
+            parts.append(f"> **{label}** `{tool_id[:8]}`\n>\n> ```\n{result_text}\n```")
+        # skip "thinking" blocks — content is encrypted/opaque
+    return "\n\n".join(parts)
+
+
+def _render_tool_use(block: dict) -> str:
+    name = block.get("name", "?")
+    inp = block.get("input", {})
+    return f"**Tool:** `{name}`\n```json\n{json.dumps(inp, indent=2)}\n```"
+
+
+def _session_to_markdown(entries: list[dict], session_id: str) -> str:
+    lines: list[str] = [
+        "# Claude Code Session Transcript",
+        f"\n**Session:** `{session_id}`",
+    ]
+    for e in entries:
+        if e.get("type") in ("user", "assistant") and e.get("timestamp"):
+            ts = e["timestamp"]
+            dt = datetime.fromisoformat(ts.replace("Z", "+00:00")).astimezone(TZ)
+            lines.append(f"**Date:** {dt.strftime('%m.%d.%Y %H:%M %Z')}")
+            break
+    lines.append("\n---\n")
+
+    for entry in entries:
+        etype = entry.get("type")
+        sidechain_note = " *(sub-agent)*" if entry.get("isSidechain") else ""
+
+        if etype == "user":
+            rendered = _render_chat_content(entry["message"].get("content", ""))
+            if rendered:
+                lines.append(f"## User{sidechain_note}\n")
+                lines.append(rendered)
+                lines.append("")
+
+        elif etype == "assistant":
+            content = entry["message"].get("content", [])
+            if not isinstance(content, list):
+                continue
+            text_blocks: list[str] = []
+            tool_blocks: list[dict] = []
+            for block in content:
+                btype = block.get("type")
+                if btype == "text":
+                    text = block.get("text", "").strip()
+                    if text:
+                        text_blocks.append(text)
+                elif btype == "tool_use":
+                    tool_blocks.append(block)
+            if text_blocks or tool_blocks:
+                lines.append(f"## Assistant{sidechain_note}\n")
+                for t in text_blocks:
+                    lines.append(t)
+                    lines.append("")
+                for tb in tool_blocks:
+                    lines.append(_render_tool_use(tb))
+                    lines.append("")
+
+    return "\n".join(lines)
+
+
+def save_chat(target_root: Path, session_id: str | None = None, list_sessions: bool = False) -> None:
+    """Export the current (or specified) Claude Code session to .collab/chat-logs/."""
+    project_dir = _find_claude_project_dir(target_root)
+    if project_dir is None:
+        slug = str(target_root).replace("/", "-")
+        print(f"Error: No Claude project dir found for {target_root}", file=sys.stderr)
+        print(f"Expected: {_CLAUDE_PROJECTS_DIR / slug}", file=sys.stderr)
+        sys.exit(1)
+
+    if list_sessions:
+        files = sorted(project_dir.glob("*.jsonl"), key=lambda f: f.stat().st_mtime, reverse=True)
+        print(f"Recent sessions in {project_dir}:\n")
+        for f in files[:10]:
+            mtime = datetime.fromtimestamp(f.stat().st_mtime, tz=TZ).strftime("%m.%d.%Y %H:%M")
+            size_kb = f.stat().st_size // 1024
+            print(f"  {f.stem[:8]}...  {mtime}  {size_kb} KB")
+        return
+
+    if session_id:
+        matches = list(project_dir.glob(f"{session_id}*.jsonl"))
+        if not matches:
+            print(f"Error: No session matching '{session_id}' in {project_dir}", file=sys.stderr)
+            sys.exit(1)
+        jsonl_path = sorted(matches, key=lambda f: f.stat().st_mtime, reverse=True)[0]
+    else:
+        files = sorted(project_dir.glob("*.jsonl"), key=lambda f: f.stat().st_mtime, reverse=True)
+        if not files:
+            print("Error: No sessions found.", file=sys.stderr)
+            sys.exit(1)
+        jsonl_path = files[0]
+
+    sid = jsonl_path.stem
+    entries = _load_jsonl(jsonl_path)
+    md = _session_to_markdown(entries, sid)
+
+    chat_logs_dir = target_root / ".collab" / "chat-logs"
+    chat_logs_dir.mkdir(parents=True, exist_ok=True)
+
+    today = now_tz().strftime("%m.%d.%Y")
+    out_path = chat_logs_dir / f"{today}-claude-chat.md"
+    if out_path.exists():
+        seq = 2
+        while True:
+            candidate = chat_logs_dir / f"{today}-{seq:02d}-claude-chat.md"
+            if not candidate.exists():
+                out_path = candidate
+                break
+            seq += 1
+
+    out_path.write_text(md, encoding="utf-8")
+    print(f"Saved: {out_path}  ({len(md):,} chars, {len(entries)} entries)")
+
+
 def safe_write(dest: Path, content: str, force: bool) -> None:
     if dest.exists() and not force:
         return
@@ -2374,6 +2563,7 @@ def ensure_required_directories(target_root: Path, mode: str) -> None:
     required_dirs = [
         target_root / ".collab" / "brainstorm",
         target_root / ".collab" / "audit",
+        target_root / ".collab" / "chat-logs",
         target_root / ".collab" / "git-management",
         target_root / ".collab" / "session-summaries",
         target_root / ".collab" / "supporting-artifacts",
@@ -2611,9 +2801,21 @@ def main() -> None:
     )
     parser.add_argument("--upgrade", action="store_true",
                         help="Upgrade an existing .collab/ scaffold to the latest templates.")
+    parser.add_argument("--save-chat", action="store_true",
+                        help="Export the current Claude Code session to .collab/chat-logs/.")
+    parser.add_argument("--session-id", metavar="UUID",
+                        help="Session UUID prefix to export (--save-chat only). Default: most recent.")
+    parser.add_argument("--list-sessions", action="store_true",
+                        help="List recent Claude Code sessions for this project (--save-chat mode).")
     parser.add_argument("--init-git", action="store_true", help="Run git init in the project root after scaffolding.")
     parser.add_argument("--description", metavar="TEXT", default="", help="Short project description.")
     args = parser.parse_args()
+
+    # --- Save-chat mode ---
+    if args.save_chat or args.list_sessions:
+        target = Path(args.path).expanduser().resolve() if args.path else Path.cwd()
+        save_chat(target, session_id=args.session_id, list_sessions=args.list_sessions)
+        return
 
     # --- Upgrade mode ---
     if args.upgrade:
@@ -2790,6 +2992,7 @@ First session — paste this to start:
 Tip: Start future sessions with OPEN SESSION to resume where you left off.
      Use SAVE SESSION mid-session to checkpoint without ending.
      End sessions with CLOSE SESSION to save your progress.
+     Use SAVE CHAT to export the full session transcript to .collab/chat-logs/.
      Put project-adjacent materials (diagrams, specs, research) in .collab/supporting-artifacts/.
 """)
 

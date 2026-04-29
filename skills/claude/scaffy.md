@@ -7,6 +7,7 @@ Read $ARGUMENTS first and route accordingly:
 - `open session` → **Session Open Protocol** (see below)
 - `save session` → **Session Save Protocol** (see below)
 - `close session` → **Session Close Protocol** (see below)
+- `save chat` → **Chat Save Protocol** (see below)
 - anything else (project name, path, flags, or empty) → **Scaffold a new project** (see below)
 
 ---
@@ -48,6 +49,18 @@ Execute immediately — do not wait for additional instructions:
 1. Write a session summary to `.collab/session-summaries/` using the same naming convention as Save (always a new file).
 2. Update `.collab/kanban-board.md` to reflect current task state.
 3. Confirm completion to the user.
+
+---
+
+## Chat Save Protocol
+
+Execute immediately — do not wait for additional instructions:
+
+1. Run from the project root:
+   - If scaffy is on PATH: `scaffy --save-chat`
+   - Otherwise: `python3 scaffy.py --save-chat`
+2. The tool saves the transcript to `.collab/chat-logs/` automatically.
+3. Confirm the filename and path to the user.
 
 ---
 
