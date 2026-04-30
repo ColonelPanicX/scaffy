@@ -64,6 +64,18 @@ PLATFORM_MODES = ("github", "gitlab", "azure-devops", "none")
 LICENSE_CHOICES = ("mit", "apache-2.0", "gpl-3.0", "agpl-3.0", "bsd-2-clause", "bsd-3-clause", "mpl-2.0", "unlicense", "none")
 
 
+class BackSignal(Exception):
+    """User typed 'b' — go back one step in the wizard."""
+
+
+class QuitSignal(Exception):
+    """User typed 'q' — quit the program."""
+
+
+_ABORT = object()     # sentinel: user declined to proceed at confirm
+_CONFIRMED = object() # sentinel: user confirmed at confirm
+
+
 def now_tz() -> datetime:
     return datetime.now(tz=TZ)
 
@@ -2206,22 +2218,42 @@ def suggest_project_name_from_target(target_root: Path) -> str:
     return "my-project"
 
 
+def prompt_nav(prompt_text: str) -> str:
+    """Input wrapper that raises BackSignal on 'b' and QuitSignal on 'q'."""
+    try:
+        value = input(prompt_text).strip()
+    except EOFError:
+        raise QuitSignal
+    if value.lower() == "q":
+        raise QuitSignal
+    if value.lower() == "b":
+        raise BackSignal
+    return value
+
+
 def prompt_choice(prompt: str, valid: set[str]) -> str:
     while True:
         try:
             value = input(prompt).strip()
         except EOFError:
-            raise SystemExit("No input provided; exiting.")
+            raise QuitSignal
+        low = value.lower()
+        if low == "q":
+            raise QuitSignal
+        if low == "b":
+            raise BackSignal
         if value in valid:
             return value
-        print(f"Invalid selection. Please enter one of: {', '.join(sorted(valid))}.")
+        print(f"  Invalid. Enter one of: {', '.join(sorted(valid))}.")
 
 
 def prompt_for_mode() -> str:
     print("\nWhat are you initializing?")
-    print("  1) New project")
-    print("  2) Existing project")
-    print("  3) Upgrade existing scaffold")
+    print("  [1] New project")
+    print("  [2] Existing project  (add .collab/ to a project that already exists)")
+    print("  [3] Upgrade existing scaffold  (add new files to an existing .collab/)")
+    print("  " + "─" * 52)
+    print("  [q] Quit")
     choices = {"1": "new", "2": "existing", "3": "upgrade"}
     choice = prompt_choice("Select [1-3]: ", set(choices))
     return choices[choice]
@@ -2230,101 +2262,102 @@ def prompt_for_mode() -> str:
 def prompt_for_target_root() -> Path:
     cwd = Path.cwd().resolve()
     print("\nWhere should it be installed?")
-    print(f"  1) Current directory ({cwd})")
-    print("  2) Another directory")
+    print(f"  [1] Current directory  ({cwd})")
+    print("  [2] Another directory")
+    print("  " + "─" * 40)
+    print("  [b] Back   [q] Quit")
     choice = prompt_choice("Select [1-2]: ", {"1", "2"})
 
     if choice == "1":
         return cwd
 
-    print("\nEnter target directory path:")
-    print("  (supports ~, relative, or absolute path)")
+    print("\nEnter the full path to your target directory.")
+    print("  Tip: supports ~, relative paths, or absolute paths.")
+    print("  Type [b] to go back, [q] to quit.")
     while True:
-        try:
-            raw = input("Path: ").strip()
-        except EOFError:
-            raise SystemExit("No input provided; exiting.")
+        raw = prompt_nav("Path: ")
         if not raw:
-            print("Path cannot be empty.")
+            print("  Path cannot be empty.")
             continue
         target = Path(raw).expanduser().resolve()
         if not target.exists():
-            print(f"Target directory does not exist: {target}")
-            print("Choose another path or create the directory first.")
+            print(f"  Directory not found: {target}")
+            print("  Check the path or create the directory first, then try again.")
             continue
         if not target.is_dir():
-            print(f"Target path is not a directory: {target}")
+            print(f"  That path exists but is a file, not a directory: {target}")
             continue
         print(f"  Resolved: {target}")
         return target
 
 
 def prompt_for_new_project_name(default_name: str) -> str:
+    print("\nProject name")
+    print(f"  Press Enter to use the suggested name.")
+    print("  " + "─" * 48)
+    print("  [b] Back   [q] Quit")
     while True:
-        try:
-            name = input(f"Project name [{default_name}]: ").strip()
-        except EOFError:
-            raise SystemExit("No input provided; exiting.")
+        name = prompt_nav(f"Name [{default_name}]: ")
         if not name:
             return default_name
         if not valid_project_name(name):
             print(
-                'Invalid name. Folder names cannot contain \\ / : * ? " < > | '
-                "or be Windows reserved names (CON, PRN, NUL, etc.)."
+                '  Invalid name. Cannot contain \\ / : * ? " < > |\n'
+                "  or be a Windows reserved name (CON, NUL, etc.)."
             )
             continue
         return name
 
 
 def prompt_for_governance() -> str:
-    print("\nGovernance mode:")
-    print("  1) None        — no governance rules or process structure")
-    print("  2) Lightweight — minimal process, fast iteration (prototypes, solo work)")
-    print("  3) Standard    — balanced workflow, recommended for most projects")
-    print("  4) Strict      — full process gates, for compliance/regulated work")
+    print("\nGovernance mode  (controls how strict the workflow rules are):")
+    print("  [1] None        — no rules at all, blank slate")
+    print("  [2] Lightweight — minimal process, good for solo/prototype work")
+    print("  [3] Standard    — balanced workflow, recommended for most projects")
+    print("  [4] Strict      — full process gates, for compliance or team work")
+    print("  " + "─" * 52)
+    print("  [b] Back   [q] Quit   (Enter = Standard)")
     choices = {"1": "none", "2": "lightweight", "3": "standard", "4": "strict"}
     while True:
-        try:
-            value = input("Select [1-4, Enter for standard]: ").strip()
-        except EOFError:
-            raise SystemExit("No input provided; exiting.")
+        value = prompt_nav("Select [1-4]: ").strip()
         if not value:
             return "standard"
         if value in choices:
             return choices[value]
-        print("Invalid. Enter 1, 2, 3, or 4.")
+        print("  Invalid. Enter 1, 2, 3, or 4 — or press Enter for Standard.")
 
 
 def prompt_for_platform() -> str:
-    print("\nGit platform:")
-    print("  1) GitHub")
-    print("  2) GitLab")
-    print("  3) Azure DevOps")
-    print("  4) None / other")
+    print("\nGit platform  (generates issue/PR templates for your platform):")
+    print("  [1] GitHub")
+    print("  [2] GitLab")
+    print("  [3] Azure DevOps")
+    print("  [4] None / not using one")
+    print("  " + "─" * 44)
+    print("  [b] Back   [q] Quit   (Enter = None)")
     choices = {"1": "github", "2": "gitlab", "3": "azure-devops", "4": "none"}
     while True:
-        try:
-            value = input("Select [1-4, Enter to skip]: ").strip()
-        except EOFError:
-            raise SystemExit("No input provided; exiting.")
+        value = prompt_nav("Select [1-4]: ").strip()
         if not value:
             return "none"
         if value in choices:
             return choices[value]
-        print("Invalid. Enter 1, 2, 3, or 4.")
+        print("  Invalid. Enter 1, 2, 3, or 4 — or press Enter to skip.")
 
 
 def prompt_for_license() -> str:
-    print("\nLicense:")
-    print("  1) MIT             — permissive, short, very common")
-    print("  2) Apache-2.0      — permissive, patent grant included")
-    print("  3) GPL-3.0         — copyleft, strong")
-    print("  4) AGPL-3.0        — copyleft, network use triggers share-alike")
-    print("  5) BSD-2-Clause    — permissive, minimal")
-    print("  6) BSD-3-Clause    — permissive, no-endorsement clause")
-    print("  7) MPL-2.0         — weak copyleft, file-level")
-    print("  8) Unlicense       — public domain dedication")
-    print("  9) None            — skip LICENSE file")
+    print("\nLicense  (adds a LICENSE file to your project root):")
+    print("  [1] MIT          — permissive, short, very common")
+    print("  [2] Apache-2.0   — permissive, includes patent grant")
+    print("  [3] GPL-3.0      — copyleft, strong share-alike")
+    print("  [4] AGPL-3.0     — copyleft, network use also triggers share-alike")
+    print("  [5] BSD-2-Clause — permissive, minimal")
+    print("  [6] BSD-3-Clause — permissive, adds no-endorsement clause")
+    print("  [7] MPL-2.0      — weak copyleft, file-level only")
+    print("  [8] Unlicense    — public domain, no restrictions")
+    print("  [9] None         — skip LICENSE file")
+    print("  " + "─" * 44)
+    print("  [b] Back   [q] Quit   (Enter = None)")
     choices = {
         "1": "mit",
         "2": "apache-2.0",
@@ -2337,25 +2370,168 @@ def prompt_for_license() -> str:
         "9": "none",
     }
     while True:
-        try:
-            value = input("Select [1-9, Enter to skip]: ").strip()
-        except EOFError:
-            raise SystemExit("No input provided; exiting.")
+        value = prompt_nav("Select [1-9]: ").strip()
         if not value:
             return "none"
         if value in choices:
             return choices[value]
-        print("Invalid. Enter 1–9 or press Enter to skip.")
+        print("  Invalid. Enter 1–9 or press Enter to skip.")
 
 
 def prompt_for_description() -> str:
-    print("\nProject description (optional):")
-    print("  A short sentence injected into context.md.")
-    try:
-        value = input("Description [Enter to skip]: ").strip()
-    except EOFError:
-        raise SystemExit("No input provided; exiting.")
+    print("\nProject description  (optional, one sentence):")
+    print("  This gets injected into your context.md so agents know what the project is.")
+    print("  " + "─" * 56)
+    print("  [b] Back   [q] Quit   (Enter = skip)")
+    value = prompt_nav("Description: ").strip()
     return value
+
+
+# ---------------------------------------------------------------------------
+# Interactive wizard
+# ---------------------------------------------------------------------------
+
+_WIZARD_ORDER = ["mode", "target", "name", "governance", "platform", "license", "description", "confirm"]
+
+
+def _wizard_should_skip(step: str, collected: dict) -> bool:
+    if step == "name" and collected.get("mode") != "new":
+        return True
+    if step == "license" and collected.get("platform", "none") == "none":
+        return True
+    return False
+
+
+def _next_wizard_step(current: str, collected: dict) -> str | None:
+    idx = _WIZARD_ORDER.index(current) + 1
+    while idx < len(_WIZARD_ORDER):
+        candidate = _WIZARD_ORDER[idx]
+        if not _wizard_should_skip(candidate, collected):
+            return candidate
+        idx += 1
+    return None
+
+
+def _wizard_run_step(step: str, collected: dict, args: argparse.Namespace) -> object:
+    if step == "mode":
+        return prompt_for_mode()
+    if step == "target":
+        return prompt_for_target_root()
+    if step == "name":
+        default = suggest_project_name_from_target(collected["target"])
+        return prompt_for_new_project_name(default)
+    if step == "governance":
+        return prompt_for_governance()
+    if step == "platform":
+        return prompt_for_platform()
+    if step == "license":
+        return prompt_for_license()
+    if step == "description":
+        return prompt_for_description()
+    if step == "confirm":
+        return _wizard_confirm(collected, args)
+    raise ValueError(f"Unknown wizard step: {step}")
+
+
+def _wizard_confirm(collected: dict, args: argparse.Namespace) -> object:
+    mode = collected["mode"]
+    target = collected["target"]
+    if mode == "new":
+        name = collected["name"]
+        target_root = (target / name).resolve()
+    else:
+        target_root = target
+        name = suggest_project_name_from_target(target_root)
+
+    timestamp = now_tz().strftime("%m.%d.%Y")
+
+    print("\n╔══════════════════════════════════╗")
+    print("║             Summary              ║")
+    print("╚══════════════════════════════════╝")
+    print(f"  Mode:        {'New project' if mode == 'new' else 'Existing project'}")
+    print(f"  Target:      {target_root}")
+    if mode == "new":
+        print(f"  Name:        {name}")
+    print(f"  Governance:  {collected['governance']}")
+    print(f"  Platform:    {collected['platform']}")
+    print(f"  License:     {collected.get('license', 'none')}")
+    desc = collected.get("description", "")
+    if desc:
+        print(f"  Description: {desc}")
+    print(f"  Date:        {timestamp} (America/New_York)")
+    if target_root.exists() and not args.force:
+        print("\n  Note: Target already exists. Existing files will be skipped.")
+        print("  Run with --force to overwrite them.")
+
+    if args.dry_run:
+        return _CONFIRMED  # skip prompt — main() will show planned actions
+
+    print("\n  [b] Back   [q] Quit")
+    while True:
+        raw = prompt_nav("Proceed? [y/N]: ").lower()
+        if raw == "y":
+            return _CONFIRMED
+        if raw in ("n", ""):
+            return _ABORT
+        print("  Please enter y to proceed or N to cancel.")
+
+
+def _print_header() -> None:
+    print("\n╔════════════════════════════════════════╗")
+    print("║                scaffy                  ║")
+    print("║  Multi-agent project workspace setup   ║")
+    print("╚════════════════════════════════════════╝")
+    print("\nSets up a .collab/ workspace for AI-assisted projects.")
+    print("At any prompt: type  b  to go back,  q  to quit.\n")
+
+
+def _run_interactive_wizard(args: argparse.Namespace) -> dict | None:
+    """Drive the step-by-step interactive wizard. Returns collected values or None if aborted."""
+    _print_header()
+
+    collected: dict = {}
+    visited: list[str] = []
+    step: str | None = "mode"
+
+    while step is not None:
+        if _wizard_should_skip(step, collected):
+            step = _next_wizard_step(step, collected)
+            continue
+
+        try:
+            value = _wizard_run_step(step, collected, args)
+
+            if value is _ABORT:
+                print("Aborted.")
+                return None
+
+            if step != "confirm":
+                collected[step] = value
+            visited.append(step)
+
+            # Upgrade only needs mode + target — return early
+            if step == "target" and collected.get("mode") == "upgrade":
+                return collected
+
+            if value is _CONFIRMED:
+                return collected
+
+            step = _next_wizard_step(step, collected)
+
+        except BackSignal:
+            if not visited:
+                print("\n  (Already at the first step — nothing to go back to.)\n")
+                # step unchanged — re-run the same step
+            else:
+                prev = visited.pop()
+                collected.pop(prev, None)
+                step = prev
+
+        except QuitSignal:
+            print("\nAborted.")
+            return None
+
+    return collected
 
 
 def render_template(
@@ -3153,8 +3329,8 @@ def main() -> None:
 
     if args.name and not valid_project_name(args.name):
         parser.error(
-            'Invalid --name. Folder names cannot contain \\ / : * ? " < > | '
-            "or be Windows reserved names (CON, PRN, NUL, etc.)."
+            'Invalid --name. Cannot contain \\ / : * ? " < > | '
+            "or be a Windows reserved name (CON, NUL, etc.)."
         )
 
     fully_scripted = bool(args.name and args.path)
@@ -3168,31 +3344,27 @@ def main() -> None:
         license_id = args.license or "none"
         description = args.description
     else:
-        print("Project Initialize")
-        print("------------------")
-        print("Sets up a .collab/ collaboration scaffold for multi-agent projects.")
-
-        mode = "new" if args.name else prompt_for_mode()
-        selected_root = Path(args.path).expanduser().resolve() if args.path else prompt_for_target_root()
-
-        if mode == "upgrade":
-            upgrade_scaffold(selected_root, force=args.force, dry_run=args.dry_run)
+        result = _run_interactive_wizard(args)
+        if result is None:
             return
 
+        mode = result["mode"]
+        if mode == "upgrade":
+            upgrade_scaffold(result["target"], force=args.force, dry_run=args.dry_run)
+            return
+
+        selected_root = result["target"]
         if mode == "new":
-            default_name = suggest_project_name_from_target(selected_root)
-            print("\nNew project details")
-            print("-------------------")
-            project_name = args.name or prompt_for_new_project_name(default_name)
+            project_name = result["name"]
             target_root = (selected_root / project_name).resolve()
         else:
             target_root = selected_root
             project_name = suggest_project_name_from_target(target_root)
 
-        governance_mode = args.governance or prompt_for_governance()
-        platform = args.platform or prompt_for_platform()
-        license_id = args.license or ("none" if platform == "none" else prompt_for_license())
-        description = args.description or prompt_for_description()
+        governance_mode = result["governance"]
+        platform = result["platform"]
+        license_id = result.get("license", "none")
+        description = result.get("description", "")
 
     # .gitignore fallback
     gitignore_dest = target_root / ".gitignore"
@@ -3212,19 +3384,20 @@ def main() -> None:
         date=timestamp,
     )
 
-    # Summary
-    print("\nSummary")
-    print("-------")
-    print(f"Mode:       {'New project' if mode == 'new' else 'Existing project'}")
-    print(f"Target:     {target_root}")
-    if mode == "new":
-        print(f"Name:       {project_name}")
-    print(f"Governance: {governance_mode}")
-    print(f"Platform:   {platform}")
-    print(f"License:    {license_id}")
-    print(f"Date:       {timestamp} (America/New_York)")
-    if target_root.exists() and not args.dry_run and not args.force:
-        print("Notice: Target exists. Existing files will be skipped. Use --force to overwrite.")
+    # Scripted mode: print summary here (interactive mode shows summary in wizard confirm step)
+    if fully_scripted:
+        print("\nSummary")
+        print("-------")
+        print(f"Mode:       {'New project' if mode == 'new' else 'Existing project'}")
+        print(f"Target:     {target_root}")
+        if mode == "new":
+            print(f"Name:       {project_name}")
+        print(f"Governance: {governance_mode}")
+        print(f"Platform:   {platform}")
+        print(f"License:    {license_id}")
+        print(f"Date:       {timestamp} (America/New_York)")
+        if target_root.exists() and not args.dry_run and not args.force:
+            print("Notice: Target exists. Existing files will be skipped. Use --force to overwrite.")
 
     if args.dry_run:
         def _dry_action(dest: Path) -> str:
@@ -3250,15 +3423,6 @@ def main() -> None:
             print("\nNote: 'skip' entries already exist and will not be changed. Use --force to overwrite.")
         print("\nDry run complete. No files written.")
         return
-
-    if not fully_scripted:
-        try:
-            confirm = input("\nProceed? [y/N]: ").strip().lower()
-        except EOFError:
-            confirm = "n"
-        if confirm != "y":
-            print("Aborted.")
-            return
 
     target_root.mkdir(parents=True, exist_ok=True)
     ensure_required_directories(target_root, mode)
