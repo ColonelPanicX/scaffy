@@ -2293,7 +2293,6 @@ def prompt_for_target_root() -> Path:
 
 def prompt_for_new_project_name(default_name: str) -> str:
     print("\nProject name")
-    print(f"  Must be lowercase and hyphen-separated  (e.g. my-cool-project)")
     print(f"  Press Enter to use the suggested name.")
     print("  " + "─" * 48)
     print("  [b] Back   [q] Quit")
@@ -2303,8 +2302,8 @@ def prompt_for_new_project_name(default_name: str) -> str:
             return default_name
         if not valid_project_name(name):
             print(
-                "  Invalid name. Use only lowercase letters, numbers, and hyphens.\n"
-                '  Cannot contain \\ / : * ? " < > | or be a Windows reserved name.'
+                '  Invalid name. Cannot contain \\ / : * ? " < > |\n'
+                "  or be a Windows reserved name (CON, NUL, etc.)."
             )
             continue
         return name
@@ -3330,8 +3329,8 @@ def main() -> None:
 
     if args.name and not valid_project_name(args.name):
         parser.error(
-            'Invalid --name. Folder names cannot contain \\ / : * ? " < > | '
-            "or be Windows reserved names (CON, PRN, NUL, etc.)."
+            'Invalid --name. Cannot contain \\ / : * ? " < > | '
+            "or be a Windows reserved name (CON, NUL, etc.)."
         )
 
     fully_scripted = bool(args.name and args.path)
