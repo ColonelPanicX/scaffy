@@ -2546,6 +2546,7 @@ def save_chat(target_root: Path, session_id: str | None = None, list_sessions: b
             mtime = datetime.fromtimestamp(f.stat().st_mtime, tz=TZ).strftime("%m.%d.%Y %H:%M")
             size_kb = f.stat().st_size // 1024
             print(f"  {f.stem[:8]}...  {mtime}  {size_kb} KB")
+        print("\nTo save a specific session: scaffy --save-session --session-id <prefix>")
         return
 
     if session_id:
@@ -2699,6 +2700,7 @@ def save_chat_codex(target_root: Path, session_id: str | None = None, list_sessi
         for s in sessions[:10]:
             preview = (s.get("first_user_message") or "")[:80]
             print(f"  {s['id']}  {_codex_iso_from_ms(s.get('created_at_ms'))}  {preview}")
+        print("\nTo save a specific session: scaffy --save-session --session-id <prefix>")
         return
 
     if not sessions:
@@ -2825,6 +2827,7 @@ def save_chat_gemini(target_root: Path, session_id: str | None = None, list_sess
             except OSError:
                 pass
             print(f"  {f.stem[:36]}  {mtime}  {preview}")
+        print("\nTo save a specific session: scaffy --save-session --session-id <prefix>")
         return
 
     if session_id:
