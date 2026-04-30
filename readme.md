@@ -27,7 +27,7 @@ Requires Python 3.9+. No dependencies to install.
    python3 scaffy.py
    ```
 
-3. Follow the prompts: project name, target path, governance level, platform, and an optional description
+3. Follow the prompts — at any step, type `b` to go back or `q` to quit
 4. When scaffolding completes, the terminal prints the initial prompt — copy it and paste into your AI agent to start your first session
 
 To skip the prompts entirely:
@@ -83,7 +83,7 @@ python3 scaffy.py --dry-run
 
 | Flag | Description | Default |
 |---|---|---|
-| `--name NAME` | Project name (lowercase, hyphen-separated recommended) | interactive |
+| `--name NAME` | Project name | interactive |
 | `--path PATH` | Base directory for scaffold installation | interactive |
 | `--force` | Overwrite existing files | off |
 | `--dry-run` | Show planned actions without writing | off |
@@ -92,6 +92,7 @@ python3 scaffy.py --dry-run
 | `--license LICENSE` | `mit`, `apache-2.0`, `gpl-3.0`, `agpl-3.0`, `bsd-2-clause`, `bsd-3-clause`, `mpl-2.0`, `unlicense`, or `none` — writes a `LICENSE` file | interactive (`none`) |
 | `--init-git` | Run `git init` in the project root after scaffolding | off |
 | `--description TEXT` | Short description injected into `context.md` | interactive (optional) |
+| `--cli CLI` | Agent CLI for `--save-session` / `--list-sessions`: `claude`, `codex`, `gemini` | auto-detect |
 
 ## Governance Modes
 
@@ -118,8 +119,9 @@ The scaffold installs four trigger phrases into the agent contract and initial p
 - **`CLOSE SESSION`** — Agent writes a session summary and updates the kanban board.
   Use at the end of every session.
 - **`SAVE CHAT`** — Exports the full session transcript to `.collab/chat-logs/` as a markdown
-  file. Filename: `MM.DD.YYYY-claude-chat.md`. Session UUID preserved in the header for
-  traceability. **Currently Claude Code only — Gemini CLI and Codex CLI support coming soon.**
+  file. Session UUID preserved in the header for traceability. Supported for Claude Code,
+  Gemini CLI, and Codex CLI — scaffy auto-detects the running agent. Override with
+  `scaffy --save-session --cli <agent>` if needed.
 
 ## Brainstorm Workflow
 
@@ -238,8 +240,7 @@ Windows users: `scafrag.exe` is available in the [latest release](https://github
 ## Behavior
 
 - If `--name` and `--path` are both provided, runs non-interactively.
-- Otherwise prompts for: mode (new/existing), target directory, project name, governance mode,
-  and description.
+- Otherwise launches an interactive wizard: at any prompt, type `b` to go back one step or `q` to quit.
 - Existing `.gitignore` is not overwritten — template is written to `.collab/.gitignore.template` instead.
 - Uses `America/New_York` and `MM.DD.YYYY` date formatting in generated templates.
 
