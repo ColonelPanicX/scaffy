@@ -120,8 +120,10 @@ The scaffold installs four trigger phrases into the agent contract and initial p
   Use at the end of every session.
 - **`SAVE CHAT`** — Exports the full session transcript to `.collab/chat-logs/` as a markdown
   file. Session UUID preserved in the header for traceability. Supported for Claude Code,
-  Gemini CLI, and Codex CLI — scaffy auto-detects the running agent. Override with
-  `scaffy --save-session --cli <agent>` if needed.
+  Gemini CLI, and Codex CLI. scaffy auto-detects the running agent when invoked from inside
+  a chat session. If run from a plain terminal after the session ends, auto-detection is not
+  possible and scaffy will prompt you to select the agent (1/2/3). Use
+  `scaffy --save-session --cli <agent>` to skip the prompt.
 
 ## Brainstorm Workflow
 

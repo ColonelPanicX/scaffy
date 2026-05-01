@@ -442,10 +442,10 @@ When an idea graduates to a formal ticket:
 
 <!--
 Format:
-- [ ] TASK-###: Description (@owner) [p?] [area:?] [type:?]
+- [ ] {ticket_prefix}-###: Description (@owner) [p?] [area:?] [type:?]
 Examples:
-- [ ] TASK-001: Draft project plan (@user) [p1] [area:planning] [type:doc]
-- [ ] TASK-002: Implement exporter refactor (@claude) [p2] [area:exporters] [type:feature]
+- [ ] {ticket_prefix}-001: Draft project plan (@user) [p1] [area:planning] [type:doc]
+- [ ] {ticket_prefix}-002: Implement first feature (@claude) [p2] [area:core] [type:feature]
 -->
 
 ## Working Rules
@@ -915,6 +915,7 @@ timezone: America/New_York
 governance_mode: {governance_mode}
 platform: {platform}
 license: {license}
+ticket_prefix: {ticket_prefix}
 """,
 
 
@@ -2387,11 +2388,28 @@ def prompt_for_description() -> str:
     return value
 
 
+def prompt_for_ticket_prefix() -> str:
+    print("\nTask ID prefix  (3-5 alphanumeric characters, e.g. SCAF, PROD):")
+    print("  Used in the kanban board: PREFIX-001, PREFIX-002, etc.")
+    print("  Unique prefixes help distinguish tasks across multiple projects.")
+    print("  " + "─" * 56)
+    print("  [b] Back   [q] Quit   (Enter = use TASK)")
+    while True:
+        raw = prompt_nav("Prefix [TASK]: ").strip().upper()
+        if raw in ("B", "Q"):
+            raise BackSignal() if raw == "B" else QuitSignal()
+        if raw == "":
+            return "TASK"
+        if raw.isalnum() and 3 <= len(raw) <= 5:
+            return raw
+        print("  Must be 3–5 alphanumeric characters (letters and numbers only).")
+
+
 # ---------------------------------------------------------------------------
 # Interactive wizard
 # ---------------------------------------------------------------------------
 
-_WIZARD_ORDER = ["mode", "target", "name", "governance", "platform", "license", "description", "confirm"]
+_WIZARD_ORDER = ["mode", "target", "name", "governance", "platform", "license", "description", "ticket_prefix", "confirm"]
 
 
 def _wizard_should_skip(step: str, collected: dict) -> bool:
@@ -2428,6 +2446,8 @@ def _wizard_run_step(step: str, collected: dict, args: argparse.Namespace) -> ob
         return prompt_for_license()
     if step == "description":
         return prompt_for_description()
+    if step == "ticket_prefix":
+        return prompt_for_ticket_prefix()
     if step == "confirm":
         return _wizard_confirm(collected, args)
     raise ValueError(f"Unknown wizard step: {step}")
@@ -2458,6 +2478,7 @@ def _wizard_confirm(collected: dict, args: argparse.Namespace) -> object:
     desc = collected.get("description", "")
     if desc:
         print(f"  Description: {desc}")
+    print(f"  Task prefix: {collected.get('ticket_prefix', 'TASK')}")
     print(f"  Date:        {timestamp} (America/New_York)")
     if target_root.exists() and not args.force:
         print("\n  Note: Target already exists. Existing files will be skipped.")
@@ -2543,6 +2564,7 @@ def render_template(
     platform: str,
     license_id: str,
     date: str,
+    ticket_prefix: str = "TASK",
 ) -> str:
     description_rendered = description if description else "<!-- Add a brief description of this project -->"
     replacements = {
@@ -2552,6 +2574,7 @@ def render_template(
         "{platform}": platform,
         "{license}": license_id,
         "{date}": date,
+        "{ticket_prefix}": ticket_prefix,
     }
     for placeholder, value in replacements.items():
         content = content.replace(placeholder, value)
@@ -2567,8 +2590,8 @@ _CODEX_STATE_DB = Path.home() / ".codex" / "state_5.sqlite"
 _GEMINI_TMP_DIR = Path.home() / ".gemini" / "tmp"
 
 
-def _detect_agent() -> str:
-    """Detect which AI agent CLI is currently running scaffy."""
+def _detect_agent() -> str | None:
+    """Detect which AI agent CLI is currently running scaffy. Returns None if unknown."""
     env = os.environ
     if env.get("CLAUDECODE") or env.get("AI_AGENT", "").startswith("claude"):
         return "claude"
@@ -2594,7 +2617,7 @@ def _detect_agent() -> str:
                 break
     except (OSError, ValueError):
         pass
-    return "claude"
+    return None
 
 
 def _find_claude_project_dir(cwd: Path) -> Path | None:
@@ -3137,6 +3160,7 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
     governance_mode = meta.get("governance_mode", "standard")
     platform = meta.get("platform", "none")
     license_id = meta.get("license", "none")
+    ticket_prefix = meta.get("ticket_prefix", "TASK")
 
     timestamp = meta.get("created", now_tz().strftime("%m.%d.%Y"))
     description = ""
@@ -3148,6 +3172,7 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
         platform=platform,
         license_id=license_id,
         date=timestamp,
+        ticket_prefix=ticket_prefix,
     )
 
     # Determine the mode based on whether .collab/ was a new or existing project.
@@ -3307,12 +3332,23 @@ def main() -> None:
                         help="Agent CLI to export sessions from (--save-session mode). Auto-detected if omitted.")
     parser.add_argument("--init-git", action="store_true", help="Run git init in the project root after scaffolding.")
     parser.add_argument("--description", metavar="TEXT", default="", help="Short project description.")
+    parser.add_argument("--ticket-prefix", metavar="PREFIX", default="", help="Task ID prefix (3-5 alphanumeric chars, e.g. SCAF). Default: TASK.")
     args = parser.parse_args()
 
     # --- Save-chat mode ---
     if args.save_session or args.list_sessions:
         target = Path(args.path).expanduser().resolve() if args.path else Path.cwd()
         cli = args.cli or _detect_agent()
+        if cli is None:
+            print("Could not auto-detect agent. Which CLI are you using?")
+            print("  1) claude")
+            print("  2) codex")
+            print("  3) gemini")
+            choice = input("Enter 1/2/3 or name: ").strip().lower()
+            cli = {"1": "claude", "2": "codex", "3": "gemini"}.get(choice, choice)
+            if cli not in ("claude", "codex", "gemini"):
+                print(f"Unknown agent '{cli}'. Use --cli {{claude,codex,gemini}}.", file=sys.stderr)
+                sys.exit(1)
         if cli == "codex":
             save_chat_codex(target, session_id=args.session_id, list_sessions=args.list_sessions)
         elif cli == "gemini":
@@ -3343,6 +3379,8 @@ def main() -> None:
         platform = args.platform or "none"
         license_id = args.license or "none"
         description = args.description
+        raw_prefix = (args.ticket_prefix or "").strip().upper()
+        ticket_prefix = raw_prefix if (raw_prefix.isalnum() and 3 <= len(raw_prefix) <= 5) else "TASK"
     else:
         result = _run_interactive_wizard(args)
         if result is None:
@@ -3365,6 +3403,7 @@ def main() -> None:
         platform = result["platform"]
         license_id = result.get("license", "none")
         description = result.get("description", "")
+        ticket_prefix = result.get("ticket_prefix", "TASK")
 
     # .gitignore fallback
     gitignore_dest = target_root / ".gitignore"
@@ -3382,6 +3421,7 @@ def main() -> None:
         platform=platform,
         license_id=license_id,
         date=timestamp,
+        ticket_prefix=ticket_prefix,
     )
 
     # Scripted mode: print summary here (interactive mode shows summary in wizard confirm step)
@@ -3395,6 +3435,7 @@ def main() -> None:
         print(f"Governance: {governance_mode}")
         print(f"Platform:   {platform}")
         print(f"License:    {license_id}")
+        print(f"Prefix:     {ticket_prefix}")
         print(f"Date:       {timestamp} (America/New_York)")
         if target_root.exists() and not args.dry_run and not args.force:
             print("Notice: Target exists. Existing files will be skipped. Use --force to overwrite.")
