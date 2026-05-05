@@ -1,6 +1,7 @@
 project: scaffy-example
-created: 04.30.2026
+created: 05.05.2026
 timezone: America/New_York
 governance_mode: standard
 platform: github
 license: none
+ticket_prefix: TASK

@@ -5,7 +5,7 @@ Format:
 - [ ] TASK-###: Description (@owner) [p?] [area:?] [type:?]
 Examples:
 - [ ] TASK-001: Draft project plan (@user) [p1] [area:planning] [type:doc]
-- [ ] TASK-002: Implement exporter refactor (@claude) [p2] [area:exporters] [type:feature]
+- [ ] TASK-002: Implement first feature (@claude) [p2] [area:core] [type:feature]
 -->
 
 ## Working Rules
