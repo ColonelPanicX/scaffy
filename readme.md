@@ -2,6 +2,22 @@
 
 Initialize a project with a standard `.collab/` workspace scaffold for multi-agent collaboration.
 
+## Install
+
+```bash
+pipx install scaffy-collab
+```
+
+That's it. `scaffy` is now available system-wide. Requires Python 3.9+ and [pipx](https://pipx.pypa.io).
+
+```bash
+scaffy --help
+```
+
+> **Windows users:** grab the GUI instead — see below.
+
+---
+
 ## Quickstart
 
 ### Windows — GUI (exe)
@@ -18,22 +34,24 @@ Initialize a project with a standard `.collab/` workspace scaffold for multi-age
 
 ### Python — CLI (Mac / Linux / Windows)
 
-Requires Python 3.9+. No dependencies to install.
+**Recommended:** install via pipx (see above), then run:
 
-1. Download `scaffy.py` from the [latest release](https://github.com/ColonelPanicX/scaffy/releases/latest)
-2. Run it — scaffy will walk you through the rest:
+```bash
+scaffy
+```
 
-   ```bash
-   python3 scaffy.py
-   ```
+**Alternative:** download `scaffy.py` from the [latest release](https://github.com/ColonelPanicX/scaffy/releases/latest) and run directly — no install needed:
 
-3. Follow the prompts — at any step, type `b` to go back or `q` to quit
-4. When scaffolding completes, the terminal prints the initial prompt — copy it and paste into your AI agent to start your first session
+```bash
+python3 scaffy.py
+```
+
+Either way, scaffy walks you through the rest. Follow the prompts — at any step, type `b` to go back or `q` to quit. When scaffolding completes, the terminal prints the initial prompt — copy it and paste into your AI agent to start your first session.
 
 To skip the prompts entirely:
 
 ```bash
-python3 scaffy.py --name my-project --path /path/to/base \
+scaffy --name my-project --path /path/to/base \
   --governance standard \
   --platform github
 ```
@@ -63,20 +81,20 @@ python3 scaffy.py --name my-project --path /path/to/base \
 
 ```bash
 # Interactive
-python3 scaffy.py
+scaffy
 
 # Fully scripted (non-interactive)
-python3 scaffy.py --name my-project --path /path/to/base
+scaffy --name my-project --path /path/to/base
 
 # With flags
-python3 scaffy.py --name my-project --path /path/to/base \
+scaffy --name my-project --path /path/to/base \
   --governance strict \
   --platform github \
   --description "Automates AWS resource exports to Excel" \
   --init-git
 
 # Preview without writing
-python3 scaffy.py --dry-run
+scaffy --dry-run
 ```
 
 ## Flags
@@ -92,7 +110,7 @@ python3 scaffy.py --dry-run
 | `--license LICENSE` | `mit`, `apache-2.0`, `gpl-3.0`, `agpl-3.0`, `bsd-2-clause`, `bsd-3-clause`, `mpl-2.0`, `unlicense`, or `none` — writes a `LICENSE` file | interactive (`none`) |
 | `--init-git` | Run `git init` in the project root after scaffolding | off |
 | `--description TEXT` | Short description injected into `context.md` | interactive (optional) |
-| `--cli CLI` | Agent CLI for `--save-session` / `--list-sessions`: `claude`, `codex`, `gemini` | auto-detect |
+| `--cli CLI` | Agent CLI for `--save-chat` / `--list-chats`: `claude`, `codex`, `gemini` | auto-detect |
 
 ## Governance Modes
 
@@ -123,7 +141,7 @@ The scaffold installs four trigger phrases into the agent contract and initial p
   Gemini CLI, and Codex CLI. scaffy auto-detects the running agent when invoked from inside
   a chat session. If run from a plain terminal after the session ends, auto-detection is not
   possible and scaffy will prompt you to select the agent (1/2/3). Use
-  `scaffy --save-session --cli <agent>` to skip the prompt.
+  `scaffy --save-chat --cli <agent>` to skip the prompt.
 
 ## Brainstorm Workflow
 
@@ -245,37 +263,6 @@ Windows users: `scafrag.exe` is available in the [latest release](https://github
 - Otherwise launches an interactive wizard: at any prompt, type `b` to go back one step or `q` to quit.
 - Existing `.gitignore` is not overwritten — template is written to `.collab/.gitignore.template` instead.
 - Uses `America/New_York` and `MM.DD.YYYY` date formatting in generated templates.
-
-## Make `scaffy` Available Everywhere
-
-```bash
-mkdir -p ~/.local/bin
-chmod +x path/to/scaffy/scaffy.py
-ln -sf path/to/scaffy/scaffy.py ~/.local/bin/scaffy
-```
-
-Ensure `~/.local/bin` is on your `PATH` (Bash):
-
-```bash
-grep -q 'export PATH="$HOME/.local/bin:$PATH"' ~/.bashrc \
-  || echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
-source ~/.bashrc
-```
-
-Verify:
-
-```bash
-which scaffy
-scaffy --help
-```
-
-If you move the script later, update the symlink:
-
-```bash
-ln -sf /new/path/to/scaffy.py ~/.local/bin/scaffy
-```
-
----
 
 ## See Also
 

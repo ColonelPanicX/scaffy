@@ -7,8 +7,8 @@ Usage:
                      [--governance MODE] [--platform PLATFORM] [--license LICENSE]
                      [--init-git] [--description TEXT]
     python scaffy.py --upgrade [--path PATH] [--force] [--dry-run]
-    python scaffy.py --save-session [--path PATH] [--session-id UUID] [--cli {claude,codex,gemini}]
-    python scaffy.py --list-sessions [--path PATH] [--cli {claude,codex,gemini}]
+    python scaffy.py --save-chat [--path PATH] [--session-id UUID] [--cli {claude,codex,gemini}]
+    python scaffy.py --list-chats [--path PATH] [--cli {claude,codex,gemini}]
 
 If --name and --path are both provided, runs without interactive prompts.
 Otherwise uses interactive menus for mode/target/governance selection.
@@ -58,6 +58,8 @@ except KeyError:
         file=sys.stderr,
     )
     TZ = timezone.utc
+
+__version__ = "1.8.0"
 
 GOVERNANCE_MODES = ("none", "lightweight", "standard", "strict")
 PLATFORM_MODES = ("github", "gitlab", "azure-devops", "none")
@@ -381,8 +383,8 @@ When the user types exactly:
 Immediately execute the Chat Save Protocol — do not wait for additional instructions:
 
 1. Run from the project root:
-   - If scaffy is on PATH: `scaffy --save-session`
-   - Otherwise: `python3 scaffy.py --save-session`
+   - If scaffy is on PATH: `scaffy --save-chat`
+   - Otherwise: `python3 scaffy.py --save-chat`
    - scaffy auto-detects the running agent (Claude, Codex, Gemini). Override with `--cli {claude,codex,gemini}` if needed.
 2. The tool saves the transcript to `.collab/chat-logs/` automatically.
 3. Confirm the filename and path to the user.
@@ -2745,7 +2747,7 @@ def save_chat(target_root: Path, session_id: str | None = None, list_sessions: b
             mtime = datetime.fromtimestamp(f.stat().st_mtime, tz=TZ).strftime("%m.%d.%Y %H:%M")
             size_kb = f.stat().st_size // 1024
             print(f"  {f.stem[:8]}...  {mtime}  {size_kb} KB")
-        print("\nTo save a specific session: scaffy --save-session --session-id <prefix>")
+        print("\nTo save a specific session: scaffy --save-chat --session-id <prefix>")
         return
 
     if session_id:
@@ -2899,7 +2901,7 @@ def save_chat_codex(target_root: Path, session_id: str | None = None, list_sessi
         for s in sessions[:10]:
             preview = (s.get("first_user_message") or "")[:80]
             print(f"  {s['id']}  {_codex_iso_from_ms(s.get('created_at_ms'))}  {preview}")
-        print("\nTo save a specific session: scaffy --save-session --session-id <prefix>")
+        print("\nTo save a specific session: scaffy --save-chat --session-id <prefix>")
         return
 
     if not sessions:
@@ -3026,7 +3028,7 @@ def save_chat_gemini(target_root: Path, session_id: str | None = None, list_sess
             except OSError:
                 pass
             print(f"  {f.stem[:36]}  {mtime}  {preview}")
-        print("\nTo save a specific session: scaffy --save-session --session-id <prefix>")
+        print("\nTo save a specific session: scaffy --save-chat --session-id <prefix>")
         return
 
     if session_id:
@@ -3322,21 +3324,21 @@ def main() -> None:
     )
     parser.add_argument("--upgrade", action="store_true",
                         help="Upgrade an existing .collab/ scaffold to the latest templates.")
-    parser.add_argument("--save-session", action="store_true",
+    parser.add_argument("--save-chat", action="store_true",
                         help="Export the current agent session to .collab/chat-logs/. Use --cli to specify the agent.")
     parser.add_argument("--session-id", metavar="UUID",
-                        help="Session UUID prefix to export (--save-session only). Default: most recent.")
-    parser.add_argument("--list-sessions", action="store_true",
-                        help="List recent agent sessions (--save-session mode). Use --cli to specify the agent.")
+                        help="Session UUID prefix to export (--save-chat only). Default: most recent.")
+    parser.add_argument("--list-chats", action="store_true",
+                        help="List recent agent sessions (--save-chat mode). Use --cli to specify the agent.")
     parser.add_argument("--cli", choices=["claude", "codex", "gemini"], default=None,
-                        help="Agent CLI to export sessions from (--save-session mode). Auto-detected if omitted.")
+                        help="Agent CLI to export sessions from (--save-chat mode). Auto-detected if omitted.")
     parser.add_argument("--init-git", action="store_true", help="Run git init in the project root after scaffolding.")
     parser.add_argument("--description", metavar="TEXT", default="", help="Short project description.")
     parser.add_argument("--ticket-prefix", metavar="PREFIX", default="", help="Task ID prefix (3-5 alphanumeric chars, e.g. SCAF). Default: TASK.")
     args = parser.parse_args()
 
     # --- Save-chat mode ---
-    if args.save_session or args.list_sessions:
+    if args.save_chat or args.list_chats:
         target = Path(args.path).expanduser().resolve() if args.path else Path.cwd()
         cli = args.cli or _detect_agent()
         if cli is None:
@@ -3350,11 +3352,11 @@ def main() -> None:
                 print(f"Unknown agent '{cli}'. Use --cli {{claude,codex,gemini}}.", file=sys.stderr)
                 sys.exit(1)
         if cli == "codex":
-            save_chat_codex(target, session_id=args.session_id, list_sessions=args.list_sessions)
+            save_chat_codex(target, session_id=args.session_id, list_sessions=args.list_chats)
         elif cli == "gemini":
-            save_chat_gemini(target, session_id=args.session_id, list_sessions=args.list_sessions)
+            save_chat_gemini(target, session_id=args.session_id, list_sessions=args.list_chats)
         else:
-            save_chat(target, session_id=args.session_id, list_sessions=args.list_sessions)
+            save_chat(target, session_id=args.session_id, list_sessions=args.list_chats)
         return
 
     # --- Upgrade mode ---

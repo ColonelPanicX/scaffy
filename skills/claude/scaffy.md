@@ -57,8 +57,8 @@ Execute immediately — do not wait for additional instructions:
 Execute immediately — do not wait for additional instructions:
 
 1. Run from the project root:
-   - If scaffy is on PATH: `scaffy --save-session`
-   - Otherwise: `python3 scaffy.py --save-session`
+   - If scaffy is on PATH: `scaffy --save-chat`
+   - Otherwise: `python3 scaffy.py --save-chat`
 2. The tool saves the transcript to `.collab/chat-logs/` automatically.
 3. Confirm the filename and path to the user.
 

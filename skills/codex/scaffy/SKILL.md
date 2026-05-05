@@ -13,22 +13,22 @@ When the user types `SAVE CHAT`, export the current Codex session transcript:
 
 ```bash
 # If scaffy is on PATH:
-scaffy --save-session --cli codex
+scaffy --save-chat --cli codex
 
 # Otherwise:
-python3 scaffy.py --save-session --cli codex
+python3 scaffy.py --save-chat --cli codex
 ```
 
 The transcript is saved to `.collab/chat-logs/MM.DD.YYYY-codex-chat.md` in the current project directory. Confirm the filename and path to the user.
 
 To list recent sessions:
 ```bash
-scaffy --list-sessions --cli codex
+scaffy --list-chats --cli codex
 ```
 
 To export a specific session by UUID prefix:
 ```bash
-scaffy --save-session --cli codex --session-id <uuid-prefix>
+scaffy --save-chat --cli codex --session-id <uuid-prefix>
 ```
 
 ---
