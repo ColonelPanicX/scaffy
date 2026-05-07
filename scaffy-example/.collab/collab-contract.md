@@ -158,18 +158,18 @@ Immediately execute the Chat Save Protocol — do not wait for additional instru
 
 ## Brainstorm Directory
 
-- **Location**: `.collab/brainstorm/`
+- **Location**: `.collab/brainstorms/`
 - **Purpose**: Persistent thinking space for ideas that aren't ready to become tickets.
   Use this directory to capture, workshop, and evolve ideas collaboratively before they
   enter the formal task pipeline.
 - **One file per idea cluster** — name files descriptively (lowercase, hyphen-separated).
-- **Use the template** at `.collab/brainstorm/brainstorm-template.md` as a starting point.
-- **Nothing in `brainstorm/` is required to go anywhere.** Ideas can sit, evolve, or be parked
+- **Use the template** at `.collab/brainstorms/brainstorm-template.md` as a starting point.
+- **Nothing in `brainstorms/` is required to go anywhere.** Ideas can sit, evolve, or be parked
   indefinitely. The value is keeping them on paper so they aren't lost between sessions.
 
-### Agent Behavior in `brainstorm/`
+### Agent Behavior in `brainstorms/`
 
-When the user points you at a file in `.collab/brainstorm/`:
+When the user points you at a file in `.collab/brainstorms/`:
 
 1. Read the full file before responding.
 2. Engage honestly — assess whether the idea has merit, identify gaps, ask clarifying questions.
@@ -183,4 +183,4 @@ When the user points you at a file in `.collab/brainstorm/`:
 When an idea graduates to a formal ticket:
 
 - Add `Graduated → Issue #__ on [date]` at the bottom of the file.
-- Leave the file in `brainstorm/` as a record — do not delete it.
+- Leave the file in `brainstorms/` as a record — do not delete it.

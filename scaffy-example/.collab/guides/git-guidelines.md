@@ -319,8 +319,9 @@ Use this to bootstrap quickly without over-engineering.
 - Require status checks for CI where available.
 
 4. Enable work item and change request templates:
-- Use `issue-template.md` from this directory as your baseline.
-- Add a PR/MR template with summary, test evidence, and linked work item.
+- Use `.collab/playbooks/templates/issue-template.md` as your baseline.
+- Use `.collab/playbooks/templates/pull-request-template.md` as your PR/MR template.
+- Copy into your platform's template directory (`.github/`, `.gitlab/`, etc.).
 
 5. Set up a basic board:
 - Columns: `Inbox`, `Backlog`, `To Do`, `In Progress`, `Blocked`, `In Review`, `Done`.

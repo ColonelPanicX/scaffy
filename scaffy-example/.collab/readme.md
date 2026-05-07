@@ -25,7 +25,7 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
 - Use `SAVE CHAT` to export the full session transcript to `chat-logs/`.
 - Write session summaries to `session-summaries/` on close.
 - Keep `kanban-board.md` current — it is the internal source of truth for task status.
-- Use `brainstorm/` to workshop pre-ticket concepts. See `collab-contract.md` for agent behavior rules.
+- Use `brainstorms/` to workshop pre-ticket concepts. See `collab-contract.md` for agent behavior rules.
 
 ## Directory Structure
 
@@ -40,7 +40,7 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
     (use zero-padded sequence like `02`, `03`, etc.)
 - `chat-logs/` — Full session transcripts exported via `SAVE CHAT`.
   Naming: `MM.DD.YYYY-claude-chat.md` (or `MM.DD.YYYY-##-claude-chat.md` for multiple per day).
-- `brainstorm/` — Thinking space for pre-ticket concepts and proposals.
+- `brainstorms/` — Thinking space for pre-ticket concepts and proposals.
   - `brainstorm-template.md` — Starter template for new brainstorm files.
 - `audit/` — Analysis reports, planning documents, and progress tracking artifacts.
 - `supporting-artifacts/` — Adjacent project materials: diagrams, research notes, specs,
@@ -51,9 +51,12 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
   - `initial-prompt.md` — First-session onboarding prompt (paste on first launch).
   - `agent-profile.md` — Fill-in questionnaire for generating agent instruction files.
   - `agent-md-prompt.md` — Prompt to generate CLAUDE.md / AGENTS.md from the profile.
-- `playbooks/` — Reference playbooks; includes a generic coding standards playbook.
-- `git-management/` — Optional VCS platform governance templates.
-  Includes: `git-guidelines.md`, `issue-template.md`, `pull-request-template.md`
+- `guides/` — Reference documents explaining the *why* behind project conventions.
+  - `git-guidelines.md` — Git governance modes, branching strategy, label taxonomy, platform notes.
+- `playbooks/` — Step-by-step procedures for common operations.
+  - `coding-playbook.md` — General coding standards and best practices.
+  - `git-governance-lightweight.md` / `git-governance-standard.md` / `git-governance-strict.md` — Execution playbooks per governance mode.
+  - `templates/` — Fill-in-the-blank forms: `issue-template.md`, `pull-request-template.md`.
 
 ## Supporting Artifacts Guidance
 
@@ -75,7 +78,7 @@ Conventions:
 
 ## Brainstorm Directory Guidance
 
-Use `brainstorm/` for concepts that aren't ready to be formal tickets yet — brain dumps, half-formed
+Use `brainstorms/` for concepts that aren't ready to be formal tickets yet — brain dumps, half-formed
 proposals, things worth thinking through before committing to a sprint.
 
 Workflow:
