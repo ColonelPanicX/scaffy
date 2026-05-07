@@ -111,6 +111,7 @@ scaffy --dry-run
 | `--license LICENSE` | `mit`, `apache-2.0`, `gpl-3.0`, `agpl-3.0`, `bsd-2-clause`, `bsd-3-clause`, `mpl-2.0`, `unlicense`, or `none` — writes a `LICENSE` file | interactive (`none`) |
 | `--init-git` | Run `git init` in the project root after scaffolding | off |
 | `--description TEXT` | Short description injected into `context.md` | interactive (optional) |
+| `--upgrade` | Upgrade an existing `.collab/` scaffold to the latest templates | off |
 | `--cli CLI` | Agent CLI for `--save-chat` / `--list-chats`: `claude`, `codex`, `gemini` | auto-detect |
 
 ## Governance Modes
@@ -183,6 +184,21 @@ for the project root.
 development best practices — code quality, testing, security, documentation, and more.
 It's a starting point: edit it down to what matters for your project, or leave it as a
 general reference for your agent to consult.
+
+### Git Governance
+
+`.collab/guides/git-guidelines.md` is a reference guide explaining the governance modes,
+branching strategy, label taxonomy, PR standards, and platform notes for GitHub and GitLab.
+
+Three matching execution playbooks in `.collab/playbooks/` give each governance mode a
+concrete step-by-step procedure for starting work, committing, opening PRs, merging, and
+handling hotfixes:
+
+- `git-governance-lightweight.md` — prototypes and sandboxes
+- `git-governance-standard.md` — active product development (default)
+- `git-governance-strict.md` — compliance-sensitive or auditable work
+
+Fill-in-the-blank issue and PR templates live in `.collab/playbooks/templates/`.
 
 ### Agent Skills
 
