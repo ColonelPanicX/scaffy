@@ -193,9 +193,12 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
   - `initial-prompt.md` — First-session onboarding prompt (paste on first launch).
   - `agent-profile.md` — Fill-in questionnaire for generating agent instruction files.
   - `agent-md-prompt.md` — Prompt to generate CLAUDE.md / AGENTS.md from the profile.
-- `playbooks/` — Reference playbooks; includes a generic coding standards playbook.
-- `git-management/` — Optional VCS platform governance templates.
-  Includes: `git-guidelines.md`, `issue-template.md`, `pull-request-template.md`
+- `guides/` — Reference documents explaining the *why* behind project conventions.
+  - `git-guidelines.md` — Git governance modes, branching strategy, label taxonomy, platform notes.
+- `playbooks/` — Step-by-step procedures for common operations.
+  - `coding-playbook.md` — General coding standards and best practices.
+  - `git-governance-lightweight.md` / `git-governance-standard.md` / `git-governance-strict.md` — Execution playbooks per governance mode.
+  - `templates/` — Fill-in-the-blank forms: `issue-template.md`, `pull-request-template.md`.
 
 ## Supporting Artifacts Guidance
 
@@ -941,7 +944,7 @@ summary: "1-2 sentence outcome of the session."
 - Files touched (paths only).
 """,
 
-    ".collab/git-management/git-guidelines.md": """\
+    ".collab/guides/git-guidelines.md": """\
 ---
 
 # Git Platform Governance & AI Agent Operating Guidelines
@@ -1263,8 +1266,9 @@ Use this to bootstrap quickly without over-engineering.
 - Require status checks for CI where available.
 
 4. Enable work item and change request templates:
-- Use `issue-template.md` from this directory as your baseline.
-- Add a PR/MR template with summary, test evidence, and linked work item.
+- Use `.collab/playbooks/templates/issue-template.md` as your baseline.
+- Use `.collab/playbooks/templates/pull-request-template.md` as your PR/MR template.
+- Copy into your platform's template directory (`.github/`, `.gitlab/`, etc.).
 
 5. Set up a basic board:
 - Columns: `Inbox`, `Backlog`, `To Do`, `In Progress`, `Blocked`, `In Review`, `Done`.
@@ -1284,7 +1288,7 @@ This checklist is intentionally minimal. Expand controls only where risk or team
 ---
 """,
 
-    ".collab/git-management/issue-template.md": """\
+    ".collab/playbooks/templates/issue-template.md": """\
 ---
 
 # Work Item Template (Platform-Agnostic)
@@ -1412,7 +1416,7 @@ For Lightweight mode, apply only the labels your repo actively uses.
 ---
 """,
 
-    ".collab/git-management/pull-request-template.md": """\
+    ".collab/playbooks/templates/pull-request-template.md": """\
 ---
 
 # Change Request Template (Platform-Agnostic)
@@ -1508,6 +1512,196 @@ Follow-up links:
 - [ ] Test evidence is adequate for risk level
 - [ ] No sensitive data or secrets introduced
 - [ ] Rollback path is clear for high-impact changes
+
+---
+""",
+
+    ".collab/playbooks/git-governance-lightweight.md": """\
+---
+title: Git Governance Playbook — Lightweight
+description: Step-by-step procedures for prototypes, sandboxes, and early-stage projects
+governance_mode: lightweight
+---
+
+# Git Governance Playbook — Lightweight
+
+**When to use:** Prototypes, sandboxes, personal projects, early ideation.
+**Reference:** `.collab/guides/git-guidelines.md` explains the *why* behind each mode.
+
+> Upgrade to Standard before shipping to production or onboarding a second contributor.
+
+---
+
+## Starting Work
+
+1. No issue required for small changes — commit directly to `main` or a short-lived branch.
+2. For anything taking more than a session, create a branch: `feature/<slug>` or `fix/<slug>`.
+3. Keep a rough record of intent in the commit message — that's your audit trail.
+
+## Committing
+
+- Commit early and often. No minimum quality gate.
+- Use conventional commit format when practical: `feat:`, `fix:`, `chore:`, `docs:`.
+- No required reviewer. Self-merge is fine.
+
+## Opening a PR / MR
+
+- Optional at this mode. Use when you want a change record or are unsure about a change.
+- No required sections — a one-line summary is enough.
+
+## Merging
+
+- Merge when the work is done. No approval gate.
+- Squash or merge commit — your preference.
+- Delete the branch after merge if using feature branches.
+
+## Hotfixes
+
+- Commit directly to `main`. Document what broke and why in the commit message.
+
+## When to Upgrade
+
+Upgrade to Standard mode when:
+
+- A second contributor joins.
+- The project ships to a real user or production system.
+- You find yourself losing track of what changed and why.
+
+---
+""",
+
+    ".collab/playbooks/git-governance-standard.md": """\
+---
+title: Git Governance Playbook — Standard
+description: Step-by-step procedures for active product development (recommended default)
+governance_mode: standard
+---
+
+# Git Governance Playbook — Standard
+
+**When to use:** Most active projects — team delivery, side products, anything shipping to users.
+**Reference:** `.collab/guides/git-guidelines.md` explains the *why* behind each mode.
+
+---
+
+## Starting Work
+
+1. Confirm a work item (issue/ticket) exists. Create one if not.
+2. Assign yourself and move the item to **In Progress** on the board.
+3. Create a branch from the primary integration branch:
+   - `feature/<slug>` or `issue-<number>-<slug>`
+   - Keep branches short-lived — one concern per branch.
+
+## Committing
+
+- Use conventional commit format: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`.
+- Each commit should be coherent and buildable.
+- Reference issue numbers in commits when relevant: `fix: resolve race condition (#42)`.
+
+## Opening a PR / MR
+
+1. Use the template at `.collab/playbooks/templates/pull-request-template.md`.
+2. Required sections: **Summary**, **Why**, **Linked Work Item(s)**, **Validation**.
+3. Link to the work item with `Closes #<number>` for auto-close.
+4. Keep scope tight — one concern per PR.
+
+## Merging
+
+- **Solo maintainer:** No reviewer required. PR serves as a change record. Merge when CI passes (if applicable).
+- **Multi-contributor:** One approval required before merge.
+- Do not merge if required checks fail.
+- Delete the branch after merge.
+- Move the work item to **Done** on the board.
+
+## Hotfixes
+
+1. Create a `fix/<slug>` branch directly from `main`.
+2. Open a PR with a minimal description — note it is a hotfix.
+3. Merge with expedited review (or self-merge if solo).
+4. Create a post-hoc tracking issue if one doesn't exist.
+
+## Blocked Work
+
+- Move the work item to **Blocked** on the board with a brief reason.
+- Unblock or reassign before end of sprint/week.
+
+---
+""",
+
+    ".collab/playbooks/git-governance-strict.md": """\
+---
+title: Git Governance Playbook — Strict
+description: Step-by-step procedures for compliance-sensitive or high-risk projects
+governance_mode: strict
+---
+
+# Git Governance Playbook — Strict
+
+**When to use:** Compliance requirements, auditable work, high-risk or high-visibility systems.
+**Reference:** `.collab/guides/git-guidelines.md` explains the *why* behind each mode.
+
+---
+
+## Starting Work
+
+1. Work item must exist, be approved, and have clear acceptance criteria before work begins.
+2. Assign yourself and move to **In Progress**. Do not start without an approved item.
+3. Create a branch:
+   - `feature/<slug>`, `fix/<slug>`, or `issue-<number>-<slug>`.
+   - No direct commits to protected branches (`main`, `develop`, release branches).
+4. If scope is unclear, resolve it before writing code — not during review.
+
+## Committing
+
+- Conventional commit format required: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`.
+- Each commit must be coherent, atomic, and buildable.
+- Reference issue numbers in every non-trivial commit.
+- No "WIP" commits on shared branches.
+
+## Opening a PR / MR
+
+1. Use the full template at `.collab/playbooks/templates/pull-request-template.md`.
+2. All sections required: **Summary**, **Why**, **Linked Work Item(s)**, **Scope**, **Validation**, **Risk Assessment**, **Rollout and Rollback**.
+3. Risk assessment must be completed — do not leave fields blank.
+4. PR must pass all CI/CD checks before review is requested.
+5. `Closes #<number>` required in description.
+
+## Merging
+
+1. Minimum two approvals required (or one if only two contributors exist).
+2. All required status checks must pass.
+3. Reviewer checklist in the PR template must be completed by at least one reviewer.
+4. No force pushes to protected branches.
+5. Delete branch after merge.
+6. Update work item to **Done** and note any follow-up items.
+
+## Exceptions and Fast Paths
+
+If a process bypass is unavoidable (incident response, build-break):
+
+1. Document the reason in the commit message or PR description.
+2. Tag the PR/commit with an exception label.
+3. Create a follow-up issue within 24 hours for governance cleanup.
+4. Note the exception in the next review cadence.
+
+Never skip exceptions silently — the audit trail must show the bypass and the reason.
+
+## Hotfixes
+
+1. Create `fix/<slug>` branch from `main` (or current release branch).
+2. Open a PR immediately — do not wait for work to be complete to create the PR.
+3. Use the PR template with at minimum: Summary, Risk Assessment, Rollback Plan.
+4. Expedited review by one qualified reviewer. Post-hoc second review within 48 hours.
+5. Create post-hoc issue documenting root cause and prevention plan.
+
+## Governance Review
+
+Review this playbook and the project's governance posture:
+
+- At each sprint retrospective.
+- When team composition changes.
+- After any incident or near-miss.
+- Before entering a compliance audit period.
 
 ---
 """,
@@ -3085,11 +3279,12 @@ def ensure_required_directories(target_root: Path, mode: str) -> None:
         target_root / ".collab" / "brainstorms",
         target_root / ".collab" / "audit",
         target_root / ".collab" / "chat-logs",
-        target_root / ".collab" / "git-management",
+        target_root / ".collab" / "guides",
         target_root / ".collab" / "session-summaries",
         target_root / ".collab" / "supporting-artifacts",
         target_root / ".collab" / "prompts",
         target_root / ".collab" / "playbooks",
+        target_root / ".collab" / "playbooks" / "templates",
     ]
     for path in required_dirs:
         path.mkdir(parents=True, exist_ok=True)
@@ -3110,6 +3305,39 @@ def _parse_project_yaml(yaml_path: Path) -> dict[str, str]:
             key, _, value = line.partition(":")
             data[key.strip()] = value.strip()
     return data
+
+
+def _migrate_git_management(collab_dir: Path, dry_run: bool) -> list[str]:
+    """Move .collab/git-management/ files to guides/ and playbooks/templates/. Returns log lines."""
+    git_mgmt_dir = collab_dir / "git-management"
+    log: list[str] = []
+
+    if not git_mgmt_dir.exists():
+        return log
+
+    moves = [
+        (git_mgmt_dir / "git-guidelines.md",      collab_dir / "guides" / "git-guidelines.md"),
+        (git_mgmt_dir / "issue-template.md",       collab_dir / "playbooks" / "templates" / "issue-template.md"),
+        (git_mgmt_dir / "pull-request-template.md", collab_dir / "playbooks" / "templates" / "pull-request-template.md"),
+    ]
+
+    for src, dst in moves:
+        if src.exists() and not dst.exists():
+            if not dry_run:
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                src.rename(dst)
+            log.append(f"  rename .collab/git-management/{src.name} → {dst.relative_to(collab_dir.parent)}")
+
+    # Remove git-management/ if now empty
+    if not dry_run and git_mgmt_dir.exists():
+        remaining = list(git_mgmt_dir.iterdir())
+        if not remaining:
+            git_mgmt_dir.rmdir()
+            log.append("  rmdir  .collab/git-management/ (empty after migration)")
+        else:
+            log.append(f"  note   .collab/git-management/ not removed — {len(remaining)} file(s) remain")
+
+    return log
 
 
 def _migrate_ideas_to_brainstorms(collab_dir: Path, dry_run: bool) -> list[str]:
@@ -3212,11 +3440,12 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
     required_dirs = [
         collab_dir / "brainstorms",
         collab_dir / "audit",
-        collab_dir / "git-management",
+        collab_dir / "guides",
         collab_dir / "session-summaries",
         collab_dir / "supporting-artifacts",
         collab_dir / "prompts",
         collab_dir / "playbooks",
+        collab_dir / "playbooks" / "templates",
     ]
 
     # Execute
@@ -3230,7 +3459,8 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
           f"platform={platform}, license={license_id}")
     print()
 
-    migrated = _migrate_ideas_to_brainstorms(collab_dir, dry_run)
+    migrated = _migrate_git_management(collab_dir, dry_run)
+    migrated += _migrate_ideas_to_brainstorms(collab_dir, dry_run)
 
     for d in required_dirs:
         if not d.exists():

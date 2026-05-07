@@ -73,8 +73,9 @@ scaffy --name my-project --path /path/to/base \
 - `.collab/audit/` — Analysis reports and planning documents
 - `.collab/supporting-artifacts/` — Diagrams, specs, research, and other project-adjacent materials
 - `.collab/prompts/` — Reusable agent prompts, including the agent instructions generator
-- `.collab/playbooks/` — Reference playbooks; includes a generic coding standards playbook
-- `.collab/git-management/` — Git governance templates
+- `.collab/guides/` — Reference docs: git governance modes, branching strategy, label taxonomy
+- `.collab/playbooks/` — Step-by-step procedures: coding standards, per-mode git governance playbooks
+- `.collab/playbooks/templates/` — Fill-in-the-blank forms: issue and pull request templates
 - `.gitignore` — Sane defaults (`.collab/` and agent dirs excluded from version control)
 
 ## Usage
