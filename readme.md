@@ -68,7 +68,7 @@ scaffy --name my-project --path /path/to/base \
 - `.collab/project.yaml` — Machine-readable project metadata
 - `.collab/prompts/initial-prompt.md` — First-session onboarding prompt (paste on first launch)
 - `.collab/prompts/agent-profile.md` — Fill-in questionnaire for generating agent instructions (CLAUDE.md, AGENTS.md, etc.)
-- `.collab/brainstorm/` — Thinking space for pre-ticket concepts and proposals
+- `.collab/brainstorms/` — Thinking space for pre-ticket concepts and proposals
 - `.collab/session-summaries/` — Session summary directory with template
 - `.collab/audit/` — Analysis reports and planning documents
 - `.collab/supporting-artifacts/` — Diagrams, specs, research, and other project-adjacent materials
@@ -145,20 +145,20 @@ The scaffold installs four trigger phrases into the agent contract and initial p
 
 ## Brainstorm Workflow
 
-The `.collab/brainstorm/` directory is a persistent thinking space for ideas that aren't ready to
+The `.collab/brainstorms/` directory is a persistent thinking space for ideas that aren't ready to
 become formal tickets yet. It bridges the gap between "I had a thought" and "I opened an issue."
 
 **How it works:**
 
-1. Create a file for your idea: `.collab/brainstorm/my-idea-name.md`
-2. Use `.collab/brainstorm/brainstorm-template.md` as a starting point
+1. Create a file for your idea: `.collab/brainstorms/my-idea-name.md`
+2. Use `.collab/brainstorms/brainstorm-template.md` as a starting point
 3. Brain dump freely — no rules, no required format in the idea body
 4. When ready, point your agent at the file: *"Hey, look at this idea — does it have legs?"*
 5. The agent will engage honestly, then append a dated summary to the **Discussion Log** section
 6. Ideas evolve over time. Status tracks the lifecycle: `drafting` → `workshopping` → `parked` or `graduated`
 7. When an idea becomes a ticket, note the issue number at the bottom and leave the file in place
 
-**Key property:** nothing in `brainstorm/` is required to go anywhere. Ideas can sit, evolve slowly,
+**Key property:** nothing in `brainstorms/` is required to go anywhere. Ideas can sit, evolve slowly,
 or be parked indefinitely. The point is keeping them on paper so they aren't lost when a session closes.
 
 When scaffolding into an **existing project**, scaffy will print a reminder to migrate any ideas

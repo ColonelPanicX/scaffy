@@ -167,7 +167,7 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
 - Use `SAVE CHAT` to export the full session transcript to `chat-logs/`.
 - Write session summaries to `session-summaries/` on close.
 - Keep `kanban-board.md` current — it is the internal source of truth for task status.
-- Use `brainstorm/` to workshop pre-ticket concepts. See `collab-contract.md` for agent behavior rules.
+- Use `brainstorms/` to workshop pre-ticket concepts. See `collab-contract.md` for agent behavior rules.
 
 ## Directory Structure
 
@@ -182,7 +182,7 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
     (use zero-padded sequence like `02`, `03`, etc.)
 - `chat-logs/` — Full session transcripts exported via `SAVE CHAT`.
   Naming: `MM.DD.YYYY-claude-chat.md` (or `MM.DD.YYYY-##-claude-chat.md` for multiple per day).
-- `brainstorm/` — Thinking space for pre-ticket concepts and proposals.
+- `brainstorms/` — Thinking space for pre-ticket concepts and proposals.
   - `brainstorm-template.md` — Starter template for new brainstorm files.
 - `audit/` — Analysis reports, planning documents, and progress tracking artifacts.
 - `supporting-artifacts/` — Adjacent project materials: diagrams, research notes, specs,
@@ -217,7 +217,7 @@ Conventions:
 
 ## Brainstorm Directory Guidance
 
-Use `brainstorm/` for concepts that aren't ready to be formal tickets yet — brain dumps, half-formed
+Use `brainstorms/` for concepts that aren't ready to be formal tickets yet — brain dumps, half-formed
 proposals, things worth thinking through before committing to a sprint.
 
 Workflow:
@@ -411,18 +411,18 @@ Immediately execute the Chat Save Protocol — do not wait for additional instru
 
 ## Brainstorm Directory
 
-- **Location**: `.collab/brainstorm/`
+- **Location**: `.collab/brainstorms/`
 - **Purpose**: Persistent thinking space for ideas that aren't ready to become tickets.
   Use this directory to capture, workshop, and evolve ideas collaboratively before they
   enter the formal task pipeline.
 - **One file per idea cluster** — name files descriptively (lowercase, hyphen-separated).
-- **Use the template** at `.collab/brainstorm/brainstorm-template.md` as a starting point.
-- **Nothing in `brainstorm/` is required to go anywhere.** Ideas can sit, evolve, or be parked
+- **Use the template** at `.collab/brainstorms/brainstorm-template.md` as a starting point.
+- **Nothing in `brainstorms/` is required to go anywhere.** Ideas can sit, evolve, or be parked
   indefinitely. The value is keeping them on paper so they aren't lost between sessions.
 
-### Agent Behavior in `brainstorm/`
+### Agent Behavior in `brainstorms/`
 
-When the user points you at a file in `.collab/brainstorm/`:
+When the user points you at a file in `.collab/brainstorms/`:
 
 1. Read the full file before responding.
 2. Engage honestly — assess whether the idea has merit, identify gaps, ask clarifying questions.
@@ -436,7 +436,7 @@ When the user points you at a file in `.collab/brainstorm/`:
 When an idea graduates to a formal ticket:
 
 - Add `Graduated → Issue #__ on [date]` at the bottom of the file.
-- Leave the file in `brainstorm/` as a record — do not delete it.
+- Leave the file in `brainstorms/` as a record — do not delete it.
 """,
 
     ".collab/kanban-board.md": """\
@@ -483,7 +483,7 @@ Examples:
 ## Done
 """,
 
-    ".collab/brainstorm/brainstorm-template.md": """\
+    ".collab/brainstorms/brainstorm-template.md": """\
 # Idea Title
 
 _Started: {date}_
@@ -3082,7 +3082,7 @@ def safe_write(dest: Path, content: str, force: bool) -> None:
 
 def ensure_required_directories(target_root: Path, mode: str) -> None:
     required_dirs = [
-        target_root / ".collab" / "brainstorm",
+        target_root / ".collab" / "brainstorms",
         target_root / ".collab" / "audit",
         target_root / ".collab" / "chat-logs",
         target_root / ".collab" / "git-management",
@@ -3112,32 +3112,32 @@ def _parse_project_yaml(yaml_path: Path) -> dict[str, str]:
     return data
 
 
-def _migrate_ideas_to_brainstorm(collab_dir: Path, dry_run: bool) -> list[str]:
-    """Rename .collab/ideas/ → .collab/brainstorm/ if present. Returns log lines."""
+def _migrate_ideas_to_brainstorms(collab_dir: Path, dry_run: bool) -> list[str]:
+    """Rename .collab/ideas/ or .collab/brainstorm/ → .collab/brainstorms/ if present. Returns log lines."""
     ideas_dir = collab_dir / "ideas"
     brainstorm_dir = collab_dir / "brainstorm"
+    brainstorms_dir = collab_dir / "brainstorms"
     log: list[str] = []
 
-    if not ideas_dir.exists():
+    # Migrate ideas/ → brainstorms/ (legacy v1 scaffolds)
+    if ideas_dir.exists() and not brainstorms_dir.exists():
+        old_template = ideas_dir / "idea-template.md"
+        new_template = ideas_dir / "brainstorm-template.md"
+        if not dry_run:
+            if old_template.exists() and not new_template.exists():
+                old_template.rename(new_template)
+            ideas_dir.rename(brainstorms_dir)
+        log.append("  rename .collab/ideas/ → .collab/brainstorms/")
+        if old_template.exists() or dry_run:
+            log.append("  rename .collab/brainstorms/idea-template.md → brainstorm-template.md")
         return log
 
-    if brainstorm_dir.exists():
-        log.append("  note   ideas/ and brainstorm/ both exist — skipping auto-rename")
+    # Migrate brainstorm/ → brainstorms/ (v1.5–v1.8 scaffolds)
+    if brainstorm_dir.exists() and not brainstorms_dir.exists():
+        if not dry_run:
+            brainstorm_dir.rename(brainstorms_dir)
+        log.append("  rename .collab/brainstorm/ → .collab/brainstorms/")
         return log
-
-    old_template = ideas_dir / "idea-template.md"
-    new_template = ideas_dir / "brainstorm-template.md"  # inside ideas/ before rename
-
-    if not dry_run:
-        # Rename the template first (still inside ideas/)
-        if old_template.exists() and not new_template.exists():
-            old_template.rename(new_template)
-        # Then rename the directory
-        ideas_dir.rename(brainstorm_dir)
-
-    log.append("  rename .collab/ideas/ → .collab/brainstorm/")
-    if old_template.exists() or dry_run:
-        log.append("  rename .collab/brainstorm/idea-template.md → brainstorm-template.md")
 
     return log
 
@@ -3210,7 +3210,7 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
 
     # Directories
     required_dirs = [
-        collab_dir / "brainstorm",
+        collab_dir / "brainstorms",
         collab_dir / "audit",
         collab_dir / "git-management",
         collab_dir / "session-summaries",
@@ -3230,7 +3230,7 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
           f"platform={platform}, license={license_id}")
     print()
 
-    migrated = _migrate_ideas_to_brainstorm(collab_dir, dry_run)
+    migrated = _migrate_ideas_to_brainstorms(collab_dir, dry_run)
 
     for d in required_dirs:
         if not d.exists():
@@ -3496,14 +3496,14 @@ def main() -> None:
 
     if mode == "existing":
         print(f"""
-┌─ Brainstorm Directory ───────────────────────────────────────────────────────┐
+┌─ Brainstorms Directory ──────────────────────────────────────────────────────┐
 │                                                                              │
-│  .collab/brainstorm/ is ready.                                               │
+│  .collab/brainstorms/ is ready.                                              │
 │                                                                              │
 │  If you have ideas already in your head or written down somewhere else,      │
 │  now is a great time to move them in. Use the template to get started:       │
 │                                                                              │
-│    .collab/brainstorm/brainstorm-template.md                                 │
+│    .collab/brainstorms/brainstorm-template.md                                │
 │                                                                              │
 │  One file per idea. No rules. Workshop them with your agent when ready.      │
 │                                                                              │
