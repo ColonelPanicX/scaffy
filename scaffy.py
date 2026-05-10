@@ -184,6 +184,8 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
   Naming: `MM.DD.YYYY-claude-chat.md` (or `MM.DD.YYYY-##-claude-chat.md` for multiple per day).
 - `brainstorms/` — Thinking space for pre-ticket concepts and proposals.
   - `brainstorm-template.md` — Starter template for new brainstorm files.
+- `project-plans/` — Structured plans bridging brainstormed ideas and kanban execution.
+  - `project-plan-template.md` — Starter template for new plan files.
 - `audit/` — Analysis reports, planning documents, and progress tracking artifacts.
 - `supporting-artifacts/` — Adjacent project materials: diagrams, research notes, specs,
   reference docs, exported data, and anything else that supports the work but isn't
@@ -231,6 +233,19 @@ Workflow:
 - When an idea is ready to become a ticket, note it at the bottom of the file and graduate it
   to your issue tracker. Leave the file in place as a record.
 - Ideas that don't go anywhere can be left as `parked` — they might be useful later.
+
+## Project Plans Directory Guidance
+
+Use `project-plans/` for work that has moved past the "is this a good idea?" stage but isn't
+ready to be sprint tasks yet. Plans define the goal, phases, and tasks before anything hits the board.
+
+Workflow:
+- Create one file per initiative, named descriptively (e.g., `auth-refactor.md`).
+- Use `project-plan-template.md` as a starting point.
+- Work with an agent to fill out phases and surface risks. Capture decisions in the file itself.
+- When a phase is approved for execution, promote its tasks to `kanban-board.md` and note the
+  date at the bottom of the plan file.
+- Plans that are complete or cancelled can be marked `archived` — leave them in place as a record.
 
 ## Audit Directory Guidance
 
@@ -440,6 +455,32 @@ When an idea graduates to a formal ticket:
 
 - Add `Graduated → Issue #__ on [date]` at the bottom of the file.
 - Leave the file in `brainstorms/` as a record — do not delete it.
+
+---
+
+## Project Plans Directory
+
+- **Location**: `.collab/project-plans/`
+- **Purpose**: Structured planning space between brainstorming and execution.
+  Use this directory to define goals, phases, and tasks before they enter the kanban pipeline.
+- **One file per plan** — name files descriptively (lowercase, hyphen-separated).
+- **Use the template** at `.collab/project-plans/project-plan-template.md` as a starting point.
+
+### Agent Behavior in `project-plans/`
+
+When the user points you at a file in `.collab/project-plans/`:
+
+1. Read the full file before responding.
+2. Clarify the goal and phases — ask questions rather than assuming scope.
+3. Do **not** promote tasks to the kanban board without explicit user approval.
+4. Update the `Status` field as the plan progresses:
+   `draft` → `active` → `complete` or `archived`
+
+When a plan phase is approved for execution:
+
+- Promote its tasks to `.collab/kanban-board.md`.
+- Note it at the bottom of the plan file: `Phase [N] promoted to kanban on [date]`.
+- Leave the plan file in place — it is the planning record.
 """,
 
     ".collab/kanban-board.md": """\
@@ -509,6 +550,49 @@ _Status: drafting_
 
 ---
 <!-- When graduated: Graduated → Issue #__ on [date] -->
+""",
+
+    ".collab/project-plans/project-plan-template.md": """\
+# Plan Title
+
+_Created: {date}_
+_Status: draft_
+_Linked issue: —_
+
+<!-- Status values: draft | active | complete | archived -->
+
+## Goal
+
+<!-- What does success look like? One clear sentence. -->
+
+## Background
+
+<!-- Why this plan exists. Problem being solved, context needed. -->
+
+## Phases
+
+### Phase 1: [Name]
+
+- [ ] Task description
+- [ ] Task description
+
+### Phase 2: [Name]
+
+- [ ] Task description
+
+## Risks & Dependencies
+
+| Risk / Dependency | Impact | Mitigation |
+|---|---|---|
+| | | |
+
+## Open Questions
+
+<!-- Unresolved decisions that would block or change the plan. -->
+
+---
+<!-- When phases promoted: Phase [N] promoted to kanban on MM.DD.YYYY -->
+<!-- When complete: Completed on MM.DD.YYYY -->
 """,
 
     ".collab/prompts/agent-profile.md": """\
@@ -3280,6 +3364,7 @@ def ensure_required_directories(target_root: Path, mode: str) -> None:
         target_root / ".collab" / "audit",
         target_root / ".collab" / "chat-logs",
         target_root / ".collab" / "guides",
+        target_root / ".collab" / "project-plans",
         target_root / ".collab" / "session-summaries",
         target_root / ".collab" / "supporting-artifacts",
         target_root / ".collab" / "prompts",
@@ -3441,6 +3526,7 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
         collab_dir / "brainstorms",
         collab_dir / "audit",
         collab_dir / "guides",
+        collab_dir / "project-plans",
         collab_dir / "session-summaries",
         collab_dir / "supporting-artifacts",
         collab_dir / "prompts",
