@@ -214,7 +214,7 @@ The [`skills/`](skills/) directory contains installable slash commands for Claud
 
 ```bash
 # Claude Code
-cp skills/claude/scaffy.md ~/.claude/commands/scaffy.md
+cp skills/claude/scaffy.md ~/.claude/skills/scaffy.md
 
 # Gemini CLI
 cp skills/gemini/scaffy.toml ~/.gemini/commands/scaffy.toml
