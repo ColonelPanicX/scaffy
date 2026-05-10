@@ -107,11 +107,15 @@ scaffy --dry-run
 | `--force` | Overwrite existing files | off |
 | `--dry-run` | Show planned actions without writing | off |
 | `--governance MODE` | `lightweight`, `standard`, or `strict` | interactive (`standard`) |
-| `--platform PLATFORM` | `github`, `gitlab`, or `none` — writes platform-native issue and PR/MR templates | interactive (`none`) |
+| `--platform PLATFORM` | `github`, `gitlab`, `azure-devops`, or `none` — writes platform-native issue and PR/MR templates | interactive (`none`) |
 | `--license LICENSE` | `mit`, `apache-2.0`, `gpl-3.0`, `agpl-3.0`, `bsd-2-clause`, `bsd-3-clause`, `mpl-2.0`, `unlicense`, or `none` — writes a `LICENSE` file | interactive (`none`) |
+| `--ticket-prefix PREFIX` | Task ID prefix rendered in `kanban-board.md` (e.g. `SCAF`) | interactive (`TASK`) |
 | `--init-git` | Run `git init` in the project root after scaffolding | off |
 | `--description TEXT` | Short description injected into `context.md` | interactive (optional) |
 | `--upgrade` | Upgrade an existing `.collab/` scaffold to the latest templates | off |
+| `--save-chat` | Export the current agent session to `.collab/chat-logs/` | off |
+| `--list-chats` | List recent agent sessions | off |
+| `--session-id UUID` | Session UUID prefix to export (use with `--save-chat`) | most recent |
 | `--cli CLI` | Agent CLI for `--save-chat` / `--list-chats`: `claude`, `codex`, `gemini` | auto-detect |
 
 ## Governance Modes
@@ -214,13 +218,13 @@ The [`skills/`](skills/) directory contains installable slash commands for Claud
 
 ```bash
 # Claude Code
-cp -r skills/claude/scaffy ~/.claude/skills/scaffy
+mkdir -p ~/.claude/skills && cp -r skills/claude/scaffy ~/.claude/skills/scaffy
 
 # Gemini CLI
-cp -r skills/gemini/scaffy ~/.gemini/skills/scaffy
+mkdir -p ~/.gemini/skills && cp -r skills/gemini/scaffy ~/.gemini/skills/scaffy
 
 # Codex CLI
-cp -r skills/codex/scaffy ~/.codex/skills/scaffy
+mkdir -p ~/.codex/skills && cp -r skills/codex/scaffy ~/.codex/skills/scaffy
 ```
 
 **Claude & Gemini:** type `/scaffy` to bootstrap a project — the agent gathers inputs and runs scaffy for you. Pass a project name or path as arguments to skip the prompts.

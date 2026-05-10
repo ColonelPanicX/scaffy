@@ -3524,7 +3524,7 @@ def main() -> None:
         description="Initialize a multi-agent project scaffold.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("--name", metavar="NAME", help="Project name (lowercase, hyphen-separated).")
+    parser.add_argument("--name", metavar="NAME", help="Project name (any valid folder name).")
     parser.add_argument("--path", metavar="PATH", help="Target directory where scaffold files will be installed.")
     parser.add_argument("--force", action="store_true", help="Overwrite existing files.")
     parser.add_argument("--dry-run", action="store_true", help="Show planned actions without writing.")
