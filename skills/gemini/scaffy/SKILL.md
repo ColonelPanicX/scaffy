@@ -1,39 +1,76 @@
 ---
 name: scaffy
-description: Bootstrap a .collab/ multi-agent workspace using scaffy, or export the current Gemini session transcript via SAVE CHAT.
+description: Bootstrap a .collab/ multi-agent workspace using scaffy, or run session protocols (open/save/close/save-chat) for an existing scaffy project.
 ---
 
 # scaffy — .collab/ Workspace Bootstrapper
 
-scaffy generates a `.collab/` multi-agent workspace into any project directory: collab contract, kanban board, context file, session summary templates, git governance templates, and agent instruction files (CLAUDE.md, AGENTS.md, GEMINI.md).
+Route based on the user's request:
 
-## Save Chat (SAVE CHAT)
+- `open session` → **Session Open Protocol**
+- `save session` → **Session Save Protocol**
+- `close session` → **Session Close Protocol**
+- `save chat` → **Chat Save Protocol**
+- anything else (project name, path, flags, or empty) → **Scaffold a new project**
 
-When the user types `SAVE CHAT`, export the current Gemini session:
+---
 
-```bash
-# If scaffy is on PATH:
-scaffy --save-chat --cli gemini
+## Session Open Protocol
 
-# Otherwise:
-python3 scaffy.py --save-chat --cli gemini
-```
+Execute immediately — do not wait for additional instructions:
 
-The transcript is saved to `.collab/chat-logs/MM.DD.YYYY-gemini-chat.md` in the current project directory. Confirm the filename and path to the user.
+1. Find and read the most recent 1–2 session summaries in `.collab/session-summaries/` (sort by filename date, newest first; skip `session-summary-template.md`).
+2. Read `.collab/kanban-board.md` for current task state.
+3. Read `.collab/context.md` if it exists.
+4. Deliver a concise session resume covering:
+   - What was accomplished last session
+   - What is currently In Progress or Blocked on the board
+   - What is up next
+   - Any open questions or flags left from the last session
 
-To list recent sessions:
-```bash
-scaffy --list-chats --cli gemini
-```
+Do not re-read `collab-contract.md` — focus on current state, not process rules.
 
-To export a specific session by ID fragment:
-```bash
-scaffy --save-chat --cli gemini --session-id <id-fragment>
-```
+---
+
+## Session Save Protocol
+
+Execute immediately — do not wait for additional instructions:
+
+1. Write a session summary to `.collab/session-summaries/` (always a new file — never overwrite):
+   - First summary that day: `MM.DD.YYYY-gemini-summary.md`
+   - Additional same-day saves: `MM.DD.YYYY-02-gemini-summary.md`, `MM.DD.YYYY-03-gemini-summary.md`, etc.
+   - Use the template at `.collab/session-summaries/session-summary-template.md`.
+2. Update `.collab/kanban-board.md` to reflect current task state.
+3. Confirm the checkpoint was saved. Do not end the session — continue working.
+
+---
+
+## Session Close Protocol
+
+Execute immediately — do not wait for additional instructions:
+
+1. Write a session summary to `.collab/session-summaries/` using the same naming convention as Save (always a new file).
+2. Update `.collab/kanban-board.md` to reflect current task state.
+3. Confirm completion to the user.
+
+---
+
+## Chat Save Protocol
+
+Execute immediately — do not wait for additional instructions:
+
+1. Run from the project root:
+   - If scaffy is on PATH: `scaffy --save-chat --cli gemini`
+2. The tool saves the transcript to `.collab/chat-logs/` automatically.
+3. Confirm the filename and path to the user.
 
 ---
 
 ## Scaffold a new project
+
+scaffy generates a `.collab/` multi-agent workspace into any project directory: collab contract, kanban board, context file, session summary templates, git governance templates, and agent instruction files (CLAUDE.md, AGENTS.md, GEMINI.md).
+
+## Steps
 
 1. **Find scaffy** — verify it's available:
    - Run `scaffy --help` to confirm
@@ -48,7 +85,7 @@ scaffy --save-chat --cli gemini --session-id <id-fragment>
 
 3. **Run non-interactively:**
    ```bash
-   python3 scaffy.py --name <name> --path <path> --governance <mode> --platform <platform> [--description "<text>"]
+   scaffy --name <name> --path <path> --governance <mode> --platform <platform> [--description "<text>"]
    ```
 
 4. **Report back** — confirm what was written, then print the contents of `<path>/.collab/prompts/initial-prompt.md` so the user can copy it into their agent on first launch.
@@ -56,7 +93,7 @@ scaffy --save-chat --cli gemini --session-id <id-fragment>
 ## Upgrade an existing scaffold
 
 ```bash
-python3 scaffy.py --upgrade --path <path>
+scaffy --upgrade --path <path>
 ```
 
 Diffs the existing `.collab/` against current templates and adds any missing files or directories. Does not overwrite existing files unless `--force` is added.
