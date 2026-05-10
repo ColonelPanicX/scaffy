@@ -1,3 +1,8 @@
+---
+name: scaffy
+description: Bootstrap a .collab/ multi-agent workspace, or run session protocols (open/save/close/save-chat) for an existing scaffy project.
+---
+
 scaffy skill — bootstrap a `.collab/` workspace, or run session protocols for an existing one.
 
 ## Dispatch on $ARGUMENTS

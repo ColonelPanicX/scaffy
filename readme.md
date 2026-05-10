@@ -204,20 +204,20 @@ Fill-in-the-blank issue and PR templates live in `.collab/playbooks/templates/`.
 
 The [`skills/`](skills/) directory contains installable slash commands for Claude Code and Gemini CLI, and a passive skill for Codex CLI. Once installed, your agent knows how to run scaffy without you explaining it.
 
-| Agent | File | Type |
+| Agent | File | Invocation |
 |---|---|---|
-| Claude Code | `skills/claude/scaffy.md` | `/scaffy` slash command |
-| Gemini CLI | `skills/gemini/scaffy.toml` | `/scaffy` slash command |
-| Codex CLI | `skills/codex/scaffy/` | AI-activated (no slash command) |
+| Claude Code | `skills/claude/scaffy/SKILL.md` | `/scaffy` |
+| Gemini CLI | `skills/gemini/scaffy/SKILL.md` | `/scaffy` |
+| Codex CLI | `skills/codex/scaffy/SKILL.md` | AI-activated |
 
 **Install (global):**
 
 ```bash
 # Claude Code
-cp skills/claude/scaffy.md ~/.claude/skills/scaffy.md
+cp -r skills/claude/scaffy ~/.claude/skills/scaffy
 
 # Gemini CLI
-cp skills/gemini/scaffy.toml ~/.gemini/commands/scaffy.toml
+cp -r skills/gemini/scaffy ~/.gemini/skills/scaffy
 
 # Codex CLI
 cp -r skills/codex/scaffy ~/.codex/skills/scaffy

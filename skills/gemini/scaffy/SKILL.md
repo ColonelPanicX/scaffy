@@ -1,42 +1,46 @@
-description = "Bootstrap a new .collab/ collaboration workspace using scaffy, or export a Gemini session transcript via SAVE CHAT."
+---
+name: scaffy
+description: Bootstrap a .collab/ multi-agent workspace using scaffy, or export the current Gemini session transcript via SAVE CHAT.
+---
 
-prompt = """
-Bootstrap a new `.collab/` collaboration workspace using scaffy, or export the current session transcript. If {{args}} is `save chat`, run the Save Chat protocol. If {{args}} contains a project name or path, use them as a head start for scaffolding.
+# scaffy — .collab/ Workspace Bootstrapper
+
+scaffy generates a `.collab/` multi-agent workspace into any project directory: collab contract, kanban board, context file, session summary templates, git governance templates, and agent instruction files (CLAUDE.md, AGENTS.md, GEMINI.md).
 
 ## Save Chat (SAVE CHAT)
 
 When the user types `SAVE CHAT`, export the current Gemini session:
 
 ```bash
-scaffy --save-session
+# If scaffy is on PATH:
+scaffy --save-chat --cli gemini
+
+# Otherwise:
+python3 scaffy.py --save-chat --cli gemini
 ```
 
-scaffy auto-detects Gemini CLI via the `GEMINI_CLI` environment variable. The transcript is saved to `.collab/chat-logs/MM.DD.YYYY-gemini-chat.md`. Confirm the filename and path to the user.
+The transcript is saved to `.collab/chat-logs/MM.DD.YYYY-gemini-chat.md` in the current project directory. Confirm the filename and path to the user.
 
-To list recent Gemini sessions:
+To list recent sessions:
 ```bash
-scaffy --list-sessions
+scaffy --list-chats --cli gemini
 ```
 
 To export a specific session by ID fragment:
 ```bash
-scaffy --save-session --session-id <id-fragment>
+scaffy --save-chat --cli gemini --session-id <id-fragment>
 ```
 
 ---
 
-## What scaffy does
-
-scaffy generates a `.collab/` multi-agent workspace into any project directory: collab contract, kanban board, context file, session summary templates, git governance templates, and agent instruction files (CLAUDE.md, AGENTS.md, GEMINI.md).
-
-## Steps
+## Scaffold a new project
 
 1. **Find scaffy** — check in order:
    - `scaffy --help` (installed globally via symlink)
    - `python3 scaffy.py --help` (in current directory or project root)
    - If not found, tell the user to download from https://github.com/ColonelPanicX/scaffy/releases/latest
 
-2. **Gather inputs** — extract from {{args}} if present, otherwise ask:
+2. **Gather inputs** — ask the user for:
    - **Project name** — lowercase, hyphen-separated (e.g. `my-project`)
    - **Target path** — base directory where `.collab/` will be created
    - **Governance mode** — `lightweight`, `standard` (default), or `strict`
@@ -66,4 +70,3 @@ Diffs the existing `.collab/` against current templates and adds any missing fil
 | `--dry-run` | Preview planned actions without writing anything |
 | `--init-git` | Run `git init` in the project root after scaffolding |
 | `--license LICENSE` | Write a LICENSE file (`mit`, `apache-2.0`, `gpl-3.0`, `agpl-3.0`, `bsd-2-clause`, `bsd-3-clause`, `mpl-2.0`, `unlicense`) |
-"""
