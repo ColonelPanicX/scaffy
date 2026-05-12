@@ -71,6 +71,8 @@ scaffy --name my-project --path /path/to/base \
 - `.collab/brainstorms/` — Thinking space for pre-ticket concepts and proposals
 - `.collab/session-summaries/` — Session summary directory with template
 - `.collab/audit/` — Analysis reports and planning documents
+- `.collab/project-plans/` — Long-form plans, architecture docs, and multi-phase roadmaps
+- `.collab/skills/` — Project-specific agent skills and slash commands
 - `.collab/supporting-artifacts/` — Diagrams, specs, research, and other project-adjacent materials
 - `.collab/prompts/` — Reusable agent prompts, including the agent instructions generator
 - `.collab/guides/` — Reference docs: git governance modes, branching strategy, label taxonomy
