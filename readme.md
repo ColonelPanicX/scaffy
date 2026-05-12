@@ -71,6 +71,8 @@ scaffy --name my-project --path /path/to/base \
 - `.collab/brainstorms/` — Thinking space for pre-ticket concepts and proposals
 - `.collab/session-summaries/` — Session summary directory with template
 - `.collab/audit/` — Analysis reports and planning documents
+- `.collab/project-plans/` — Long-form plans, architecture docs, and multi-phase roadmaps
+- `.collab/skills/` — Project-specific agent skills and slash commands
 - `.collab/supporting-artifacts/` — Diagrams, specs, research, and other project-adjacent materials
 - `.collab/prompts/` — Reusable agent prompts, including the agent instructions generator
 - `.collab/guides/` — Reference docs: git governance modes, branching strategy, label taxonomy
@@ -229,7 +231,7 @@ mkdir -p ~/.codex/skills && cp -r skills/codex/scaffy ~/.codex/skills/scaffy
 
 **Claude & Gemini:** type `/scaffy` to bootstrap a project — the agent gathers inputs and runs scaffy for you. Pass a project name or path as arguments to skip the prompts.
 
-The Claude skill also handles session protocols. If you use scaffy's session conventions in your projects, you can invoke them via the skill as a more reliable alternative to the plain-text trigger:
+All three skills support session protocols. If you use scaffy's session conventions in your projects, invoke them via the skill:
 
 ```
 /scaffy open session
@@ -238,7 +240,7 @@ The Claude skill also handles session protocols. If you use scaffy's session con
 /scaffy save chat
 ```
 
-**Codex:** no slash command — Codex pulls the skill in automatically when it detects a scaffolding need.
+**Codex:** no slash command — Codex pulls the skill in automatically when it detects a scaffolding or session need.
 
 ---
 

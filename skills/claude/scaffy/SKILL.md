@@ -61,9 +61,7 @@ Execute immediately — do not wait for additional instructions:
 
 Execute immediately — do not wait for additional instructions:
 
-1. Run from the project root:
-   - If scaffy is on PATH: `scaffy --save-chat`
-   - Otherwise: `python3 scaffy.py --save-chat`
+1. Run from the project root: `scaffy --save-chat`
 2. The tool saves the transcript to `.collab/chat-logs/` automatically.
 3. Confirm the filename and path to the user.
 
@@ -88,7 +86,7 @@ scaffy generates a `.collab/` multi-agent workspace into any project directory: 
 
 3. **Run non-interactively:**
    ```bash
-   python3 scaffy.py --name <name> --path <path> --governance <mode> --platform <platform> [--description "<text>"]
+   scaffy --name <name> --path <path> --governance <mode> --platform <platform> [--description "<text>"]
    ```
 
 4. **Report back** — confirm what was written, then print the contents of `<path>/.collab/prompts/initial-prompt.md` so the user can copy it into their agent on first launch.
@@ -96,7 +94,7 @@ scaffy generates a `.collab/` multi-agent workspace into any project directory: 
 ## Upgrade an existing scaffold
 
 ```bash
-python3 scaffy.py --upgrade --path <path>
+scaffy --upgrade --path <path>
 ```
 
 Diffs the existing `.collab/` against current templates and adds any missing files or directories. Does not overwrite existing files unless `--force` is added.
