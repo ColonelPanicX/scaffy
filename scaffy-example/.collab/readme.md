@@ -42,6 +42,8 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
   Naming: `MM.DD.YYYY-claude-chat.md` (or `MM.DD.YYYY-##-claude-chat.md` for multiple per day).
 - `brainstorms/` — Thinking space for pre-ticket concepts and proposals.
   - `brainstorm-template.md` — Starter template for new brainstorm files.
+- `project-plans/` — Structured plans bridging brainstormed ideas and kanban execution.
+  - `project-plan-template.md` — Starter template for new plan files.
 - `audit/` — Analysis reports, planning documents, and progress tracking artifacts.
 - `supporting-artifacts/` — Adjacent project materials: diagrams, research notes, specs,
   reference docs, exported data, and anything else that supports the work but isn't
@@ -89,6 +91,19 @@ Workflow:
 - When an idea is ready to become a ticket, note it at the bottom of the file and graduate it
   to your issue tracker. Leave the file in place as a record.
 - Ideas that don't go anywhere can be left as `parked` — they might be useful later.
+
+## Project Plans Directory Guidance
+
+Use `project-plans/` for work that has moved past the "is this a good idea?" stage but isn't
+ready to be sprint tasks yet. Plans define the goal, phases, and tasks before anything hits the board.
+
+Workflow:
+- Create one file per initiative, named descriptively (e.g., `auth-refactor.md`).
+- Use `project-plan-template.md` as a starting point.
+- Work with an agent to fill out phases and surface risks. Capture decisions in the file itself.
+- When a phase is approved for execution, promote its tasks to `kanban-board.md` and note the
+  date at the bottom of the plan file.
+- Plans that are complete or cancelled can be marked `archived` — leave them in place as a record.
 
 ## Audit Directory Guidance
 

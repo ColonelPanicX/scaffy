@@ -184,3 +184,29 @@ When an idea graduates to a formal ticket:
 
 - Add `Graduated → Issue #__ on [date]` at the bottom of the file.
 - Leave the file in `brainstorms/` as a record — do not delete it.
+
+---
+
+## Project Plans Directory
+
+- **Location**: `.collab/project-plans/`
+- **Purpose**: Structured planning space between brainstorming and execution.
+  Use this directory to define goals, phases, and tasks before they enter the kanban pipeline.
+- **One file per plan** — name files descriptively (lowercase, hyphen-separated).
+- **Use the template** at `.collab/project-plans/project-plan-template.md` as a starting point.
+
+### Agent Behavior in `project-plans/`
+
+When the user points you at a file in `.collab/project-plans/`:
+
+1. Read the full file before responding.
+2. Clarify the goal and phases — ask questions rather than assuming scope.
+3. Do **not** promote tasks to the kanban board without explicit user approval.
+4. Update the `Status` field as the plan progresses:
+   `draft` → `active` → `complete` or `archived`
+
+When a plan phase is approved for execution:
+
+- Promote its tasks to `.collab/kanban-board.md`.
+- Note it at the bottom of the plan file: `Phase [N] promoted to kanban on [date]`.
+- Leave the plan file in place — it is the planning record.
