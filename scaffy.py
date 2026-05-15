@@ -59,7 +59,7 @@ except KeyError:
     )
     TZ = timezone.utc
 
-__version__ = "1.10.0"
+__version__ = "1.10.1"
 
 GOVERNANCE_MODES = ("none", "lightweight", "standard", "strict")
 PLATFORM_MODES = ("github", "gitlab", "azure-devops", "none")

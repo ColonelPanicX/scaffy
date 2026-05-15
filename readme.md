@@ -140,8 +140,9 @@ The scaffold installs four trigger phrases into the agent contract and initial p
 
 - **`OPEN SESSION`** — Agent reads the latest session summary, kanban board, and context,
   then delivers a concise resume of where things stand. Use at the start of every session.
-- **`SAVE SESSION`** — Mid-session checkpoint. Agent writes a summary and updates the kanban,
-  then continues working. Use any time you want to preserve progress without closing.
+- **`SAVE SESSION`** — Mid-session checkpoint. Agent writes a summary, updates the kanban,
+  and generates a **re-entry prompt** — a self-contained block you can paste into a new chat
+  to resume exactly where you left off after clearing context. Then continues working.
 - **`CLOSE SESSION`** — Agent writes a session summary and updates the kanban board.
   Use at the end of every session.
 - **`SAVE CHAT`** — Exports the full session transcript to `.collab/chat-logs/` as a markdown
