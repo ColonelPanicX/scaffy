@@ -40,8 +40,16 @@ Execute immediately — do not wait for additional instructions:
    - First summary that day: `MM.DD.YYYY-codex-summary.md`
    - Additional same-day saves: `MM.DD.YYYY-02-codex-summary.md`, `MM.DD.YYYY-03-codex-summary.md`, etc.
    - Use the template at `.collab/session-summaries/session-summary-template.md`.
+   - Include a `## Re-entry Prompt` section in the summary (see step 3).
 2. Update `.collab/kanban-board.md` to reflect current task state.
-3. Confirm the checkpoint was saved. Do not end the session — continue working.
+3. Generate a re-entry prompt and output it as a copyable block. The prompt should be self-contained — everything a fresh agent needs to pick up exactly where this session left off:
+   - Project name and one-line purpose
+   - What was accomplished this session
+   - What is currently in-flight (active task, any partial work)
+   - What comes next
+   - Any open decisions or blockers
+   Also write this prompt into the `## Re-entry Prompt` section of the session summary file.
+4. Confirm the checkpoint was saved. Do not end the session — continue working.
 
 ---
 

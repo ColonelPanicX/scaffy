@@ -364,14 +364,24 @@ Immediately execute the Session Save Protocol — do not wait for additional ins
    - `MM.DD.YYYY-##-agentname-summary.md` for additional same-day saves/closes
      (use zero-padded sequence like `02`, `03`, etc.).
    - Use the template at `.collab/session-summaries/session-summary-template.md`.
+   - Include a `## Re-entry Prompt` section in the summary (see step 3).
 2. Update `.collab/kanban-board.md` to reflect current task state:
    - Move completed tasks to **Done**.
    - Update statuses of in-progress tasks.
    - Add newly discovered tasks to **Inbox** or **Backlog**.
-3. Confirm the checkpoint was saved. **Do not end the session** — continue working.
+3. Generate a re-entry prompt and output it as a copyable block. The prompt should be
+   self-contained — everything a fresh agent needs to pick up exactly where this session
+   left off:
+   - Project name and one-line purpose
+   - What was accomplished this session
+   - What is currently in-flight (active task, any partial work)
+   - What comes next
+   - Any open decisions or blockers
+   Also write this prompt into the `## Re-entry Prompt` section of the session summary file.
+4. Confirm the checkpoint was saved. **Do not end the session** — continue working.
 
 > Use `SAVE SESSION` as a mid-session checkpoint. If the session is interrupted
-> unexpectedly, the last save can be used to reconstruct context on next `OPEN SESSION`.
+> unexpectedly, paste the re-entry prompt into a new chat to resume with full context.
 
 ### CLOSE SESSION
 
@@ -1026,6 +1036,13 @@ summary: "1-2 sentence outcome of the session."
 
 - Who owns the next action.
 - Files touched (paths only).
+
+## Re-entry Prompt
+
+<!--
+Populated automatically on SAVE SESSION.
+Paste this block into a new chat to resume exactly where this session left off.
+-->
 """,
 
     ".collab/guides/git-guidelines.md": """\
