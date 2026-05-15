@@ -15,3 +15,10 @@ summary: "1-2 sentence outcome of the session."
 
 - Who owns the next action.
 - Files touched (paths only).
+
+## Re-entry Prompt
+
+<!--
+Populated automatically on SAVE SESSION.
+Paste this block into a new chat to resume exactly where this session left off.
+-->
