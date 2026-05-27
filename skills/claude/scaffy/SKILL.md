@@ -1,6 +1,6 @@
 ---
 name: scaffy
-description: Bootstrap a .collab/ multi-agent workspace, or run session protocols (open/save/close/save-chat) for an existing scaffy project.
+description: Bootstrap a .collab/ multi-agent workspace, or run session protocols (initialize/open/save/close/save-chat/brainstorm/project-plan) for an existing scaffy project.
 ---
 
 scaffy skill — bootstrap a `.collab/` workspace, or run session protocols for an existing one.
@@ -9,11 +9,38 @@ scaffy skill — bootstrap a `.collab/` workspace, or run session protocols for 
 
 Read $ARGUMENTS first and route accordingly:
 
+- `initialize` → **Initialize Protocol** (see below)
 - `open session` → **Session Open Protocol** (see below)
 - `save session` → **Session Save Protocol** (see below)
 - `close session` → **Session Close Protocol** (see below)
 - `save chat` → **Chat Save Protocol** (see below)
+- `brainstorm` or `brainstorm <title>` → **Brainstorm Protocol** (see below)
+- `project plan` or `project plan <title>` → **Project Plan Protocol** (see below)
 - anything else (project name, path, flags, or empty) → **Scaffold a new project** (see below)
+
+---
+
+## Initialize Protocol
+
+Execute immediately — do not wait for additional instructions.
+
+This is the first-session onboarding for a project with a `.collab/` workspace. Use this instead of `open session` when the agent has never worked in this project before.
+
+1. **Read the workspace** — read the full `.collab/` directory:
+   - `collab-contract.md` — rules, session protocols, guardrails
+   - `kanban-board.md` — current task state
+   - `context.md` — project facts (if it exists)
+   - Any summaries in `session-summaries/`
+2. **Commit session protocols to memory** — note the trigger phrases and their behaviors from `collab-contract.md`: `OPEN SESSION`, `SAVE SESSION`, `CLOSE SESSION`.
+3. **Repo recon** — do a brief, non-destructive survey of the repository:
+   - Project purpose and what problem it solves
+   - Primary languages and frameworks
+   - Entry points (main scripts, CLI commands, server start)
+   - Build, test, and lint commands
+   - Existing documentation
+   - Do **not** restructure, rename, or modify anything.
+4. **Seed the kanban** — if the kanban board is empty, add initial recon tasks to **Inbox** (e.g. populate context.md, map key files, validate build commands). Wait for user approval before acting on them.
+5. **Report findings** — deliver a concise summary of what you found: project purpose, stack, entry points, commands, and any gaps or questions. Your first responsibility is to understand the current state, not change it.
 
 ---
 
@@ -64,6 +91,83 @@ Execute immediately — do not wait for additional instructions:
 1. Run from the project root: `scaffy --save-chat`
 2. The tool saves the transcript to `.collab/chat-logs/` automatically.
 3. Confirm the filename and path to the user.
+
+---
+
+## Brainstorm Protocol
+
+Execute immediately — do not wait for additional instructions.
+
+### With no arguments (`brainstorm`)
+
+List all brainstorm files with their statuses:
+
+1. Scan `.collab/brainstorms/` for all `.md` files (exclude `brainstorm-template.md`).
+2. For each file, extract the `_Status:` value and the `# Title` heading.
+3. Display a summary table:
+   ```
+   Status        | File
+   --------------|------
+   workshopping  | pypi-distribution.md — PyPI Distribution
+   drafting      | my-idea.md — My Idea Title
+   ```
+4. If the directory is empty (no files besides the template), say so.
+
+### With a title (`brainstorm <title>`)
+
+Create a new brainstorm file and start workshopping it:
+
+1. Convert the title to a filename: lowercase, hyphen-separated, `.md` extension (e.g. `brainstorm my cool idea` → `my-cool-idea.md`).
+2. Check if `.collab/brainstorms/<filename>` already exists:
+   - **Exists**: Read the file and resume workshopping (skip to step 4).
+   - **Does not exist**: Create it from the template at `.collab/brainstorms/brainstorm-template.md`, filling in the title and today's date.
+3. Confirm the file was created and its path.
+4. Start workshopping — engage with the user collaboratively:
+   - Ask what the idea is about — what problem it solves, what it would look like.
+   - As the conversation develops, update the file: fill in **The Idea** section, append dated entries to **Discussion Log**, update **Next Steps / Open Questions**.
+   - Assess honestly — identify gaps, ask clarifying questions, push back if something doesn't hold up.
+   - Update the `Status` field as appropriate (`drafting` → `workshopping`).
+5. Do **not** create tickets, tasks, or kanban entries from the brainstorm without explicit user approval.
+6. If the user approves graduation: add `Graduated → Issue #__ on [date]` at the bottom, update status to `graduated`, and leave the file in place.
+
+---
+
+## Project Plan Protocol
+
+Execute immediately — do not wait for additional instructions.
+
+### With no arguments (`project plan`)
+
+List all project plan files with their statuses:
+
+1. Scan `.collab/project-plans/` for all `.md` files (exclude `project-plan-template.md`).
+2. For each file, extract the `_Status:` value and the `# Title` heading.
+3. Display a summary table:
+   ```
+   Status   | File
+   ---------|------
+   active   | api-redesign.md — API Redesign
+   draft    | monitoring-setup.md — Monitoring Setup
+   ```
+4. If the directory is empty (no files besides the template), say so.
+
+### With a title (`project plan <title>`)
+
+Create a new project plan file and start workshopping it:
+
+1. Convert the title to a filename: lowercase, hyphen-separated, `.md` extension (e.g. `project plan api redesign` → `api-redesign.md`).
+2. Check if `.collab/project-plans/<filename>` already exists:
+   - **Exists**: Read the file and resume workshopping (skip to step 4).
+   - **Does not exist**: Create it from the template at `.collab/project-plans/project-plan-template.md`, filling in the title and today's date.
+3. Confirm the file was created and its path.
+4. Start workshopping — engage with the user collaboratively:
+   - Clarify the goal — what does success look like?
+   - Help define phases, tasks, risks, and dependencies.
+   - As the conversation develops, update the file: fill in **Goal**, **Background**, **Phases**, **Risks & Dependencies**, and **Open Questions**.
+   - Ask questions rather than assuming scope.
+   - Update the `Status` field as appropriate (`draft` → `active`).
+5. Do **not** promote tasks to the kanban board without explicit user approval.
+6. When a phase is approved for execution: promote its tasks to `.collab/kanban-board.md`, note `Phase [N] promoted to kanban on [date]` at the bottom of the plan file, and leave the plan in place.
 
 ---
 
