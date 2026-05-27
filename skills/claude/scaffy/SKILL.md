@@ -1,6 +1,6 @@
 ---
 name: scaffy
-description: Bootstrap a .collab/ multi-agent workspace, or run session protocols (open/save/close/save-chat/brainstorm/project-plan) for an existing scaffy project.
+description: Bootstrap a .collab/ multi-agent workspace, or run session protocols (initialize/open/save/close/save-chat/brainstorm/project-plan) for an existing scaffy project.
 ---
 
 scaffy skill — bootstrap a `.collab/` workspace, or run session protocols for an existing one.
@@ -9,6 +9,7 @@ scaffy skill — bootstrap a `.collab/` workspace, or run session protocols for 
 
 Read $ARGUMENTS first and route accordingly:
 
+- `initialize` → **Initialize Protocol** (see below)
 - `open session` → **Session Open Protocol** (see below)
 - `save session` → **Session Save Protocol** (see below)
 - `close session` → **Session Close Protocol** (see below)
@@ -16,6 +17,30 @@ Read $ARGUMENTS first and route accordingly:
 - `brainstorm` or `brainstorm <title>` → **Brainstorm Protocol** (see below)
 - `project plan` or `project plan <title>` → **Project Plan Protocol** (see below)
 - anything else (project name, path, flags, or empty) → **Scaffold a new project** (see below)
+
+---
+
+## Initialize Protocol
+
+Execute immediately — do not wait for additional instructions.
+
+This is the first-session onboarding for a project with a `.collab/` workspace. Use this instead of `open session` when the agent has never worked in this project before.
+
+1. **Read the workspace** — read the full `.collab/` directory:
+   - `collab-contract.md` — rules, session protocols, guardrails
+   - `kanban-board.md` — current task state
+   - `context.md` — project facts (if it exists)
+   - Any summaries in `session-summaries/`
+2. **Commit session protocols to memory** — note the trigger phrases and their behaviors from `collab-contract.md`: `OPEN SESSION`, `SAVE SESSION`, `CLOSE SESSION`.
+3. **Repo recon** — do a brief, non-destructive survey of the repository:
+   - Project purpose and what problem it solves
+   - Primary languages and frameworks
+   - Entry points (main scripts, CLI commands, server start)
+   - Build, test, and lint commands
+   - Existing documentation
+   - Do **not** restructure, rename, or modify anything.
+4. **Seed the kanban** — if the kanban board is empty, add initial recon tasks to **Inbox** (e.g. populate context.md, map key files, validate build commands). Wait for user approval before acting on them.
+5. **Report findings** — deliver a concise summary of what you found: project purpose, stack, entry points, commands, and any gaps or questions. Your first responsibility is to understand the current state, not change it.
 
 ---
 
