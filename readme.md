@@ -232,13 +232,18 @@ mkdir -p ~/.codex/skills && cp -r skills/codex/scaffy ~/.codex/skills/scaffy
 
 **Claude & Gemini:** type `/scaffy` to bootstrap a project — the agent gathers inputs and runs scaffy for you. Pass a project name or path as arguments to skip the prompts.
 
-All three skills support session protocols. If you use scaffy's session conventions in your projects, invoke them via the skill:
+All three skills support session protocols and workspace commands. If you use scaffy's session conventions in your projects, invoke them via the skill:
 
 ```
-/scaffy open session
-/scaffy save session
-/scaffy close session
-/scaffy save chat
+/scaffy initialize          # First-session onboarding — reads workspace, does repo recon, seeds kanban
+/scaffy open session        # Resume from latest session summary
+/scaffy save session        # Mid-session checkpoint with re-entry prompt
+/scaffy close session       # End-of-session summary and kanban update
+/scaffy save chat           # Export transcript to .collab/chat-logs/
+/scaffy brainstorm          # List brainstorms with statuses
+/scaffy brainstorm <title>  # Create or resume a brainstorm and start workshopping
+/scaffy project plan        # List project plans with statuses
+/scaffy project plan <title> # Create or resume a project plan and start workshopping
 ```
 
 **Codex:** no slash command — Codex pulls the skill in automatically when it detects a scaffolding or session need.
