@@ -1009,6 +1009,7 @@ These apply to both humans and AI agents working in the project.
 
     ".collab/project.yaml": """\
 project: {project_name}
+description: {description_yaml}
 created: {date}
 timezone: America/New_York
 governance_mode: {governance_mode}
@@ -2867,6 +2868,8 @@ def render_template(
     replacements = {
         "{project_name}": project_name,
         "{description}": description_rendered,
+        # project.yaml is one-line key: value; keep the raw text on a single line
+        "{description_yaml}": " ".join(description.split()),
         "{governance_mode}": governance_mode,
         "{platform}": platform,
         "{license}": license_id,
@@ -3509,7 +3512,7 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
     ticket_prefix = meta.get("ticket_prefix", "TASK")
 
     timestamp = meta.get("created", now_tz().strftime("%m.%d.%Y"))
-    description = ""
+    description = meta.get("description", "")
 
     render_kwargs = dict(
         project_name=project_name,
