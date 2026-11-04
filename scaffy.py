@@ -3624,7 +3624,21 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
 # Main
 # ---------------------------------------------------------------------------
 
+def _force_utf8_stdio() -> None:
+    """Use UTF-8 for redirected/piped output (Windows falls back to cp1252 and crashes on
+    non-Latin-1 characters). Real consoles already use UTF-8, so they are unaffected."""
+    for stream in (sys.stdout, sys.stderr):
+        if stream is None or not hasattr(stream, "reconfigure"):
+            continue  # windowed GUI exe has no stdio
+        if (getattr(stream, "encoding", "") or "").lower().replace("-", "") != "utf8":
+            try:
+                stream.reconfigure(encoding="utf-8")
+            except (OSError, ValueError):
+                pass
+
+
 def main() -> None:
+    _force_utf8_stdio()
     parser = argparse.ArgumentParser(
         description="Initialize a multi-agent project scaffold.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
