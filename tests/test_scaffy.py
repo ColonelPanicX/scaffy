@@ -105,6 +105,55 @@ class TestUpgrade(TempDirCase):
         scaffy("--upgrade", "--path", str(root))
         self.assertEqual(contract.read_text(), "custom contract\n")
 
+    def test_force_upgrade_never_touches_user_owned_files(self) -> None:
+        root = new_project(self.tmp, "demo", "--license", "mit")
+        collab = root / ".collab"
+        edits = {
+            collab / "kanban-board.md": "- [ ] TASK-001: MY REAL TASK\n",
+            collab / "context.md": "# real context\n",
+            collab / "project.yaml": (collab / "project.yaml").read_text() + "agents:\n  - claude\n",
+            root / "LICENSE": "Copyright 2026 Me\n",
+        }
+        for path, text in edits.items():
+            path.write_text(text)
+        out = scaffy("--upgrade", "--path", str(root), "--force").stdout
+        for path, text in edits.items():
+            self.assertEqual(path.read_text(), text, path.name)
+        self.assertIn("keep   .collab/kanban-board.md", out)
+
+    def test_force_upgrade_backs_up_replaced_files(self) -> None:
+        root = new_project(self.tmp)
+        contract = root / ".collab/collab-contract.md"
+        original = contract.read_text()
+        contract.write_text("custom contract\n")
+        scaffy("--upgrade", "--path", str(root), "--force")
+        self.assertEqual(contract.read_text(), original)
+        backups = list((root / ".collab/.upgrade-backups").rglob("collab-contract.md"))
+        self.assertEqual(len(backups), 1)
+        self.assertEqual(backups[0].read_text(), "custom contract\n")
+
+    def test_force_upgrade_skips_current_files_without_backup(self) -> None:
+        root = new_project(self.tmp)
+        scaffy("--upgrade", "--path", str(root), "--force")
+        self.assertFalse((root / ".collab/.upgrade-backups").exists())
+
+    def test_force_upgrade_dry_run_writes_nothing(self) -> None:
+        root = new_project(self.tmp)
+        (root / ".collab/collab-contract.md").write_text("custom\n")
+        before = snapshot(root)
+        out = scaffy("--upgrade", "--path", str(root), "--force", "--dry-run").stdout
+        self.assertEqual(before, snapshot(root))
+        self.assertIn("update .collab/collab-contract.md", out)
+
+    def test_upgrade_without_collab_fails(self) -> None:
+        proc = scaffy("--upgrade", "--path", str(self.tmp), check=False)
+        self.assertNotEqual(proc.returncode, 0)
+
+    def test_upgrade_without_project_yaml_fails(self) -> None:
+        (self.tmp / ".collab").mkdir()
+        proc = scaffy("--upgrade", "--path", str(self.tmp), check=False)
+        self.assertNotEqual(proc.returncode, 0)
+
     def test_upgrade_dry_run_writes_nothing(self) -> None:
         root = new_project(self.tmp)
         (root / ".collab/guides/git-guidelines.md").unlink()

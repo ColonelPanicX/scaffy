@@ -114,7 +114,7 @@ scaffy --dry-run
 | `--ticket-prefix PREFIX` | Task ID prefix rendered in `kanban-board.md` (e.g. `SCAF`) | interactive (`TASK`) |
 | `--init-git` | Run `git init` in the project root after scaffolding | off |
 | `--description TEXT` | Short description injected into `context.md` | interactive (optional) |
-| `--upgrade` | Upgrade an existing `.collab/` scaffold to the latest templates | off |
+| `--upgrade` | Upgrade an existing `.collab/` scaffold to the latest templates. Adds missing files only; with `--force` also refreshes scaffold-managed files, saving the old versions to `.collab/.upgrade-backups/<timestamp>/`. Kanban, context, project.yaml, initial-prompt and LICENSE are never replaced | off |
 | `--save-chat` | Export the current agent session to `.collab/chat-logs/` | off |
 | `--list-chats` | List recent agent sessions | off |
 | `--session-id UUID` | Session UUID prefix to export (use with `--save-chat`) | most recent |
