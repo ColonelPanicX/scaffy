@@ -39,7 +39,7 @@ if sys.version_info < MIN_PYTHON:
 # ---------------------------------------------------------------------------
 
 INDEX_PATH = Path.home() / ".scafrag" / "index.json"
-INDEX_VERSION = 1
+INDEX_VERSION = 2  # v2: projects keyed by resolved path, not name
 BM25_K1 = 1.5
 BM25_B = 0.75
 
@@ -232,7 +232,8 @@ def _build_index(root: Path) -> dict[str, Any]:
         kanban_lanes = _parse_kanban_lanes(content.get("kanban-board.md", ""))
         combined = "\n\n".join(content.values())
 
-        projects[name] = {
+        # Key by path: two projects can share a name (e.g. personal/api, work/api).
+        projects[str(project_root.resolve())] = {
             "name": name,
             "path": str(project_root),
             "description": meta.get("description", ""),
@@ -291,18 +292,18 @@ def cmd_query(args: argparse.Namespace) -> None:
         sys.exit("Query is empty after tokenization.")
 
     corpus = [
-        (name, _tokenize(p["combined_text"])) for name, p in projects.items()
+        (key, _tokenize(p["combined_text"])) for key, p in projects.items()
     ]
     corpus_lists = [tokens for _, tokens in corpus]
 
     results = []
-    for name, doc_tokens in corpus:
+    for key, doc_tokens in corpus:
         score = _bm25_score(query_tokens, doc_tokens, corpus_lists)
         if score > 0:
-            p = projects[name]
+            p = projects[key]
             results.append(
                 {
-                    "project": name,
+                    "project": p["name"],
                     "path": p["path"],
                     "score": round(score, 4),
                     "description": p["description"],
@@ -316,28 +317,37 @@ def cmd_query(args: argparse.Namespace) -> None:
     _output(results, args.format, "query", query=args.query)
 
 
+def _resolve_project(projects: dict[str, Any], wanted: str) -> dict[str, Any]:
+    """Find one project by path, exact name, or partial name; exit if none or ambiguous."""
+    as_path = Path(wanted).expanduser()
+    if as_path.exists():
+        hit = projects.get(str(as_path.resolve()))
+        if hit:
+            return hit
+    entries = list(projects.values())
+    matches = [p for p in entries if p["name"] == wanted]
+    if not matches:
+        matches = [p for p in entries if wanted.lower() in p["name"].lower()]
+    if not matches:
+        sys.exit(
+            f"Project '{wanted}' not found. "
+            "Run 'scafrag projects' to see available projects."
+        )
+    if len(matches) > 1:
+        listing = "\n".join(f"  {p['name']}  {p['path']}" for p in
+                            sorted(matches, key=lambda p: (p["name"], p["path"])))
+        sys.exit(f"Ambiguous project '{wanted}'. Pass the path instead:\n{listing}")
+    return matches[0]
+
+
 def cmd_context(args: argparse.Namespace) -> None:
     index = _load_index()
     projects = index["projects"]
 
-    name = args.project
-    if name not in projects:
-        matches = [k for k in projects if name.lower() in k.lower()]
-        if not matches:
-            sys.exit(
-                f"Project '{name}' not found. "
-                "Run 'scafrag projects' to see available projects."
-            )
-        if len(matches) > 1:
-            sys.exit(
-                f"Ambiguous name '{name}'. Matches: {', '.join(sorted(matches))}"
-            )
-        name = matches[0]
-
-    p = projects[name]
+    p = _resolve_project(projects, args.project)
     _output(
         {
-            "project": name,
+            "project": p["name"],
             "path": p["path"],
             "description": p["description"],
             "governance": p["governance"],
@@ -351,17 +361,21 @@ def cmd_context(args: argparse.Namespace) -> None:
     )
 
 
+def _sorted_projects(index: dict[str, Any]) -> list[dict[str, Any]]:
+    return sorted(index["projects"].values(), key=lambda p: (p["name"], p["path"]))
+
+
 def cmd_status(args: argparse.Namespace) -> None:
     index = _load_index()
     rows = [
         {
-            "project": name,
+            "project": p["name"],
             "path": p["path"],
             "description": p["description"],
             **{k: p["kanban_lanes"].get(k, 0) for k in
                ("backlog", "todo", "in_progress", "blocked", "in_review", "done")},
         }
-        for name, p in sorted(index["projects"].items())
+        for p in _sorted_projects(index)
     ]
     _output(rows, args.format, "status", built_at=index.get("built_at", ""))
 
@@ -370,14 +384,14 @@ def cmd_projects(args: argparse.Namespace) -> None:
     index = _load_index()
     rows = [
         {
-            "project": name,
+            "project": p["name"],
             "path": p["path"],
             "description": p["description"],
             "governance": p["governance"],
             "created": p["created"],
             "indexed_at": p["indexed_at"],
         }
-        for name, p in sorted(index["projects"].items())
+        for p in _sorted_projects(index)
     ]
     _output(rows, args.format, "projects", built_at=index.get("built_at", ""))
 
@@ -585,7 +599,7 @@ def main() -> None:
 
     # context
     p_ctx = sub.add_parser("context", help="Full context dump for one project.")
-    p_ctx.add_argument("project", help="Project name (partial match supported)")
+    p_ctx.add_argument("project", help="Project name (partial match supported) or project path")
     p_ctx.add_argument(
         "--format",
         choices=["text", "json", "markdown"],

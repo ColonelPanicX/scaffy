@@ -88,6 +88,31 @@ class TestScafrag(ScafragCase):
         ctx = self.rag_json("context", "legacy")
         self.assertEqual((ctx["governance"], ctx["created"]), ("lightweight", "01.02.2026"))
 
+    def test_same_name_projects_both_indexed(self) -> None:
+        (self.root / "personal").mkdir()
+        (self.root / "work").mkdir()
+        a = new_project(self.root / "personal", "api")
+        b = new_project(self.root / "work", "api")
+        self.add_summary(a, "11.01.2026-claude-summary.md", "personal oauth notes\n")
+        self.add_summary(b, "11.01.2026-claude-summary.md", "work oauth notes\n")
+        out = self.rag("index", "--root", str(self.root))
+        self.assertIn("2 project", out.stderr + out.stdout)
+        paths = sorted(p["path"] for p in self.rag_json("projects"))
+        self.assertEqual(paths, sorted([str(a.resolve()), str(b.resolve())]))
+        self.assertEqual(len(self.rag_json("query", "oauth")), 2)
+        self.assertEqual(len(self.rag_json("status")), 2)
+
+    def test_context_ambiguous_name_needs_path(self) -> None:
+        (self.root / "personal").mkdir()
+        (self.root / "work").mkdir()
+        a = new_project(self.root / "personal", "api")
+        b = new_project(self.root / "work", "api")
+        self.rag("index", "--root", str(self.root))
+        proc = self.rag("context", "api", check=False)
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertIn(str(b.resolve()), proc.stderr)
+        self.assertEqual(self.rag_json("context", str(a))["path"], str(a.resolve()))
+
     def test_no_index(self) -> None:
         self.assertNotEqual(self.rag("projects", check=False).returncode, 0)
 
