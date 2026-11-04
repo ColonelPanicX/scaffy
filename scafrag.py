@@ -225,7 +225,9 @@ def _build_index(root: Path) -> dict[str, Any]:
         except OSError:
             continue
 
-        name = meta.get("name") or project_root.name
+        # project.yaml keys written by scaffy: project, description, created,
+        # governance_mode. Older/hand-written files may use name/date/governance.
+        name = meta.get("project") or meta.get("name") or project_root.name
         content = _collect_content(collab_path)
         kanban_lanes = _parse_kanban_lanes(content.get("kanban-board.md", ""))
         combined = "\n\n".join(content.values())
@@ -234,8 +236,8 @@ def _build_index(root: Path) -> dict[str, Any]:
             "name": name,
             "path": str(project_root),
             "description": meta.get("description", ""),
-            "governance": meta.get("governance", ""),
-            "created": meta.get("date", ""),
+            "governance": meta.get("governance_mode") or meta.get("governance", ""),
+            "created": meta.get("created") or meta.get("date", ""),
             "indexed_at": datetime.now(timezone.utc).isoformat(),
             "content": content,
             "combined_text": combined,
