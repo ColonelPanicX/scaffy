@@ -1,6 +1,6 @@
 ---
 name: scaffy
-description: Bootstrap a .collab/ multi-agent workspace using scaffy, or run session protocols (initialize/open/save/close/save-chat/north-star/brainstorm/project-plan) for an existing scaffy project.
+description: Bootstrap a .collab/ multi-agent workspace using scaffy, or run session protocols (initialize/open/save/close/save-chat/north-star/brainstorm/brainstorm-session/project-plan) for an existing scaffy project.
 ---
 
 # scaffy — .collab/ Workspace Bootstrapper
@@ -13,6 +13,7 @@ Route based on the user's request:
 - `initialize` → **Initialize Protocol**
 - `save chat` → **Chat Save Protocol**
 - `north star` → **North Star Protocol**
+- `brainstorm session` or `brainstorm session <topic>` → **Brainstorm Session Protocol** (match this before `brainstorm <title>`)
 - `brainstorm` or `brainstorm <title>` → **Brainstorm Protocol**
 - `project plan` or `project plan <title>` → **Project Plan Protocol**
 - anything else (project name, path, flags, or empty) → **Scaffold a new project**
@@ -147,6 +148,67 @@ Execute immediately — do not wait for additional instructions.
 
 ---
 
+## Brainstorm Session Protocol
+
+Execute immediately — do not wait for additional instructions.
+
+A facilitated session on one question that ends in a written brainstorm document. You are the facilitator: keep the session moving, add ideas of your own, and write everything down. The user decides.
+
+### Setup
+
+1. If no topic was given, ask for one in a single line.
+2. Filename: topic in lowercase, hyphen-separated, plus `-session-MM.DD.YYYY.md` (e.g. `brainstorm session onboarding flow` → `onboarding-flow-session-11.05.2026.md`) in `.collab/brainstorms/`.
+   - **Exists**: read it and resume at the first phase that is still empty.
+   - **Does not exist**: create it from `.collab/brainstorms/brainstorm-session-template.md` (if the template is missing, use the section headings below). Fill in the title and today's date, set `_Status: in-session_`, and list participants (the user and you, by agent name).
+3. Ask how deep to go: **quick** (~15 min, ~10 ideas), **standard** (~30 min, ~20 ideas), or **deep** (no cap). Default: standard.
+
+### Phase 1 — Frame
+
+1. Read `.collab/north-star.md` if it is `agreed`, and skim `context.md` for constraints.
+2. Agree with the user on: the **question** (one sentence), **why now**, **constraints**, and **what a good outcome looks like**. Suggest a sharper wording if the question is vague or is really several questions.
+3. Write **Framing**, including a **North Star check** (or `n/a`). Confirm it with the user before moving on.
+
+### Phase 2 — Diverge
+
+1. Rules, stated once: no judging yet, quantity over quality, build on each other's ideas, wild ideas welcome.
+2. The user goes first. Then add your own ideas, a few at a time, from angles the user hasn't covered:
+   - Who else is affected (users, maintainers, newcomers, admins)?
+   - Invert it: how would we make this worse? Then flip each answer.
+   - Drop a constraint: what if time, money, or compatibility didn't matter?
+   - The smallest version that would still help.
+   - What could go wrong, and what would prevent it?
+   - What does it look like at 10x the scale?
+3. Don't evaluate during this phase, including your own ideas. Don't let your ideas outnumber the user's by much; the point is to draw theirs out.
+4. Append ideas to **Ideas** after each round, numbered, with the source `(user)` or `(agent)`.
+5. Stop when the depth target is reached or the user says so.
+
+### Phase 3 — Cluster
+
+1. Propose 3–6 themes with the idea numbers in each. Name any idea that fits nowhere.
+2. Let the user merge, split, or rename them. Write **Clusters**.
+
+### Phase 4 — Converge
+
+1. Agree on criteria. Default: fits the question, effort, risk, North Star fit (H/M/L each).
+2. Rate the strongest ideas or clusters in **Evaluation**. Be honest: name weak spots and risks, and push back if a favorite doesn't hold up.
+3. The user picks the **Shortlist** (usually 1–3). Record why.
+4. Everything else worth noting goes to **Parked / Rejected**, each with a one-line reason.
+
+### Phase 5 — Close
+
+1. Fill in **Open Questions** and **Proposed Next Steps** (clearly marked as proposals).
+2. Set `_Status: complete_`.
+3. Give the user a short summary: the question, the shortlist, and the proposed next steps.
+4. Offer, without doing it unasked: spin shortlisted ideas into their own brainstorm files (**Brainstorm Protocol**) or a project plan (**Project Plan Protocol**). List any you create under **Spin-offs**.
+
+### Rules
+
+- Write the file at the end of every phase, so an interrupted session can be resumed.
+- Do **not** create tickets, tasks, or kanban entries without explicit user approval.
+- Keep the session conversational: one question or one batch of ideas per turn.
+
+---
+
 ## Brainstorm Protocol
 
 Execute immediately — do not wait for additional instructions.
@@ -155,7 +217,7 @@ Execute immediately — do not wait for additional instructions.
 
 List all brainstorm files with their statuses:
 
-1. Scan `.collab/brainstorms/` for all `.md` files (exclude `brainstorm-template.md`).
+1. Scan `.collab/brainstorms/` for all `.md` files (exclude `brainstorm-template.md` and `brainstorm-session-template.md`). Session files (`*-session-MM.DD.YYYY.md`) show status `in-session` or `complete`.
 2. For each file, extract the `_Status:` value and the `# Title` heading.
 3. Display a summary table:
    ```

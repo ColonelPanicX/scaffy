@@ -184,6 +184,22 @@ become formal tickets yet. It bridges the gap between "I had a thought" and "I o
 **Key property:** nothing in `brainstorms/` is required to go anywhere. Ideas can sit, evolve slowly,
 or be parked indefinitely. The point is keeping them on paper so they aren't lost when a session closes.
 
+### Brainstorm sessions
+
+For a question with many possible answers, run `/scaffy brainstorm session <topic>`. The agent
+facilitates five phases and writes `.collab/brainstorms/<topic>-session-MM.DD.YYYY.md` as it goes:
+
+1. **Frame** — agree on the question, constraints, and what a good outcome looks like
+   (checked against the North Star if you have one)
+2. **Diverge** — you go first, then the agent adds ideas from new angles; nothing is judged yet
+3. **Cluster** — group the ideas into themes
+4. **Converge** — rate the strongest against agreed criteria; you pick the shortlist
+5. **Close** — open questions and proposed next steps; status set to `complete`
+
+The file is saved after every phase, so an interrupted session can be resumed. Shortlisted ideas
+can be spun off into their own brainstorm files or a project plan. Nothing becomes a ticket
+without your approval.
+
 When scaffolding into an **existing project**, scaffy will print a reminder to migrate any ideas
 you already have written down or in your head into the new directory.
 
@@ -257,6 +273,7 @@ All three skills support session protocols and workspace commands. If you use sc
 /scaffy north star          # Draft (interview) or review the project's North Star
 /scaffy brainstorm          # List brainstorms with statuses
 /scaffy brainstorm <title>  # Create or resume a brainstorm and start workshopping
+/scaffy brainstorm session <topic>  # Facilitated session (frame → ideas → shortlist) that writes a brainstorm doc
 /scaffy project plan        # List project plans with statuses
 /scaffy project plan <title> # Create or resume a project plan and start workshopping
 ```
