@@ -3588,20 +3588,21 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
     for d in required_dirs:
         if not d.exists():
             if dry_run:
-                added_dirs.append(f"  mkdir  {d.relative_to(target_root)}/")
+                added_dirs.append(f"  mkdir  {d.relative_to(target_root).as_posix()}/")
             else:
                 d.mkdir(parents=True, exist_ok=True)
-                added_dirs.append(f"  mkdir  {d.relative_to(target_root)}/")
+                added_dirs.append(f"  mkdir  {d.relative_to(target_root).as_posix()}/")
 
     for dest, content in files_to_check.items():
         rel = dest.relative_to(target_root) if dest.is_relative_to(target_root) else dest
+        rel_s = rel.as_posix()  # same output on every OS
         if dest.exists():
             if not force:
-                skipped_files.append(f"  skip   {rel}")
-            elif rel.as_posix() in USER_OWNED_FILES:
-                protected_files.append(f"  keep   {rel}")
+                skipped_files.append(f"  skip   {rel_s}")
+            elif rel_s in USER_OWNED_FILES:
+                protected_files.append(f"  keep   {rel_s}")
             elif dest.read_text(encoding="utf-8", errors="replace") == content:
-                skipped_files.append(f"  skip   {rel}  (already current)")
+                skipped_files.append(f"  skip   {rel_s}  (already current)")
             else:
                 backup = backup_root / rel
                 if not dry_run:
@@ -3609,14 +3610,14 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
                     backup.write_bytes(dest.read_bytes())
                     dest.write_text(content, encoding="utf-8")
                 updated_files.append(
-                    f"  update {rel}  (backup: {backup.relative_to(target_root).as_posix()})")
+                    f"  update {rel_s}  (backup: {backup.relative_to(target_root).as_posix()})")
         else:
             if dry_run:
-                added_files.append(f"  add    {rel}")
+                added_files.append(f"  add    {rel_s}")
             else:
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 dest.write_text(content, encoding="utf-8")
-                added_files.append(f"  add    {rel}")
+                added_files.append(f"  add    {rel_s}")
 
     # Report
     if migrated:
