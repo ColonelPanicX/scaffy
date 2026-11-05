@@ -535,7 +535,7 @@ def main() -> None:
             "examples:\n"
             "  scafrag index --root ~/code\n"
             "  scafrag query 'authentication middleware'\n"
-            "  scafrag context compligator\n"
+            "  scafrag context my-project\n"
             "  scafrag status --format markdown\n"
             "  scafrag projects --format json\n"
         ),
