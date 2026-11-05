@@ -61,6 +61,20 @@ class TestInit(TempDirCase):
         root = new_project(self.tmp, "badpfx", "--ticket-prefix", "x!")
         self.assertIn("ticket_prefix: TASK", (root / ".collab/project.yaml").read_text())
 
+    def test_description_saved_to_project_yaml(self) -> None:
+        root = new_project(self.tmp, "desc", "--description", "Billing API:  v2\nrewrite")
+        meta = scaffy_mod._parse_project_yaml(root / ".collab/project.yaml")
+        self.assertEqual(meta["description"], "Billing API: v2 rewrite")
+        root = new_project(self.tmp, "nodesc")
+        meta = scaffy_mod._parse_project_yaml(root / ".collab/project.yaml")
+        self.assertEqual(meta["description"], "")
+
+    def test_upgrade_restores_context_with_saved_description(self) -> None:
+        root = new_project(self.tmp, "desc", "--description", "Billing API")
+        (root / ".collab/context.md").unlink()
+        scaffy("--upgrade", "--path", str(root))
+        self.assertIn("Billing API", (root / ".collab/context.md").read_text())
+
     def test_dry_run_writes_nothing(self) -> None:
         scaffy("--name", "dry", "--path", str(self.tmp), "--dry-run")
         self.assertFalse((self.tmp / "dry").exists())
