@@ -8,7 +8,7 @@ Initialize a project with a standard `.collab/` workspace scaffold for multi-age
 pipx install scaffy-collab
 ```
 
-That's it. `scaffy` is now available system-wide. Requires Python 3.9+ and [pipx](https://pipx.pypa.io).
+That's it. `scaffy` is now available system-wide. Requires Python 3.10+ and [pipx](https://pipx.pypa.io).
 
 ```bash
 scaffy --help
@@ -114,7 +114,7 @@ scaffy --dry-run
 | `--ticket-prefix PREFIX` | Task ID prefix rendered in `kanban-board.md` (e.g. `SCAF`) | interactive (`TASK`) |
 | `--init-git` | Run `git init` in the project root after scaffolding | off |
 | `--description TEXT` | Short description injected into `context.md` | interactive (optional) |
-| `--upgrade` | Upgrade an existing `.collab/` scaffold to the latest templates | off |
+| `--upgrade` | Upgrade an existing `.collab/` scaffold to the latest templates. Adds missing files only; with `--force` also refreshes scaffold-managed files, saving the old versions to `.collab/.upgrade-backups/<timestamp>/`. Kanban, context, project.yaml, initial-prompt and LICENSE are never replaced | off |
 | `--save-chat` | Export the current agent session to `.collab/chat-logs/` | off |
 | `--list-chats` | List recent agent sessions | off |
 | `--session-id UUID` | Session UUID prefix to export (use with `--save-chat`) | most recent |
@@ -280,7 +280,7 @@ python3 scafrag.py projects
 All commands support `--format text` (default), `--format json`, and `--format markdown`.
 Output goes to stdout — pipe it wherever you want, including directly into an AI agent.
 
-**Requirements:** Python 3.9+. No external dependencies — same as `scaffy.py`.
+**Requirements:** Python 3.10+. No external dependencies — same as `scaffy.py`.
 
 Windows users: `scafrag.exe` is available in the [latest release](https://github.com/ColonelPanicX/scaffy/releases/latest) — no Python required. Run it from Command Prompt or PowerShell.
 
@@ -292,6 +292,17 @@ Windows users: `scafrag.exe` is available in the [latest release](https://github
 - Otherwise launches an interactive wizard: at any prompt, type `b` to go back one step or `q` to quit.
 - Existing `.gitignore` is not overwritten — template is written to `.collab/.gitignore.template` instead.
 - Uses `America/New_York` and `MM.DD.YYYY` date formatting in generated templates.
+
+## Tests
+
+Tests use the standard library only (no install needed) and run scaffy/scafrag as real
+CLI subprocesses inside temp directories:
+
+```bash
+python -m unittest discover -s tests -t .
+```
+
+CI runs them on every push and PR to `dev` and `main` (Python 3.10–3.13, plus Windows).
 
 ## See Also
 
