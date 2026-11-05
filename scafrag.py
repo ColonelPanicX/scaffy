@@ -12,7 +12,7 @@ Usage:
   python3 scafrag.py status [--format text|json|markdown]
   python3 scafrag.py projects [--format text|json|markdown]
 
-Requires Python 3.9+. Zero external dependencies.
+Requires Python 3.10+. Zero external dependencies.
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ from typing import Any
 # Version guard
 # ---------------------------------------------------------------------------
 
-MIN_PYTHON = (3, 9)
+MIN_PYTHON = (3, 10)
 if sys.version_info < MIN_PYTHON:
     sys.exit(f"scafrag requires Python {MIN_PYTHON[0]}.{MIN_PYTHON[1]}+")
 

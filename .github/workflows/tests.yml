@@ -16,9 +16,6 @@ jobs:
         os: [ubuntu-latest]
         python: ["3.10", "3.11", "3.12", "3.13"]
         include:
-          # 3.9 is EOL and not on the newest Ubuntu runner; still the documented minimum
-          - os: ubuntu-22.04
-            python: "3.9"
           - os: windows-latest
             python: "3.12"
     steps:
