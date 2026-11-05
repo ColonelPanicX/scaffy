@@ -36,7 +36,7 @@ class TestInit(TempDirCase):
                 for d in ("brainstorms", "session-summaries", "playbooks", "guides",
                           "project-plans", "skills", "supporting-artifacts", "audit"):
                     self.assertTrue((collab / d).is_dir(), d)
-                yaml = (collab / "project.yaml").read_text()
+                yaml = (collab / "project.yaml").read_text(encoding="utf-8")
                 self.assertIn(f"governance_mode: {mode}", yaml)
                 self.assertIn(f"project: gov-{mode}", yaml)
 
@@ -45,21 +45,21 @@ class TestInit(TempDirCase):
         for plat in PLATFORMS:
             with self.subTest(platform=plat):
                 root = new_project(self.tmp, f"plat-{plat}", "--platform", plat)
-                self.assertIn(f"platform: {plat}", (root / ".collab/project.yaml").read_text())
+                self.assertIn(f"platform: {plat}", (root / ".collab/project.yaml").read_text(encoding="utf-8"))
                 if plat in marker:
                     self.assertTrue(any(root.glob(marker[plat] + "*")), plat)
 
     def test_license(self) -> None:
         root = new_project(self.tmp, "lic", "--license", "mit")
-        self.assertIn("MIT License", (root / "LICENSE").read_text())
+        self.assertIn("MIT License", (root / "LICENSE").read_text(encoding="utf-8"))
         root = new_project(self.tmp, "nolic", "--license", "none")
         self.assertFalse((root / "LICENSE").exists())
 
     def test_ticket_prefix(self) -> None:
         root = new_project(self.tmp, "pfx", "--ticket-prefix", "scaf")
-        self.assertIn("ticket_prefix: SCAF", (root / ".collab/project.yaml").read_text())
+        self.assertIn("ticket_prefix: SCAF", (root / ".collab/project.yaml").read_text(encoding="utf-8"))
         root = new_project(self.tmp, "badpfx", "--ticket-prefix", "x!")
-        self.assertIn("ticket_prefix: TASK", (root / ".collab/project.yaml").read_text())
+        self.assertIn("ticket_prefix: TASK", (root / ".collab/project.yaml").read_text(encoding="utf-8"))
 
     def test_description_saved_to_project_yaml(self) -> None:
         root = new_project(self.tmp, "desc", "--description", "Billing API:  v2\nrewrite")
@@ -73,19 +73,19 @@ class TestInit(TempDirCase):
         root = new_project(self.tmp, "desc", "--description", "Billing API")
         (root / ".collab/context.md").unlink()
         scaffy("--upgrade", "--path", str(root))
-        self.assertIn("Billing API", (root / ".collab/context.md").read_text())
+        self.assertIn("Billing API", (root / ".collab/context.md").read_text(encoding="utf-8"))
 
     def test_north_star_draft_shipped(self) -> None:
         root = new_project(self.tmp, "ns")
-        ns = (root / ".collab/north-star.md").read_text()
+        ns = (root / ".collab/north-star.md").read_text(encoding="utf-8")
         self.assertIn("# North Star — ns", ns)
         self.assertIn("_Status: draft_", ns)
         for heading in ("## Problem", "## Non-Goals", "## Off-Course Signals", "## Revision Log"):
             self.assertIn(heading, ns)
         self.assertNotIn("{", ns)
-        contract = (root / ".collab/collab-contract.md").read_text()
+        contract = (root / ".collab/collab-contract.md").read_text(encoding="utf-8")
         self.assertIn("## North Star", contract)
-        self.assertIn("north-star.md", (root / ".collab/prompts/initial-prompt.md").read_text())
+        self.assertIn("north-star.md", (root / ".collab/prompts/initial-prompt.md").read_text(encoding="utf-8"))
 
     def test_brainstorm_session_template_shipped(self) -> None:
         root = new_project(self.tmp, "bs")
@@ -104,8 +104,8 @@ class TestInit(TempDirCase):
     def test_rerun_without_force_keeps_user_edits(self) -> None:
         root = new_project(self.tmp)
         kanban = root / ".collab/kanban-board.md"
-        kanban.write_text(kanban.read_text() + "\n- [ ] TASK-001: keep me\n")
-        (root / "src.py").write_text("print('user code')\n")
+        kanban.write_text(kanban.read_text(encoding="utf-8") + "\n- [ ] TASK-001: keep me\n")
+        (root / "src.py").write_text("print('user code')\n", encoding="utf-8")
         before = snapshot(root)
         scaffy("--name", "demo", "--path", str(self.tmp))
         after = snapshot(root)
@@ -137,9 +137,9 @@ class TestUpgrade(TempDirCase):
     def test_upgrade_without_force_keeps_edits(self) -> None:
         root = new_project(self.tmp)
         contract = root / ".collab/collab-contract.md"
-        contract.write_text("custom contract\n")
+        contract.write_text("custom contract\n", encoding="utf-8")
         scaffy("--upgrade", "--path", str(root))
-        self.assertEqual(contract.read_text(), "custom contract\n")
+        self.assertEqual(contract.read_text(encoding="utf-8"), "custom contract\n")
 
     def test_force_upgrade_never_touches_user_owned_files(self) -> None:
         root = new_project(self.tmp, "demo", "--license", "mit")
@@ -147,14 +147,14 @@ class TestUpgrade(TempDirCase):
         edits = {
             collab / "kanban-board.md": "- [ ] TASK-001: MY REAL TASK\n",
             collab / "context.md": "# real context\n",
-            collab / "project.yaml": (collab / "project.yaml").read_text() + "agents:\n  - claude\n",
+            collab / "project.yaml": (collab / "project.yaml").read_text(encoding="utf-8") + "agents:\n  - claude\n",
             root / "LICENSE": "Copyright 2026 Me\n",
         }
         for path, text in edits.items():
-            path.write_text(text)
+            path.write_text(text, encoding="utf-8")
         out = scaffy("--upgrade", "--path", str(root), "--force").stdout
         for path, text in edits.items():
-            self.assertEqual(path.read_text(), text, path.name)
+            self.assertEqual(path.read_text(encoding="utf-8"), text, path.name)
         self.assertIn("keep   .collab/kanban-board.md", out)
 
     def test_upgrade_adds_north_star_and_protects_it(self) -> None:
@@ -162,21 +162,21 @@ class TestUpgrade(TempDirCase):
         ns = root / ".collab/north-star.md"
         ns.unlink()
         scaffy("--upgrade", "--path", str(root))
-        self.assertIn("_Status: draft_", ns.read_text())
-        ns.write_text("# North Star\n_Status: agreed_\n")
+        self.assertIn("_Status: draft_", ns.read_text(encoding="utf-8"))
+        ns.write_text("# North Star\n_Status: agreed_\n", encoding="utf-8")
         scaffy("--upgrade", "--path", str(root), "--force")
-        self.assertEqual(ns.read_text(), "# North Star\n_Status: agreed_\n")
+        self.assertEqual(ns.read_text(encoding="utf-8"), "# North Star\n_Status: agreed_\n")
 
     def test_force_upgrade_backs_up_replaced_files(self) -> None:
         root = new_project(self.tmp)
         contract = root / ".collab/collab-contract.md"
-        original = contract.read_text()
-        contract.write_text("custom contract\n")
+        original = contract.read_text(encoding="utf-8")
+        contract.write_text("custom contract\n", encoding="utf-8")
         scaffy("--upgrade", "--path", str(root), "--force")
-        self.assertEqual(contract.read_text(), original)
+        self.assertEqual(contract.read_text(encoding="utf-8"), original)
         backups = list((root / ".collab/.upgrade-backups").rglob("collab-contract.md"))
         self.assertEqual(len(backups), 1)
-        self.assertEqual(backups[0].read_text(), "custom contract\n")
+        self.assertEqual(backups[0].read_text(encoding="utf-8"), "custom contract\n")
 
     def test_force_upgrade_skips_current_files_without_backup(self) -> None:
         root = new_project(self.tmp)
@@ -185,7 +185,7 @@ class TestUpgrade(TempDirCase):
 
     def test_force_upgrade_dry_run_writes_nothing(self) -> None:
         root = new_project(self.tmp)
-        (root / ".collab/collab-contract.md").write_text("custom\n")
+        (root / ".collab/collab-contract.md").write_text("custom\n", encoding="utf-8")
         before = snapshot(root)
         out = scaffy("--upgrade", "--path", str(root), "--force", "--dry-run").stdout
         self.assertEqual(before, snapshot(root))
@@ -214,15 +214,15 @@ class TestUpgrade(TempDirCase):
             f.unlink()
         (collab / "brainstorms").rmdir()
         (collab / "ideas").mkdir()
-        (collab / "ideas/my-idea.md").write_text("idea\n")
+        (collab / "ideas/my-idea.md").write_text("idea\n", encoding="utf-8")
         scaffy("--upgrade", "--path", str(root))
-        self.assertEqual((collab / "brainstorms/my-idea.md").read_text(), "idea\n")
+        self.assertEqual((collab / "brainstorms/my-idea.md").read_text(encoding="utf-8"), "idea\n")
 
 
 class TestProjectYamlParser(TempDirCase):
     def parse(self, text: str) -> dict:
         p = self.tmp / "project.yaml"
-        p.write_text(text)
+        p.write_text(text, encoding="utf-8")
         return scaffy_mod._parse_project_yaml(p)
 
     def test_valid(self) -> None:
@@ -261,7 +261,7 @@ class TestChatRendering(unittest.TestCase):
     def test_load_jsonl_skips_bad_lines(self) -> None:
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / "s.jsonl"
-            p.write_text('{"type": "user"}\nnot json\n\n{"type": "assistant"}\n')
+            p.write_text('{"type": "user"}\nnot json\n\n{"type": "assistant"}\n', encoding="utf-8")
             self.assertEqual(len(scaffy_mod._load_jsonl(p)), 2)
 
     def test_gemini_session_markdown(self) -> None:
