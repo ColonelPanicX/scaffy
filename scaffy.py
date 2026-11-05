@@ -17,7 +17,7 @@ Options:
   --name NAME          Project name (lowercase, hyphen-separated).
   --path PATH          Target directory where scaffold files will be installed.
                        For --upgrade: the project root (defaults to current directory).
-  --force              Overwrite existing files.
+  --force              Overwrite existing files (with --upgrade: back up, never touch kanban/context/project.yaml/LICENSE).
   --dry-run            Show planned actions and exit without writing anything.
   --governance MODE    Governance mode: lightweight, standard, or strict. Default: standard.
   --platform PLATFORM  Git platform: github, gitlab, or none. Default: none.
@@ -3473,6 +3473,19 @@ def _migrate_ideas_to_brainstorms(collab_dir: Path, dry_run: bool) -> list[str]:
     return log
 
 
+# Files holding project state the user writes. --upgrade never replaces these, even with
+# --force; only a missing one is recreated from its template.
+USER_OWNED_FILES: frozenset[str] = frozenset({
+    ".collab/kanban-board.md",
+    ".collab/context.md",
+    ".collab/project.yaml",
+    ".collab/prompts/initial-prompt.md",  # reflects how the project was created (new vs existing)
+    "LICENSE",
+})
+
+UPGRADE_BACKUP_DIR = ".collab/.upgrade-backups"
+
+
 def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
     """Upgrade an existing .collab/ scaffold to the latest templates."""
     collab_dir = target_root / ".collab"
@@ -3481,12 +3494,12 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
     if not collab_dir.is_dir():
         print(f"Error: No .collab/ directory found in {target_root}")
         print("Use 'scaffy' without --upgrade to create a new scaffold.")
-        return
+        sys.exit(1)
 
     if not yaml_path.is_file():
         print(f"Error: No project.yaml found in {collab_dir}")
         print("Cannot determine original scaffold settings. Aborting.")
-        return
+        sys.exit(1)
 
     meta = _parse_project_yaml(yaml_path)
     project_name = meta.get("project", target_root.name)
@@ -3558,6 +3571,8 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
     added_files: list[str] = []
     skipped_files: list[str] = []
     updated_files: list[str] = []
+    protected_files: list[str] = []
+    backup_root = target_root / UPGRADE_BACKUP_DIR / now_tz().strftime("%m.%d.%Y-%H%M%S")
 
     print(f"\nUpgrading scaffold in: {target_root}")
     print(f"  Settings from project.yaml: governance={governance_mode}, "
@@ -3570,29 +3585,36 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
     for d in required_dirs:
         if not d.exists():
             if dry_run:
-                added_dirs.append(f"  mkdir  {d.relative_to(target_root)}/")
+                added_dirs.append(f"  mkdir  {d.relative_to(target_root).as_posix()}/")
             else:
                 d.mkdir(parents=True, exist_ok=True)
-                added_dirs.append(f"  mkdir  {d.relative_to(target_root)}/")
+                added_dirs.append(f"  mkdir  {d.relative_to(target_root).as_posix()}/")
 
     for dest, content in files_to_check.items():
         rel = dest.relative_to(target_root) if dest.is_relative_to(target_root) else dest
+        rel_s = rel.as_posix()  # same output on every OS
         if dest.exists():
-            if force:
-                if dry_run:
-                    updated_files.append(f"  update {rel}")
-                else:
-                    dest.write_text(content, encoding="utf-8")
-                    updated_files.append(f"  update {rel}")
+            if not force:
+                skipped_files.append(f"  skip   {rel_s}")
+            elif rel_s in USER_OWNED_FILES:
+                protected_files.append(f"  keep   {rel_s}")
+            elif dest.read_text(encoding="utf-8", errors="replace") == content:
+                skipped_files.append(f"  skip   {rel_s}  (already current)")
             else:
-                skipped_files.append(f"  skip   {rel}")
+                backup = backup_root / rel
+                if not dry_run:
+                    backup.parent.mkdir(parents=True, exist_ok=True)
+                    backup.write_bytes(dest.read_bytes())
+                    dest.write_text(content, encoding="utf-8")
+                updated_files.append(
+                    f"  update {rel_s}  (backup: {backup.relative_to(target_root).as_posix()})")
         else:
             if dry_run:
-                added_files.append(f"  add    {rel}")
+                added_files.append(f"  add    {rel_s}")
             else:
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 dest.write_text(content, encoding="utf-8")
-                added_files.append(f"  add    {rel}")
+                added_files.append(f"  add    {rel_s}")
 
     # Report
     if migrated:
@@ -3607,6 +3629,9 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
     if updated_files:
         print("Updated files (--force):")
         print("\n".join(updated_files))
+    if protected_files:
+        print("Protected (your project state; never replaced by --upgrade):")
+        print("\n".join(protected_files))
     if skipped_files:
         print("Skipped (already exist):")
         print("\n".join(skipped_files))
@@ -3618,6 +3643,8 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
     else:
         total = len(migrated) + len(added_dirs) + len(added_files) + len(updated_files)
         print(f"\nUpgrade complete. {total} item(s) added/updated/migrated.")
+        if updated_files:
+            print(f"Previous versions saved under {backup_root.relative_to(target_root).as_posix()}/")
 
 
 # ---------------------------------------------------------------------------
@@ -3645,7 +3672,7 @@ def main() -> None:
     )
     parser.add_argument("--name", metavar="NAME", help="Project name (any valid folder name).")
     parser.add_argument("--path", metavar="PATH", help="Target directory where scaffold files will be installed.")
-    parser.add_argument("--force", action="store_true", help="Overwrite existing files.")
+    parser.add_argument("--force", action="store_true", help="Overwrite existing files. With --upgrade: refresh scaffold-managed files (previous versions backed up to .collab/.upgrade-backups/); kanban, context, project.yaml and LICENSE are never replaced.")
     parser.add_argument("--dry-run", action="store_true", help="Show planned actions without writing.")
     parser.add_argument(
         "--governance",
