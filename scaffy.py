@@ -35,8 +35,8 @@ Conventions:
 from __future__ import annotations
 
 import sys
-if sys.version_info < (3, 9):
-    sys.exit("scaffy requires Python 3.9+")
+if sys.version_info < (3, 10):
+    sys.exit("scaffy requires Python 3.10+")
 
 import argparse
 import hashlib

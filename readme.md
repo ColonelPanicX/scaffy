@@ -8,7 +8,7 @@ Initialize a project with a standard `.collab/` workspace scaffold for multi-age
 pipx install scaffy-collab
 ```
 
-That's it. `scaffy` is now available system-wide. Requires Python 3.9+ and [pipx](https://pipx.pypa.io).
+That's it. `scaffy` is now available system-wide. Requires Python 3.10+ and [pipx](https://pipx.pypa.io).
 
 ```bash
 scaffy --help
@@ -280,7 +280,7 @@ python3 scafrag.py projects
 All commands support `--format text` (default), `--format json`, and `--format markdown`.
 Output goes to stdout — pipe it wherever you want, including directly into an AI agent.
 
-**Requirements:** Python 3.9+. No external dependencies — same as `scaffy.py`.
+**Requirements:** Python 3.10+. No external dependencies — same as `scaffy.py`.
 
 Windows users: `scafrag.exe` is available in the [latest release](https://github.com/ColonelPanicX/scaffy/releases/latest) — no Python required. Run it from Command Prompt or PowerShell.
 
@@ -302,7 +302,7 @@ CLI subprocesses inside temp directories:
 python -m unittest discover -s tests -t .
 ```
 
-CI runs them on every push and PR to `dev` and `main` (Python 3.9–3.13, plus Windows).
+CI runs them on every push and PR to `dev` and `main` (Python 3.10–3.13, plus Windows).
 
 ## See Also
 
