@@ -71,6 +71,23 @@ class TestScafrag(ScafragCase):
         row = self.rag_json("status")[0]
         self.assertEqual(row["blocked"], 1)
 
+    def test_metadata_read_from_scaffy_keys(self) -> None:
+        new_project(self.root, "alpha", "--governance", "strict", "--description", "Alpha svc")
+        self.rag("index", "--root", str(self.root))
+        ctx = self.rag_json("context", "alpha")
+        self.assertEqual(ctx["governance"], "strict")
+        self.assertRegex(ctx["created"], r"^\d{2}\.\d{2}\.\d{4}$")
+        self.assertEqual(ctx["description"], "Alpha svc")
+
+    def test_metadata_legacy_keys(self) -> None:
+        legacy = self.root / "folder-name" / ".collab"
+        legacy.mkdir(parents=True)
+        (legacy / "project.yaml").write_text(
+            "name: legacy\ngovernance: lightweight\ndate: 01.02.2026\n")
+        self.rag("index", "--root", str(self.root))
+        ctx = self.rag_json("context", "legacy")
+        self.assertEqual((ctx["governance"], ctx["created"]), ("lightweight", "01.02.2026"))
+
     def test_no_index(self) -> None:
         self.assertNotEqual(self.rag("projects", check=False).returncode, 0)
 
