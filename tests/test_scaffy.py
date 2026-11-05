@@ -89,13 +89,13 @@ class TestInit(TempDirCase):
 
     def test_brainstorm_session_template_shipped(self) -> None:
         root = new_project(self.tmp, "bs")
-        tpl = (root / ".collab/brainstorms/brainstorm-session-template.md").read_text()
+        tpl = (root / ".collab/brainstorms/brainstorm-session-template.md").read_text(encoding="utf-8")
         self.assertIn("_Status: in-session_", tpl)
         for heading in ("## Framing", "## Ideas", "## Clusters", "## Evaluation",
                         "## Shortlist", "## Parked / Rejected", "## Proposed Next Steps"):
             self.assertIn(heading, tpl)
         self.assertNotIn("{", tpl)
-        self.assertIn("### Brainstorm Sessions", (root / ".collab/collab-contract.md").read_text())
+        self.assertIn("### Brainstorm Sessions", (root / ".collab/collab-contract.md").read_text(encoding="utf-8"))
 
     def test_dry_run_writes_nothing(self) -> None:
         scaffy("--name", "dry", "--path", str(self.tmp), "--dry-run")
