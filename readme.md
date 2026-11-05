@@ -293,6 +293,17 @@ Windows users: `scafrag.exe` is available in the [latest release](https://github
 - Existing `.gitignore` is not overwritten — template is written to `.collab/.gitignore.template` instead.
 - Uses `America/New_York` and `MM.DD.YYYY` date formatting in generated templates.
 
+## Tests
+
+Tests use the standard library only (no install needed) and run scaffy/scafrag as real
+CLI subprocesses inside temp directories:
+
+```bash
+python -m unittest discover -s tests -t .
+```
+
+CI runs them on every push and PR to `dev` and `main` (Python 3.9–3.13, plus Windows).
+
 ## See Also
 
 Tools and resources that pair well with the structured approach scaffy promotes. None are required.
