@@ -75,6 +75,18 @@ class TestInit(TempDirCase):
         scaffy("--upgrade", "--path", str(root))
         self.assertIn("Billing API", (root / ".collab/context.md").read_text())
 
+    def test_north_star_draft_shipped(self) -> None:
+        root = new_project(self.tmp, "ns")
+        ns = (root / ".collab/north-star.md").read_text()
+        self.assertIn("# North Star — ns", ns)
+        self.assertIn("_Status: draft_", ns)
+        for heading in ("## Problem", "## Non-Goals", "## Off-Course Signals", "## Revision Log"):
+            self.assertIn(heading, ns)
+        self.assertNotIn("{", ns)
+        contract = (root / ".collab/collab-contract.md").read_text()
+        self.assertIn("## North Star", contract)
+        self.assertIn("north-star.md", (root / ".collab/prompts/initial-prompt.md").read_text())
+
     def test_dry_run_writes_nothing(self) -> None:
         scaffy("--name", "dry", "--path", str(self.tmp), "--dry-run")
         self.assertFalse((self.tmp / "dry").exists())
@@ -134,6 +146,16 @@ class TestUpgrade(TempDirCase):
         for path, text in edits.items():
             self.assertEqual(path.read_text(), text, path.name)
         self.assertIn("keep   .collab/kanban-board.md", out)
+
+    def test_upgrade_adds_north_star_and_protects_it(self) -> None:
+        root = new_project(self.tmp)
+        ns = root / ".collab/north-star.md"
+        ns.unlink()
+        scaffy("--upgrade", "--path", str(root))
+        self.assertIn("_Status: draft_", ns.read_text())
+        ns.write_text("# North Star\n_Status: agreed_\n")
+        scaffy("--upgrade", "--path", str(root), "--force")
+        self.assertEqual(ns.read_text(), "# North Star\n_Status: agreed_\n")
 
     def test_force_upgrade_backs_up_replaced_files(self) -> None:
         root = new_project(self.tmp)
