@@ -121,17 +121,18 @@ Execute immediately — do not wait for additional instructions.
 ### Draft (interview)
 
 1. Read `.collab/context.md`, the kanban board, and any project plans first, so your questions build on what is already known.
-2. Interview the user **one topic at a time**, in this order. Offer a suggested answer from what you've read when you can, and keep each answer short:
+2. **Show the agenda before the first question**, so the user knows what's coming: the six topics below, then the North Star sentence, about 10–15 minutes in all. Mention that they can give the sentence now if they already have it.
+3. Interview the user **one topic at a time**, in this order. Offer a suggested answer from what you've read when you can, and keep each answer short:
    1. **Problem** — what is wrong or missing today, and for whom?
    2. **Who It's For** — primary users or beneficiaries.
    3. **What Success Looks Like** — observable outcomes, not features.
    4. **Non-Goals** — what this project deliberately will not do.
    5. **Guiding Principles** — 3–5 rules for trade-offs.
    6. **Off-Course Signals** — signs that work is drifting.
-3. Write the answers into the file as you go, so nothing is lost if the session ends.
-4. Propose the one-sentence **North Star** last, from the answers. Offer 2–3 options if it isn't obvious.
-5. Read the whole document back. Push back on vague success criteria ("users love it") and on non-goals that contradict the rest.
-6. When the user agrees: set `_Status: agreed_`, set `_Last revised:_` to today, and add a Revision Log row (`Agreed`, approved by the user).
+4. Write each answer into the file as you go, so nothing is lost if the session ends. When you fill a section, replace its `<!-- ... -->` placeholder comment with the answer.
+5. Settle the one-sentence **North Star** last, from the answers. If the user gave one early, save it as a working draft right away and check it against the answers here; otherwise offer 2–3 options.
+6. Read the whole document back. Push back on vague success criteria ("users love it") and on non-goals that contradict the rest.
+7. When the user agrees: set `_Status: agreed_`, set `_Last revised:_` to today, remove the "Fill this in" comment under the header, and add a Revision Log row (`Agreed`, approved by the user).
 
 ### Review (already agreed)
 
