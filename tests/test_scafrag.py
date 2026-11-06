@@ -28,7 +28,7 @@ class ScafragCase(unittest.TestCase):
         return json.loads(self.rag(*args, "--format", "json").stdout)["data"]
 
     def add_summary(self, root: Path, name: str, text: str) -> None:
-        (root / ".collab/session-summaries" / name).write_text(text)
+        (root / ".collab/session-summaries" / name).write_text(text, encoding="utf-8")
 
 
 class TestScafrag(ScafragCase):
@@ -65,7 +65,7 @@ class TestScafrag(ScafragCase):
     def test_status_counts_kanban(self) -> None:
         a = new_project(self.root, "alpha")
         kanban = a / ".collab/kanban-board.md"
-        kanban.write_text(kanban.read_text().replace(
+        kanban.write_text(kanban.read_text(encoding="utf-8").replace(
             "## Blocked", "## Blocked\n- [ ] TASK-009: stuck\n"))
         self.rag("index", "--root", str(self.root))
         row = self.rag_json("status")[0]
@@ -83,7 +83,7 @@ class TestScafrag(ScafragCase):
         legacy = self.root / "folder-name" / ".collab"
         legacy.mkdir(parents=True)
         (legacy / "project.yaml").write_text(
-            "name: legacy\ngovernance: lightweight\ndate: 01.02.2026\n")
+            "name: legacy\ngovernance: lightweight\ndate: 01.02.2026\n", encoding="utf-8")
         self.rag("index", "--root", str(self.root))
         ctx = self.rag_json("context", "legacy")
         self.assertEqual((ctx["governance"], ctx["created"]), ("lightweight", "01.02.2026"))

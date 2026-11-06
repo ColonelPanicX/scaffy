@@ -1,6 +1,6 @@
 ---
 name: scaffy
-description: Bootstrap a .collab/ multi-agent workspace, or run session protocols (initialize/open/save/close/save-chat/brainstorm/project-plan) for an existing scaffy project.
+description: Bootstrap a .collab/ multi-agent workspace, or run session protocols (initialize/open/save/close/save-chat/north-star/brainstorm/project-plan) for an existing scaffy project.
 ---
 
 scaffy skill — bootstrap a `.collab/` workspace, or run session protocols for an existing one.
@@ -14,6 +14,7 @@ Read $ARGUMENTS first and route accordingly:
 - `save session` → **Session Save Protocol** (see below)
 - `close session` → **Session Close Protocol** (see below)
 - `save chat` → **Chat Save Protocol** (see below)
+- `north star` → **North Star Protocol** (see below)
 - `brainstorm` or `brainstorm <title>` → **Brainstorm Protocol** (see below)
 - `project plan` or `project plan <title>` → **Project Plan Protocol** (see below)
 - anything else (project name, path, flags, or empty) → **Scaffold a new project** (see below)
@@ -51,11 +52,13 @@ Execute immediately — do not wait for additional instructions:
 1. Find and read the most recent 1–2 session summaries in `.collab/session-summaries/` (sort by filename date, newest first; skip `session-summary-template.md`).
 2. Read `.collab/kanban-board.md` for current task state.
 3. Read `.collab/context.md` if it exists.
-4. Deliver a concise session resume covering:
+4. Read `.collab/north-star.md` if its status is `agreed` (skip it while still `draft`).
+5. Deliver a concise session resume covering:
    - What was accomplished last session
    - What is currently In Progress or Blocked on the board
    - What is up next
    - Any open questions or flags left from the last session
+   - Any work on the board that seems to pull away from the North Star
 
 Do not re-read `collab-contract.md` — focus on current state, not process rules.
 
@@ -99,6 +102,50 @@ Execute immediately — do not wait for additional instructions:
 1. Run from the project root: `scaffy --save-chat`
 2. The tool saves the transcript to `.collab/chat-logs/` automatically.
 3. Confirm the filename and path to the user.
+
+---
+
+## North Star Protocol
+
+Execute immediately — do not wait for additional instructions.
+
+`.collab/north-star.md` is the project's stable statement of direction: where it is headed, for whom, what success looks like, what it will not do, and how to make trade-offs. It changes rarely and only with the user's approval.
+
+### Find the file
+
+1. Look for `.collab/north-star.md`.
+   - **Missing** (older scaffold): tell the user `scaffy --upgrade` adds it, or create it now with the section headings listed below. Then go to **Draft**.
+   - **`_Status: draft_`** or the sections are still placeholder comments → **Draft**.
+   - **`_Status: agreed_`** → **Review**.
+
+### Draft (interview)
+
+1. Read `.collab/context.md`, the kanban board, and any project plans first, so your questions build on what is already known.
+2. **Show the agenda before the first question**, so the user knows what's coming: the six topics below, then the North Star sentence, about 10–15 minutes in all. Mention that they can give the sentence now if they already have it.
+3. Interview the user **one topic at a time**, in this order. Offer a suggested answer from what you've read when you can, and keep each answer short:
+   1. **Problem** — what is wrong or missing today, and for whom?
+   2. **Who It's For** — primary users or beneficiaries.
+   3. **What Success Looks Like** — observable outcomes, not features.
+   4. **Non-Goals** — what this project deliberately will not do.
+   5. **Guiding Principles** — 3–5 rules for trade-offs.
+   6. **Off-Course Signals** — signs that work is drifting.
+4. Write each answer into the file as you go, so nothing is lost if the session ends. When you fill a section, replace its `<!-- ... -->` placeholder comment with the answer.
+5. Settle the one-sentence **North Star** last, from the answers. If the user gave one early, save it as a working draft right away and check it against the answers here; otherwise offer 2–3 options.
+6. Read the whole document back. Push back on vague success criteria ("users love it") and on non-goals that contradict the rest.
+7. When the user agrees: set `_Status: agreed_`, set `_Last revised:_` to today, remove the "Fill this in" comment under the header, and add a Revision Log row (`Agreed`, approved by the user).
+
+### Review (already agreed)
+
+1. Show a short summary of the current North Star and the date it was last revised.
+2. Ask what prompted the review. If the user wants changes, draft the exact edits and show them **before** writing.
+3. Write only what the user approves. Add a dated Revision Log row describing the change, and update `_Last revised:_`.
+4. If nothing changes, say so and leave the file untouched.
+
+### Rules
+
+- Never edit `north-star.md` without the user's explicit approval of the exact change.
+- Keep it to one page. Detail belongs in `context.md` or a project plan.
+- Do not create tasks or kanban entries from it without approval.
 
 ---
 
@@ -209,7 +256,7 @@ scaffy generates a `.collab/` multi-agent workspace into any project directory: 
 scaffy --upgrade --path <path>
 ```
 
-Diffs the existing `.collab/` against current templates and adds any missing files or directories. Does not overwrite existing files unless `--force` is added.
+Diffs the existing `.collab/` against current templates and adds any missing files or directories. Does not overwrite existing files unless `--force` is added; with `--force`, replaced files are backed up to `.collab/.upgrade-backups/`, and project state (kanban, context, north-star, project.yaml, initial-prompt, LICENSE) is never replaced.
 
 ## Key flags
 
