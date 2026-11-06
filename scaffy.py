@@ -17,7 +17,7 @@ Options:
   --name NAME          Project name (lowercase, hyphen-separated).
   --path PATH          Target directory where scaffold files will be installed.
                        For --upgrade: the project root (defaults to current directory).
-  --force              Overwrite existing files (with --upgrade: back up, never touch kanban/context/project.yaml/LICENSE).
+  --force              Overwrite existing files (with --upgrade: back up; never touches kanban/context/north-star/project.yaml/LICENSE).
   --dry-run            Show planned actions and exit without writing anything.
   --governance MODE    Governance mode: lightweight, standard, or strict. Default: standard.
   --platform PLATFORM  Git platform: github, gitlab, or none. Default: none.
@@ -174,6 +174,8 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
 - `collab-contract.md` — Rules, conventions, and logging requirements.
 - `kanban-board.md` — Task tracking (internal source of truth).
 - `context.md` — Stable project facts: tech stack, key files, conventions, dependencies.
+- `north-star.md` — The project's end goal, who it serves, non-goals, and principles. Stable;
+  changes only with the user's approval.
 - `project.yaml` — Machine-readable project metadata (name, date, governance mode, agents).
 - `session-summaries/` — Session summaries from all agents.
   Naming:
@@ -184,6 +186,7 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
   Naming: `MM.DD.YYYY-claude-chat.md` (or `MM.DD.YYYY-##-claude-chat.md` for multiple per day).
 - `brainstorms/` — Thinking space for pre-ticket concepts and proposals.
   - `brainstorm-template.md` — Starter template for new brainstorm files.
+  - `brainstorm-session-template.md` — Template for facilitated brainstorm sessions.
 - `project-plans/` — Structured plans bridging brainstormed ideas and kanban execution.
   - `project-plan-template.md` — Starter template for new plan files.
 - `audit/` — Analysis reports, planning documents, and progress tracking artifacts.
@@ -220,6 +223,18 @@ Conventions:
 - Subdirectories are encouraged for organization (e.g., `diagrams/`, `specs/`, `research/`).
 - Prefix date when time-sensitive: `MM.DD.YYYY-filename.md`
 
+## North Star Guidance
+
+`north-star.md` is the one short document that says where the project is headed and why. Every
+plan, brainstorm, and task should be checkable against it.
+
+Workflow:
+- Draft it early, with an agent interviewing you (the scaffy skill: `north star`).
+- Keep it short: one sentence of direction, then problem, audience, success, non-goals,
+  principles, and the signals that the project is drifting.
+- It changes rarely and deliberately. Each change gets a dated line in its **Revision Log**.
+- `scaffy --upgrade` never overwrites it.
+
 ## Brainstorm Directory Guidance
 
 Use `brainstorms/` for concepts that aren't ready to be formal tickets yet — brain dumps, half-formed
@@ -233,6 +248,14 @@ Workflow:
 - When an idea is ready to become a ticket, note it at the bottom of the file and graduate it
   to your issue tracker. Leave the file in place as a record.
 - Ideas that don't go anywhere can be left as `parked` — they might be useful later.
+
+Brainstorm sessions:
+- For a topic with many possible answers, run a facilitated session (the scaffy skill:
+  `brainstorm session <topic>`). The agent frames the question with you, collects ideas
+  without judging them, groups them, helps you pick a shortlist, and writes it all up.
+- Each session produces `<topic>-session-MM.DD.YYYY.md` from `brainstorm-session-template.md`.
+  The file is written after every phase, so an interrupted session can be resumed.
+- Shortlisted ideas can be spun off into their own single-idea brainstorm files.
 
 ## Project Plans Directory Guidance
 
@@ -342,11 +365,13 @@ Immediately execute the Session Open Protocol — do not wait for additional ins
    (sort by filename date, newest first).
 2. Read `.collab/kanban-board.md` for current task state.
 3. Read `.collab/context.md` if it exists.
-4. Deliver a concise session resume to the user covering:
+4. Read `.collab/north-star.md` if its status is `agreed` (skip it while still `draft`).
+5. Deliver a concise session resume to the user covering:
    - What was accomplished last session
    - What is currently In Progress or Blocked on the board
    - What is up next
    - Any open questions or flags left from the last session
+   - Any work on the board that seems to pull away from the North Star
 
 Do **not** re-read `collab-contract.md` — focus on current state, not process rules.
 
@@ -437,6 +462,26 @@ Immediately execute the Chat Save Protocol — do not wait for additional instru
 
 ---
 
+## North Star
+
+- **Location**: `.collab/north-star.md`
+- **Purpose**: The stable statement of where this project is going: the problem, who it is
+  for, what success looks like, what it will not do, and the principles that guide decisions.
+- **Status**: `draft` until the user agrees to it, then `agreed`.
+
+### Agent Behavior with the North Star
+
+1. When it is `agreed`, read it at session open and use it as the yardstick for proposals,
+   plans, brainstorms, and task priority.
+2. If requested work conflicts with it or matches one of its **Off-Course Signals**, say so
+   plainly and let the user decide. Do not refuse the work and do not quietly reinterpret it.
+3. Never edit `north-star.md` without the user's explicit approval of the exact change.
+4. Record every approved change as a dated row in its **Revision Log** and update
+   `_Last revised:_`.
+5. If the project has clearly moved on from it, suggest a revision; do not make one.
+
+---
+
 ## Brainstorm Directory
 
 - **Location**: `.collab/brainstorms/`
@@ -465,6 +510,23 @@ When an idea graduates to a formal ticket:
 
 - Add `Graduated → Issue #__ on [date]` at the bottom of the file.
 - Leave the file in `brainstorms/` as a record — do not delete it.
+
+### Brainstorm Sessions
+
+A brainstorm session is a facilitated working session on one question that ends in a written
+record: `.collab/brainstorms/<topic>-session-MM.DD.YYYY.md`, from
+`brainstorm-session-template.md`. Status: `in-session` → `complete`.
+
+The agent facilitates in five phases — **Frame, Diverge, Cluster, Converge, Close** — and:
+
+1. Confirms the framing (question, constraints, what a good outcome looks like) before
+   generating ideas. If `north-star.md` is `agreed`, it is part of the framing.
+2. Keeps the diverge phase judgment-free; the user's ideas come first, then the agent adds
+   ideas from new angles. Every idea is recorded with its source.
+3. Is honest in the converge phase: names weak ideas and risks, but the user picks the shortlist.
+4. Writes the file after every phase so nothing is lost if the session is interrupted.
+5. Does **not** create tickets, tasks, or kanban entries from the session without explicit
+   user approval. Proposed next steps are proposals.
 
 ---
 
@@ -537,6 +599,52 @@ Examples:
 ## Done
 """,
 
+    ".collab/north-star.md": """\
+# North Star — {project_name}
+
+_Created: {date}_
+_Last revised: {date}_
+_Status: draft_
+
+<!-- Status values: draft | agreed                                                   -->
+<!-- Fill this in with your agent: run the scaffy skill with `north star`.           -->
+<!-- Keep it to one page. It changes rarely, and only with the user's approval.      -->
+
+## North Star
+
+<!-- One sentence: where this project is headed and why it matters. -->
+
+## Problem
+
+<!-- What is wrong or missing today, and for whom. -->
+
+## Who It's For
+
+<!-- The primary users or beneficiaries. Name secondary audiences only if they shape decisions. -->
+
+## What Success Looks Like
+
+<!-- Observable outcomes, not features. How would you know this worked? -->
+
+## Non-Goals
+
+<!-- What this project deliberately will not do, even if asked. -->
+
+## Guiding Principles
+
+<!-- 3-5 rules for making trade-offs (e.g. "simple by default", "no required services"). -->
+
+## Off-Course Signals
+
+<!-- Warning signs that work is drifting away from the North Star. -->
+
+## Revision Log
+
+| Date | Change | Approved by |
+|---|---|---|
+| {date} | Created (draft) | — |
+""",
+
     ".collab/brainstorms/brainstorm-template.md": """\
 # Idea Title
 
@@ -560,6 +668,58 @@ _Status: drafting_
 
 ---
 <!-- When graduated: Graduated → Issue #__ on [date] -->
+""",
+
+    ".collab/brainstorms/brainstorm-session-template.md": """\
+# Brainstorm Session — Topic
+
+_Date: {date}_
+_Status: in-session_
+_Participants: user, agent_
+
+<!-- Status values: in-session | complete                                        -->
+<!-- Run with the scaffy skill: `brainstorm session <topic>`.                      -->
+<!-- The agent fills this in after each phase: Frame, Diverge, Cluster, Converge, Close. -->
+
+## Framing
+
+- **Question:** <!-- the one question this session answers -->
+- **Why now:**
+- **Constraints:** <!-- time, budget, tech, people, must-keeps -->
+- **A good outcome looks like:**
+- **North Star check:** <!-- from north-star.md if agreed; otherwise "n/a" -->
+
+## Ideas
+
+<!-- Numbered and unjudged. Mark the source of each: (user) or (agent). -->
+
+## Clusters
+
+<!-- Themes, with the idea numbers in each. -->
+
+## Evaluation
+
+| Idea / cluster | Fits the question | Effort | Risk | North Star fit | Notes |
+|---|---|---|---|---|---|
+
+## Shortlist
+
+<!-- What the user chose to take forward, and why. -->
+
+## Parked / Rejected
+
+| Idea | Why |
+|---|---|
+
+## Open Questions
+
+## Proposed Next Steps
+
+<!-- Proposals only. Nothing becomes a ticket or kanban entry without approval. -->
+
+## Spin-offs
+
+<!-- Single-idea brainstorm files or project plans created from this session. -->
 """,
 
     ".collab/project-plans/project-plan-template.md": """\
@@ -2408,6 +2568,8 @@ This project has a `.collab/` collaboration workspace. Before doing anything:
    `OPEN SESSION`, `SAVE SESSION`, `CLOSE SESSION`, and `SAVE CHAT`.
 3. The kanban board is empty — this is a new project. Wait for my direction before
    drafting plans or tasks.
+4. `north-star.md` is still a draft. Offer to interview me to fill it in; don't fill it in
+   on your own.
 """,
     "existing": """\
 This project has a `.collab/` collaboration workspace. Before doing anything:
@@ -3483,6 +3645,7 @@ USER_OWNED_FILES: frozenset[str] = frozenset({
     ".collab/context.md",
     ".collab/project.yaml",
     ".collab/prompts/initial-prompt.md",  # reflects how the project was created (new vs existing)
+    ".collab/north-star.md",
     "LICENSE",
 })
 
@@ -3675,7 +3838,7 @@ def main() -> None:
     )
     parser.add_argument("--name", metavar="NAME", help="Project name (any valid folder name).")
     parser.add_argument("--path", metavar="PATH", help="Target directory where scaffold files will be installed.")
-    parser.add_argument("--force", action="store_true", help="Overwrite existing files. With --upgrade: refresh scaffold-managed files (previous versions backed up to .collab/.upgrade-backups/); kanban, context, project.yaml and LICENSE are never replaced.")
+    parser.add_argument("--force", action="store_true", help="Overwrite existing files. With --upgrade: refresh scaffold-managed files (previous versions backed up to .collab/.upgrade-backups/); kanban, context, north-star, project.yaml, initial-prompt and LICENSE are never replaced.")
     parser.add_argument("--dry-run", action="store_true", help="Show planned actions without writing.")
     parser.add_argument(
         "--governance",

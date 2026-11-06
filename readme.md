@@ -114,7 +114,7 @@ scaffy --dry-run
 | `--ticket-prefix PREFIX` | Task ID prefix rendered in `kanban-board.md` (e.g. `SCAF`) | interactive (`TASK`) |
 | `--init-git` | Run `git init` in the project root after scaffolding | off |
 | `--description TEXT` | Short description injected into `context.md` | interactive (optional) |
-| `--upgrade` | Upgrade an existing `.collab/` scaffold to the latest templates. Adds missing files only; with `--force` also refreshes scaffold-managed files, saving the old versions to `.collab/.upgrade-backups/<timestamp>/`. Kanban, context, project.yaml, initial-prompt and LICENSE are never replaced | off |
+| `--upgrade` | Upgrade an existing `.collab/` scaffold to the latest templates. Adds missing files only; with `--force` also refreshes scaffold-managed files, saving the old versions to `.collab/.upgrade-backups/<timestamp>/`. Kanban, context, north-star, project.yaml, initial-prompt and LICENSE are never replaced | off |
 | `--save-chat` | Export the current agent session to `.collab/chat-logs/` | off |
 | `--list-chats` | List recent agent sessions | off |
 | `--session-id UUID` | Session UUID prefix to export (use with `--save-chat`) | most recent |
@@ -152,6 +152,20 @@ The scaffold installs four trigger phrases into the agent contract and initial p
   possible and scaffy will prompt you to select the agent (1/2/3). Use
   `scaffy --save-chat --cli <agent>` to skip the prompt.
 
+## North Star
+
+`.collab/north-star.md` is a one-page statement of where the project is headed: the problem,
+who it's for, what success looks like, non-goals, guiding principles, and the signals that
+work is drifting. Every scaffold ships it as a `draft`.
+
+Run `/scaffy north star` and the agent interviews you one topic at a time, writes the answers
+in as you go, and proposes the one-sentence North Star at the end. Once you mark it `agreed`:
+
+- `OPEN SESSION` reads it and flags board items that pull away from it
+- Agents check plans, brainstorms, and priorities against it, and say so when work conflicts
+- It only changes with your explicit approval; each change is a dated Revision Log row
+- `scaffy --upgrade` never overwrites it (older scaffolds get the draft added)
+
 ## Brainstorm Workflow
 
 The `.collab/brainstorms/` directory is a persistent thinking space for ideas that aren't ready to
@@ -169,6 +183,22 @@ become formal tickets yet. It bridges the gap between "I had a thought" and "I o
 
 **Key property:** nothing in `brainstorms/` is required to go anywhere. Ideas can sit, evolve slowly,
 or be parked indefinitely. The point is keeping them on paper so they aren't lost when a session closes.
+
+### Brainstorm sessions
+
+For a question with many possible answers, run `/scaffy brainstorm session <topic>`. The agent
+facilitates five phases and writes `.collab/brainstorms/<topic>-session-MM.DD.YYYY.md` as it goes:
+
+1. **Frame** — agree on the question, constraints, and what a good outcome looks like
+   (checked against the North Star if you have one)
+2. **Diverge** — you go first, then the agent adds ideas from new angles; nothing is judged yet
+3. **Cluster** — group the ideas into themes
+4. **Converge** — rate the strongest against agreed criteria; you pick the shortlist
+5. **Close** — open questions and proposed next steps; status set to `complete`
+
+The file is saved after every phase, so an interrupted session can be resumed. Shortlisted ideas
+can be spun off into their own brainstorm files or a project plan. Nothing becomes a ticket
+without your approval.
 
 When scaffolding into an **existing project**, scaffy will print a reminder to migrate any ideas
 you already have written down or in your head into the new directory.
@@ -240,8 +270,10 @@ All three skills support session protocols and workspace commands. If you use sc
 /scaffy save session        # Mid-session checkpoint with re-entry prompt
 /scaffy close session       # End-of-session summary and kanban update
 /scaffy save chat           # Export transcript to .collab/chat-logs/
+/scaffy north star          # Draft (interview) or review the project's North Star
 /scaffy brainstorm          # List brainstorms with statuses
 /scaffy brainstorm <title>  # Create or resume a brainstorm and start workshopping
+/scaffy brainstorm session <topic>  # Facilitated session (frame → ideas → shortlist) that writes a brainstorm doc
 /scaffy project plan        # List project plans with statuses
 /scaffy project plan <title> # Create or resume a project plan and start workshopping
 ```
