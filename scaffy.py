@@ -361,8 +361,10 @@ When the user types exactly:
 
 Immediately execute the Session Open Protocol — do not wait for additional instructions:
 
-1. Find and read the most recent 1-2 session summaries in `.collab/session-summaries/`
-   (sort by filename date, newest first).
+1. Find and read the most recent 1-2 session summaries in `.collab/session-summaries/`.
+   Filenames start with `MM.DD.YYYY`, so don't sort them alphabetically
+   (`01.05.2027` would come before `11.08.2026`). Order by year, then month, then day,
+   then the same-day number (no number first, then `-02`, `-03`), newest first.
 2. Read `.collab/kanban-board.md` for current task state.
 3. Read `.collab/context.md` if it exists.
 4. Read `.collab/north-star.md` if its status is `agreed` (skip it while still `draft`).
