@@ -74,7 +74,7 @@ scaffy --name my-project --path /path/to/base \
 - `.collab/audit/` — Analysis reports and planning documents
 - `.collab/project-plans/` — Long-form plans, architecture docs, and multi-phase roadmaps
 - `.collab/skills/` — Project-specific agent skills and slash commands
-- `.collab/supporting-artifacts/` — Diagrams, specs, research, and other project-adjacent materials
+- `.collab/inbox/` — Drop zone for files that might be useful; sort them out with your agent
 - `.collab/prompts/` — Reusable agent prompts, including the agent instructions generator
 - `.collab/guides/` — Reference docs: git governance modes, branching strategy, label taxonomy
 - `.collab/playbooks/` — Step-by-step procedures: coding standards, per-mode git governance playbooks, agent bridges
@@ -203,6 +203,15 @@ without your approval.
 
 When scaffolding into an **existing project**, scaffy will print a reminder to migrate any ideas
 you already have written down or in your head into the new directory.
+
+## Inbox
+
+`.collab/inbox/` is a drop zone. Put anything that might be useful to the project there (notes,
+exports, screenshots, specs) before you know where it belongs, then ask your agent to go through
+it with you. The agent proposes what to do with each item and moves or deletes nothing without
+your approval. OPEN SESSION mentions it when items are waiting.
+
+Upgrading from an older scaffold moves anything in `.collab/supporting-artifacts/` into the inbox.
 
 ## Agent Bridge
 

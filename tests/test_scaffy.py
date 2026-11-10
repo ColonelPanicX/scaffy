@@ -34,7 +34,7 @@ class TestInit(TempDirCase):
                             "project.yaml", "prompts/initial-prompt.md"):
                     self.assertTrue((collab / rel).is_file(), rel)
                 for d in ("brainstorms", "session-summaries", "playbooks", "guides",
-                          "project-plans", "skills", "supporting-artifacts", "audit"):
+                          "project-plans", "skills", "inbox", "audit"):
                     self.assertTrue((collab / d).is_dir(), d)
                 yaml = (collab / "project.yaml").read_text(encoding="utf-8")
                 self.assertIn(f"governance_mode: {mode}", yaml)
@@ -209,6 +209,41 @@ class TestUpgrade(TempDirCase):
         scaffy("--upgrade", "--path", str(root), "--force")
         self.assertEqual(sorted(p.name for p in bridge_dir.iterdir()), ["login-timeout"])
         self.assertIn("hi", (room / "transcript.md").read_text(encoding="utf-8"))
+
+    def test_upgrade_moves_supporting_artifacts_to_inbox(self) -> None:
+        root = new_project(self.tmp)
+        collab = root / ".collab"
+        (collab / "inbox").rmdir()
+        old = collab / "supporting-artifacts"
+        (old / "diagrams").mkdir(parents=True)
+        (old / "diagrams/flow.md").write_text("flow\n", encoding="utf-8")
+        scaffy("--upgrade", "--path", str(root))
+        self.assertFalse(old.exists())
+        self.assertEqual((collab / "inbox/diagrams/flow.md").read_text(encoding="utf-8"), "flow\n")
+
+    def test_upgrade_merges_into_existing_inbox_without_clobbering(self) -> None:
+        root = new_project(self.tmp)
+        collab = root / ".collab"
+        old = collab / "supporting-artifacts"
+        old.mkdir()
+        (old / "spec.md").write_text("old spec\n", encoding="utf-8")
+        (old / "notes.md").write_text("notes\n", encoding="utf-8")
+        (collab / "inbox/spec.md").write_text("inbox spec\n", encoding="utf-8")
+        out = scaffy("--upgrade", "--path", str(root)).stdout
+        self.assertEqual((collab / "inbox/notes.md").read_text(encoding="utf-8"), "notes\n")
+        self.assertEqual((collab / "inbox/spec.md").read_text(encoding="utf-8"), "inbox spec\n")
+        self.assertEqual((old / "spec.md").read_text(encoding="utf-8"), "old spec\n")
+        self.assertIn("move it by hand", out)
+
+    def test_upgrade_migration_dry_run_moves_nothing(self) -> None:
+        root = new_project(self.tmp)
+        collab = root / ".collab"
+        (collab / "inbox").rmdir()
+        (collab / "supporting-artifacts").mkdir()
+        (collab / "supporting-artifacts/a.md").write_text("a\n", encoding="utf-8")
+        before = snapshot(root)
+        scaffy("--upgrade", "--path", str(root), "--dry-run")
+        self.assertEqual(snapshot(root), before)
 
     def test_force_upgrade_backs_up_replaced_files(self) -> None:
         root = new_project(self.tmp)

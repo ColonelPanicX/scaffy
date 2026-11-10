@@ -192,10 +192,8 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
 - `agent-bridge/` — Shared-file channels between agents of different types (one subdirectory
   per bridge). Empty until a bridge is opened.
 - `audit/` — Analysis reports, planning documents, and progress tracking artifacts.
-- `supporting-artifacts/` — Adjacent project materials: diagrams, research notes, specs,
-  reference docs, exported data, and anything else that supports the work but isn't
-  source code. Keep the project root clean — if it belongs to the project but isn't
-  code, it probably belongs here.
+- `inbox/` — Drop zone for files that might be useful: notes, exports, screenshots, docs.
+  Sort through it with your agent; it may stay empty.
 - `prompts/` — Reusable agent prompts and supporting inputs.
   - `initial-prompt.md` — First-session onboarding prompt (paste on first launch).
   - `agent-profile.md` — Fill-in questionnaire for generating agent instruction files.
@@ -208,23 +206,15 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
   - `git-governance-lightweight.md` / `git-governance-standard.md` / `git-governance-strict.md` — Execution playbooks per governance mode.
   - `templates/` — Fill-in-the-blank forms: `issue-template.md`, `pull-request-template.md`.
 
-## Supporting Artifacts Guidance
+## Inbox Guidance
 
-Use `supporting-artifacts/` for anything adjacent to the project that isn't source code,
-config, or documentation that belongs in the repo. The goal is to keep the project root
-clean and consolidate everything the AI and user need in one place.
+`inbox/` is where you drop anything that might be useful to the project before you know
+where it belongs: notes, exports, screenshots, specs, links, research.
 
-Examples of what belongs here:
-- Architecture diagrams and wireframes
-- Research notes, vendor comparisons, and technical spikes
-- Specification drafts and design documents
-- Reference material, exports, and sample data
-- Scratch files and working notes from active sessions
-
-Conventions:
-- Filenames should be lowercase, hyphen-separated.
-- Subdirectories are encouraged for organization (e.g., `diagrams/`, `specs/`, `research/`).
-- Prefix date when time-sensitive: `MM.DD.YYYY-filename.md`
+- Drop files in as they come. No naming rules, no sorting first.
+- When you're ready, ask your agent to go through it with you. It reads each item and
+  proposes what to do with it; where things end up is up to the two of you.
+- The agent moves, rewrites or deletes nothing in `inbox/` without your approval.
 
 ## North Star Guidance
 
@@ -389,6 +379,7 @@ Immediately execute the Session Open Protocol — do not wait for additional ins
    - What is up next
    - Any open questions or flags left from the last session
    - Any work on the board that seems to pull away from the North Star
+   - Whether `.collab/inbox/` has items waiting to be sorted (count only; don't sort unasked)
 
 Do **not** re-read `collab-contract.md` — focus on current state, not process rules.
 
@@ -544,6 +535,21 @@ The agent facilitates in five phases — **Frame, Diverge, Cluster, Converge, Cl
 4. Writes the file after every phase so nothing is lost if the session is interrupted.
 5. Does **not** create tickets, tasks, or kanban entries from the session without explicit
    user approval. Proposed next steps are proposals.
+
+---
+
+## Inbox
+
+- **Location**: `.collab/inbox/`. The user drops files here that might be useful; nothing in it
+  is sorted or required.
+
+### Agent Behavior with the Inbox
+
+1. Read the inbox when the user asks, or mention it at OPEN SESSION if it has items.
+2. For each item, say what it is and propose what to do with it (fold into existing docs,
+   start a brainstorm or plan, move it elsewhere, or delete it). The user decides.
+3. Never move, rewrite, or delete an inbox item without the user's explicit approval.
+4. Never create kanban entries from inbox items without approval.
 
 ---
 
@@ -3791,7 +3797,7 @@ def ensure_required_directories(target_root: Path, mode: str) -> None:
         target_root / ".collab" / "project-plans",
         target_root / ".collab" / "session-summaries",
         target_root / ".collab" / "skills",
-        target_root / ".collab" / "supporting-artifacts",
+        target_root / ".collab" / "inbox",
         target_root / ".collab" / "prompts",
         target_root / ".collab" / "playbooks",
         target_root / ".collab" / "playbooks" / "templates",
@@ -3877,6 +3883,30 @@ def _migrate_ideas_to_brainstorms(collab_dir: Path, dry_run: bool) -> list[str]:
         log.append("  rename .collab/brainstorm/ → .collab/brainstorms/")
         return log
 
+    return log
+
+
+def _migrate_supporting_artifacts_to_inbox(collab_dir: Path, dry_run: bool) -> list[str]:
+    """Move .collab/supporting-artifacts/ → .collab/inbox/ (older scaffolds). Never deletes files."""
+    old = collab_dir / "supporting-artifacts"
+    new = collab_dir / "inbox"
+    if not old.is_dir():
+        return []
+    if not new.exists():
+        if not dry_run:
+            old.rename(new)
+        return ["  rename .collab/supporting-artifacts/ → .collab/inbox/"]
+    log: list[str] = []
+    for item in sorted(old.iterdir()):
+        if (new / item.name).exists():
+            log.append(f"  keep   .collab/supporting-artifacts/{item.name}  (already in inbox/; move it by hand)")
+            continue
+        if not dry_run:
+            item.rename(new / item.name)
+        log.append(f"  move   .collab/supporting-artifacts/{item.name} → .collab/inbox/")
+    if not dry_run and not any(old.iterdir()):
+        old.rmdir()
+        log.append("  remove .collab/supporting-artifacts/  (empty)")
     return log
 
 
@@ -3969,7 +3999,7 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
         collab_dir / "project-plans",
         collab_dir / "session-summaries",
         collab_dir / "skills",
-        collab_dir / "supporting-artifacts",
+        collab_dir / "inbox",
         collab_dir / "prompts",
         collab_dir / "playbooks",
         collab_dir / "playbooks" / "templates",
@@ -3990,6 +4020,7 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
 
     migrated = _migrate_git_management(collab_dir, dry_run)
     migrated += _migrate_ideas_to_brainstorms(collab_dir, dry_run)
+    migrated += _migrate_supporting_artifacts_to_inbox(collab_dir, dry_run)
 
     for d in required_dirs:
         if not d.exists():
@@ -4313,7 +4344,7 @@ Tip: Start future sessions with OPEN SESSION to resume where you left off.
      Use SAVE SESSION mid-session to checkpoint without ending.
      End sessions with CLOSE SESSION to save your progress.
      Use SAVE CHAT to export the full session transcript to .collab/chat-logs/.
-     Put project-adjacent materials (diagrams, specs, research) in .collab/supporting-artifacts/.
+     Drop files that might be useful in .collab/inbox/ and sort them out with your agent.
 """)
 
 
