@@ -131,6 +131,24 @@ class TestInit(TempDirCase):
             self.assertIn("## Agent Bridge Protocol", text, skill)
             self.assertIn("`bridge open <name>`", text, skill)
 
+    def test_skills_shipped_in_collab(self) -> None:
+        root = new_project(self.tmp, "sk")
+        for agent in ("claude", "codex", "gemini"):
+            skill = (root / f".collab/skills/{agent}/scaffy/SKILL.md").read_text(encoding="utf-8")
+            self.assertTrue(skill.startswith("---\nname: scaffy\n"), agent)
+            self.assertIn(f"--cli {agent}", skill)
+            self.assertIn(f"-{agent}-summary.md", skill)
+            self.assertNotIn("__", skill.split("---", 2)[1], agent)
+
+    def test_repo_skills_match_generated(self) -> None:
+        # The repo's skills/ is generated from scaffy.py. To refresh it:
+        #   python -c "import scaffy; from pathlib import Path; [Path(f'skills/{a}/scaffy/SKILL.md').write_text(scaffy.render_skill(a), encoding='utf-8') for a in scaffy.SKILL_VARIANTS]"
+        for agent in scaffy_mod.SKILL_VARIANTS:
+            with self.subTest(agent=agent):
+                repo_copy = REPO / f"skills/{agent}/scaffy/SKILL.md"
+                self.assertEqual(repo_copy.read_text(encoding="utf-8"), scaffy_mod.render_skill(agent),
+                                 "skills/ is out of date; regenerate it from scaffy.py (see comment)")
+
     def test_dry_run_writes_nothing(self) -> None:
         scaffy("--name", "dry", "--path", str(self.tmp), "--dry-run")
         self.assertFalse((self.tmp / "dry").exists())
@@ -163,10 +181,10 @@ class TestUpgrade(TempDirCase):
     def test_upgrade_restores_missing_file_and_dir(self) -> None:
         root = new_project(self.tmp)
         (root / ".collab/playbooks/git-guidelines.md").unlink()
-        (root / ".collab/skills").rmdir()
+        (root / ".collab/audit").rmdir()
         scaffy("--upgrade", "--path", str(root))
         self.assertTrue((root / ".collab/playbooks/git-guidelines.md").is_file())
-        self.assertTrue((root / ".collab/skills").is_dir())
+        self.assertTrue((root / ".collab/audit").is_dir())
 
     def test_upgrade_without_force_keeps_edits(self) -> None:
         root = new_project(self.tmp)
