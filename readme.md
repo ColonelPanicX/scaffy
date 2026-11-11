@@ -76,9 +76,8 @@ scaffy --name my-project --path /path/to/base \
 - `.collab/skills/` — Project-specific agent skills and slash commands
 - `.collab/inbox/` — Drop zone for files that might be useful; sort them out with your agent
 - `.collab/prompts/` — Reusable agent prompts, including the agent instructions generator
-- `.collab/guides/` — Reference docs: git governance modes, branching strategy, label taxonomy
-- `.collab/playbooks/` — Step-by-step procedures: coding standards, per-mode git governance playbooks, agent bridges
-- `.collab/playbooks/templates/` — Fill-in-the-blank forms: issue and pull request templates
+- `.collab/playbooks/` — How-to guides: coding standards, git guidelines, the git playbook for your governance mode, agent bridges
+- `.collab/templates/` — Starting points for session summaries, brainstorms, project plans, issues and pull requests
 - `.gitignore` — Sane defaults (`.collab/` and agent dirs excluded from version control)
 
 ## Usage
@@ -175,7 +174,7 @@ become formal tickets yet. It bridges the gap between "I had a thought" and "I o
 **How it works:**
 
 1. Create a file for your idea: `.collab/brainstorms/my-idea-name.md`
-2. Use `.collab/brainstorms/brainstorm-template.md` as a starting point
+2. Use `.collab/templates/brainstorm-template.md` as a starting point
 3. Brain dump freely — no rules, no required format in the idea body
 4. When ready, point your agent at the file: *"Hey, look at this idea — does it have legs?"*
 5. The agent will engage honestly, then append a dated summary to the **Discussion Log** section
@@ -252,18 +251,19 @@ general reference for your agent to consult.
 
 ### Git Governance
 
-`.collab/guides/git-guidelines.md` is a reference guide explaining the governance modes,
+`.collab/playbooks/git-guidelines.md` is a reference guide explaining the governance modes,
 branching strategy, label taxonomy, PR standards, and platform notes for GitHub and GitLab.
 
-Three matching execution playbooks in `.collab/playbooks/` give each governance mode a
-concrete step-by-step procedure for starting work, committing, opening PRs, merging, and
-handling hotfixes:
+Each governance mode has a step-by-step playbook for starting work, committing, opening PRs,
+merging, and handling hotfixes. scaffy writes only the one for your project's mode to
+`.collab/playbooks/git-governance-<mode>.md` (none for mode `none`); if you change mode,
+update `project.yaml` and run `scaffy --upgrade` to add the new one:
 
 - `git-governance-lightweight.md` — prototypes and sandboxes
 - `git-governance-standard.md` — active product development (default)
 - `git-governance-strict.md` — compliance-sensitive or auditable work
 
-Fill-in-the-blank issue and PR templates live in `.collab/playbooks/templates/`.
+Fill-in-the-blank issue and PR templates live in `.collab/templates/`.
 
 ### Agent Skills
 

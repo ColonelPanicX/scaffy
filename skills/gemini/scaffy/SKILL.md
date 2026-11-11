@@ -49,7 +49,7 @@ This is the first-session onboarding for a project with a `.collab/` workspace. 
 
 Execute immediately — do not wait for additional instructions:
 
-1. Find and read the most recent 1–2 session summaries in `.collab/session-summaries/` (skip `session-summary-template.md`). Filenames start with `MM.DD.YYYY`, so don't sort them alphabetically (`01.05.2027` would come before `11.08.2026`). Order by year, then month, then day, then the same-day number (no number first, then `-02`, `-03`), newest first.
+1. Find and read the most recent 1–2 session summaries in `.collab/session-summaries/` (skip a `session-summary-template.md` left by an older scaffold). Filenames start with `MM.DD.YYYY`, so don't sort them alphabetically (`01.05.2027` would come before `11.08.2026`). Order by year, then month, then day, then the same-day number (no number first, then `-02`, `-03`), newest first.
 2. Read `.collab/kanban-board.md` for current task state.
 3. Read `.collab/context.md` if it exists.
 4. Read `.collab/north-star.md` if its status is `agreed` (skip it while still `draft`).
@@ -72,7 +72,7 @@ Execute immediately — do not wait for additional instructions:
 1. Write a session summary to `.collab/session-summaries/` (always a new file — never overwrite):
    - First summary that day: `MM.DD.YYYY-gemini-summary.md`
    - Additional same-day saves: `MM.DD.YYYY-02-gemini-summary.md`, `MM.DD.YYYY-03-gemini-summary.md`, etc.
-   - Use the template at `.collab/session-summaries/session-summary-template.md`.
+   - Use the template at `.collab/templates/session-summary-template.md`.
    - Include a `## Re-entry Prompt` section in the summary (see step 3).
 2. Update `.collab/kanban-board.md` to reflect current task state.
 3. Generate a re-entry prompt and output it as a copyable block. The prompt should be self-contained — everything a fresh agent needs to pick up exactly where this session left off:
@@ -162,7 +162,7 @@ A facilitated session on one question that ends in a written brainstorm document
 1. If no topic was given, ask for one in a single line.
 2. Filename: topic in lowercase, hyphen-separated, plus `-session-MM.DD.YYYY.md` (e.g. `brainstorm session onboarding flow` → `onboarding-flow-session-11.05.2026.md`) in `.collab/brainstorms/`.
    - **Exists**: read it and resume at the first phase that is still empty.
-   - **Does not exist**: create it from `.collab/brainstorms/brainstorm-session-template.md` (if the template is missing, use the section headings below). Fill in the title and today's date, set `_Status: in-session_`, and list participants (the user and you, by agent name).
+   - **Does not exist**: create it from `.collab/templates/brainstorm-session-template.md` (if the template is missing, use the section headings below). Fill in the title and today's date, set `_Status: in-session_`, and list participants (the user and you, by agent name).
 3. Ask how deep to go: **quick** (~15 min, ~10 ideas), **standard** (~30 min, ~20 ideas), or **deep** (no cap). Default: standard.
 
 ### Phase 1 — Frame
@@ -220,7 +220,7 @@ Execute immediately — do not wait for additional instructions.
 
 List all brainstorm files with their statuses:
 
-1. Scan `.collab/brainstorms/` for all `.md` files (exclude `brainstorm-template.md` and `brainstorm-session-template.md`). Session files (`*-session-MM.DD.YYYY.md`) show status `in-session` or `complete`.
+1. Scan `.collab/brainstorms/` for all `.md` files (skip any `*-template.md` left by an older scaffold). Session files (`*-session-MM.DD.YYYY.md`) show status `in-session` or `complete`.
 2. For each file, extract the `_Status:` value and the `# Title` heading.
 3. Display a summary table:
    ```
@@ -238,7 +238,7 @@ Create a new brainstorm file and start workshopping it:
 1. Convert the title to a filename: lowercase, hyphen-separated, `.md` extension (e.g. `brainstorm my cool idea` → `my-cool-idea.md`).
 2. Check if `.collab/brainstorms/<filename>` already exists:
    - **Exists**: Read the file and resume workshopping (skip to step 4).
-   - **Does not exist**: Create it from the template at `.collab/brainstorms/brainstorm-template.md`, filling in the title and today's date.
+   - **Does not exist**: Create it from the template at `.collab/templates/brainstorm-template.md`, filling in the title and today's date.
 3. Confirm the file was created and its path.
 4. Start workshopping — engage with the user collaboratively:
    - Ask what the idea is about — what problem it solves, what it would look like.
@@ -258,7 +258,7 @@ Execute immediately — do not wait for additional instructions.
 
 List all project plan files with their statuses:
 
-1. Scan `.collab/project-plans/` for all `.md` files (exclude `project-plan-template.md`).
+1. Scan `.collab/project-plans/` for all `.md` files (skip a `project-plan-template.md` left by an older scaffold).
 2. For each file, extract the `_Status:` value and the `# Title` heading.
 3. Display a summary table:
    ```
@@ -276,7 +276,7 @@ Create a new project plan file and start workshopping it:
 1. Convert the title to a filename: lowercase, hyphen-separated, `.md` extension (e.g. `project plan api redesign` → `api-redesign.md`).
 2. Check if `.collab/project-plans/<filename>` already exists:
    - **Exists**: Read the file and resume workshopping (skip to step 4).
-   - **Does not exist**: Create it from the template at `.collab/project-plans/project-plan-template.md`, filling in the title and today's date.
+   - **Does not exist**: Create it from the template at `.collab/templates/project-plan-template.md`, filling in the title and today's date.
 3. Confirm the file was created and its path.
 4. Start workshopping — engage with the user collaboratively:
    - Clarify the goal — what does success look like?
