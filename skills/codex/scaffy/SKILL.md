@@ -59,6 +59,7 @@ Execute immediately — do not wait for additional instructions:
    - What is up next
    - Any open questions or flags left from the last session
    - Any work on the board that seems to pull away from the North Star
+   - Whether `.collab/inbox/` has items waiting to be sorted (count only; don't sort unasked)
 
 Do not re-read `collab-contract.md` — focus on current state, not process rules.
 
