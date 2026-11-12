@@ -108,6 +108,22 @@ class TestInit(TempDirCase):
             self.assertIn("Order by year, then month, then day", text, skill)
             self.assertNotIn("sort by filename date", text, skill)
 
+    def test_agent_bridge_dir_and_playbook_shipped(self) -> None:
+        root = new_project(self.tmp, "ab")
+        bridge_dir = root / ".collab/agent-bridge"
+        self.assertTrue(bridge_dir.is_dir())
+        self.assertEqual(list(bridge_dir.iterdir()), [])
+        pb = (root / ".collab/playbooks/agent-bridge-playbook.md").read_text(encoding="utf-8")
+        for heading in ("## 1. When to Use a Bridge", "## 4. File Formats", "## 7. Closing a Bridge"):
+            self.assertIn(heading, pb)
+        self.assertNotIn("{", pb)
+        self.assertIn("## Agent Bridges", (root / ".collab/collab-contract.md").read_text(encoding="utf-8"))
+        self.assertIn("agent-bridge/", (root / ".collab/readme.md").read_text(encoding="utf-8"))
+        for skill in Path(__file__).resolve().parent.parent.glob("skills/*/scaffy/SKILL.md"):
+            text = skill.read_text(encoding="utf-8")
+            self.assertIn("## Agent Bridge Protocol", text, skill)
+            self.assertIn("`bridge open <name>`", text, skill)
+
     def test_dry_run_writes_nothing(self) -> None:
         scaffy("--name", "dry", "--path", str(self.tmp), "--dry-run")
         self.assertFalse((self.tmp / "dry").exists())
@@ -177,6 +193,22 @@ class TestUpgrade(TempDirCase):
         ns.write_text("# North Star\n_Status: agreed_\n", encoding="utf-8")
         scaffy("--upgrade", "--path", str(root), "--force")
         self.assertEqual(ns.read_text(encoding="utf-8"), "# North Star\n_Status: agreed_\n")
+
+    def test_upgrade_adds_agent_bridge_and_keeps_bridges(self) -> None:
+        root = new_project(self.tmp)
+        bridge_dir = root / ".collab/agent-bridge"
+        pb = root / ".collab/playbooks/agent-bridge-playbook.md"
+        bridge_dir.rmdir()
+        pb.unlink()
+        scaffy("--upgrade", "--path", str(root))
+        self.assertTrue(bridge_dir.is_dir())
+        self.assertTrue(pb.is_file())
+        room = bridge_dir / "login-timeout"
+        room.mkdir()
+        (room / "transcript.md").write_text("## from=dev ts=2026-11-09T12:00:00Z\nhi\n", encoding="utf-8")
+        scaffy("--upgrade", "--path", str(root), "--force")
+        self.assertEqual(sorted(p.name for p in bridge_dir.iterdir()), ["login-timeout"])
+        self.assertIn("hi", (room / "transcript.md").read_text(encoding="utf-8"))
 
     def test_force_upgrade_backs_up_replaced_files(self) -> None:
         root = new_project(self.tmp)

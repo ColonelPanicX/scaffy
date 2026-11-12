@@ -70,13 +70,14 @@ scaffy --name my-project --path /path/to/base \
 - `.collab/prompts/agent-profile.md` — Fill-in questionnaire for generating agent instructions (CLAUDE.md, AGENTS.md, etc.)
 - `.collab/brainstorms/` — Thinking space for pre-ticket concepts and proposals
 - `.collab/session-summaries/` — Session summary directory with template
+- `.collab/agent-bridge/` — Shared-file channels between agents of different types (empty until you open one)
 - `.collab/audit/` — Analysis reports and planning documents
 - `.collab/project-plans/` — Long-form plans, architecture docs, and multi-phase roadmaps
 - `.collab/skills/` — Project-specific agent skills and slash commands
 - `.collab/supporting-artifacts/` — Diagrams, specs, research, and other project-adjacent materials
 - `.collab/prompts/` — Reusable agent prompts, including the agent instructions generator
 - `.collab/guides/` — Reference docs: git governance modes, branching strategy, label taxonomy
-- `.collab/playbooks/` — Step-by-step procedures: coding standards, per-mode git governance playbooks
+- `.collab/playbooks/` — Step-by-step procedures: coding standards, per-mode git governance playbooks, agent bridges
 - `.collab/playbooks/templates/` — Fill-in-the-blank forms: issue and pull request templates
 - `.gitignore` — Sane defaults (`.collab/` and agent dirs excluded from version control)
 
@@ -203,6 +204,24 @@ without your approval.
 When scaffolding into an **existing project**, scaffy will print a reminder to migrate any ideas
 you already have written down or in your head into the new directory.
 
+## Agent Bridge
+
+When one project uses agents of **different types** (say Claude and Codex), they can't message
+each other directly. An agent bridge gives them a shared channel: two agents coordinate on one
+problem through files in `.collab/agent-bridge/<name>/`, and you monitor instead of relaying
+every message. Agents of the same type should use their CLI's own messaging instead.
+
+- `/scaffy bridge open <name>`: the agent becomes the **initiator**. It agrees the two roles and
+  the scope with you, writes `README.md`, the first message in `transcript.md`, and `status.md`,
+  then gives you the path to hand to the other agent.
+- `/scaffy bridge check`: the other agent (the **responder**) reads the bridge and replies;
+  either side uses it to pick up new messages.
+- `/scaffy bridge close`: the initiator posts a closing summary; the responder acknowledges.
+
+Transcripts are append-only with UTC timestamps, and closed bridges are kept as a record.
+Agents never commit, push, or change code because of a bridge message without your approval.
+The full procedure is in `.collab/playbooks/agent-bridge-playbook.md`.
+
 ## Additional Enhancements
 
 The scaffold includes two optional tools in `.collab/prompts/` to help you get more out of your agent setup:
@@ -276,6 +295,10 @@ All three skills support session protocols and workspace commands. If you use sc
 /scaffy brainstorm session <topic>  # Facilitated session (frame → ideas → shortlist) that writes a brainstorm doc
 /scaffy project plan        # List project plans with statuses
 /scaffy project plan <title> # Create or resume a project plan and start workshopping
+/scaffy bridge              # List agent bridges and who holds the ball
+/scaffy bridge open <name>  # Open a bridge to an agent of a different type
+/scaffy bridge check [name] # Read the bridge and reply if needed
+/scaffy bridge close [name] # Close (initiator) or acknowledge the close (responder)
 ```
 
 **Codex:** no slash command — Codex pulls the skill in automatically when it detects a scaffolding or session need.
