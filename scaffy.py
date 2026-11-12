@@ -177,7 +177,7 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
 - `north-star.md` — The project's end goal, who it serves, non-goals, and principles. Stable;
   changes only with the user's approval.
 - `project.yaml` — Machine-readable project metadata (name, date, governance mode, agents).
-- `session-summaries/` — Session summaries from all agents.
+- `session-summaries/` — Session summaries from all agents (template in `templates/`).
   Naming:
   - First summary of the day: `MM.DD.YYYY-agentname-summary.md`
   - Additional same-day summaries: `MM.DD.YYYY-##-agentname-summary.md`
@@ -185,10 +185,7 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
 - `chat-logs/` — Full session transcripts exported via `SAVE CHAT`.
   Naming: `MM.DD.YYYY-claude-chat.md` (or `MM.DD.YYYY-##-claude-chat.md` for multiple per day).
 - `brainstorms/` — Thinking space for pre-ticket concepts and proposals.
-  - `brainstorm-template.md` — Starter template for new brainstorm files.
-  - `brainstorm-session-template.md` — Template for facilitated brainstorm sessions.
 - `project-plans/` — Structured plans bridging brainstormed ideas and kanban execution.
-  - `project-plan-template.md` — Starter template for new plan files.
 - `agent-bridge/` — Shared-file channels between agents of different types (one subdirectory
   per bridge). Empty until a bridge is opened.
 - `audit/` — Analysis reports, planning documents, and progress tracking artifacts.
@@ -198,13 +195,14 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
   - `initial-prompt.md` — First-session onboarding prompt (paste on first launch).
   - `agent-profile.md` — Fill-in questionnaire for generating agent instruction files.
   - `agent-md-prompt.md` — Prompt to generate CLAUDE.md / AGENTS.md from the profile.
-- `guides/` — Reference documents explaining the *why* behind project conventions.
-  - `git-guidelines.md` — Git governance modes, branching strategy, label taxonomy, platform notes.
-- `playbooks/` — Step-by-step procedures for common operations.
+- `playbooks/` — How-to guides and the reasoning behind project conventions.
   - `coding-playbook.md` — General coding standards and best practices.
   - `agent-bridge-playbook.md` — How two agents of different types coordinate through a bridge.
-  - `git-governance-lightweight.md` / `git-governance-standard.md` / `git-governance-strict.md` — Execution playbooks per governance mode.
-  - `templates/` — Fill-in-the-blank forms: `issue-template.md`, `pull-request-template.md`.
+  - `git-guidelines.md` — Git governance modes, branching strategy, label taxonomy, platform notes.
+  - `git-governance-<mode>.md` — Step-by-step git procedure for this project's governance mode
+    (not created for mode `none`).
+- `templates/` — Starting points for new files: session summary, brainstorm, brainstorm session,
+  project plan, issue, and pull request.
 
 ## Inbox Guidance
 
@@ -235,7 +233,7 @@ proposals, things worth thinking through before committing to a sprint.
 
 Workflow:
 - Create one file per idea cluster, named descriptively (e.g., `better-onboarding.md`).
-- Use `brainstorm-template.md` as a starting point.
+- Use `templates/brainstorm-template.md` as a starting point.
 - Workshop ideas with an agent: ask for honest feedback, capture the discussion in the
   **Discussion Log** section of the file so context isn't lost when the session closes.
 - When an idea is ready to become a ticket, note it at the bottom of the file and graduate it
@@ -246,7 +244,7 @@ Brainstorm sessions:
 - For a topic with many possible answers, run a facilitated session (the scaffy skill:
   `brainstorm session <topic>`). The agent frames the question with you, collects ideas
   without judging them, groups them, helps you pick a shortlist, and writes it all up.
-- Each session produces `<topic>-session-MM.DD.YYYY.md` from `brainstorm-session-template.md`.
+- Each session produces `<topic>-session-MM.DD.YYYY.md` from `templates/brainstorm-session-template.md`.
   The file is written after every phase, so an interrupted session can be resumed.
 - Shortlisted ideas can be spun off into their own single-idea brainstorm files.
 
@@ -257,7 +255,7 @@ ready to be sprint tasks yet. Plans define the goal, phases, and tasks before an
 
 Workflow:
 - Create one file per initiative, named descriptively (e.g., `auth-refactor.md`).
-- Use `project-plan-template.md` as a starting point.
+- Use `templates/project-plan-template.md` as a starting point.
 - Work with an agent to fill out phases and surface risks. Capture decisions in the file itself.
 - When a phase is approved for execution, promote its tasks to `kanban-board.md` and note the
   date at the bottom of the plan file.
@@ -396,7 +394,7 @@ Immediately execute the Session Save Protocol — do not wait for additional ins
    - `MM.DD.YYYY-agentname-summary.md` for the first summary that day.
    - `MM.DD.YYYY-##-agentname-summary.md` for additional same-day saves/closes
      (use zero-padded sequence like `02`, `03`, etc.).
-   - Use the template at `.collab/session-summaries/session-summary-template.md`.
+   - Use the template at `.collab/templates/session-summary-template.md`.
    - Include a `## Re-entry Prompt` section in the summary (see step 3).
 2. Update `.collab/kanban-board.md` to reflect current task state:
    - Move completed tasks to **Done**.
@@ -428,7 +426,7 @@ Immediately execute the Session Close Protocol — do not wait for additional in
    - `MM.DD.YYYY-agentname-summary.md` for the first summary that day.
    - `MM.DD.YYYY-##-agentname-summary.md` for additional same-day summaries
      (use zero-padded sequence like `02`, `03`, etc.).
-   - Use the template at `.collab/session-summaries/session-summary-template.md`.
+   - Use the template at `.collab/templates/session-summary-template.md`.
 2. Update `.collab/kanban-board.md` to reflect current task state:
    - Move completed tasks to **Done**.
    - Update statuses of in-progress tasks.
@@ -497,7 +495,7 @@ Immediately execute the Chat Save Protocol — do not wait for additional instru
   Use this directory to capture, workshop, and evolve ideas collaboratively before they
   enter the formal task pipeline.
 - **One file per idea cluster** — name files descriptively (lowercase, hyphen-separated).
-- **Use the template** at `.collab/brainstorms/brainstorm-template.md` as a starting point.
+- **Use the template** at `.collab/templates/brainstorm-template.md` as a starting point.
 - **Nothing in `brainstorms/` is required to go anywhere.** Ideas can sit, evolve, or be parked
   indefinitely. The value is keeping them on paper so they aren't lost between sessions.
 
@@ -578,7 +576,7 @@ The agent facilitates in five phases — **Frame, Diverge, Cluster, Converge, Cl
 - **Purpose**: Structured planning space between brainstorming and execution.
   Use this directory to define goals, phases, and tasks before they enter the kanban pipeline.
 - **One file per plan** — name files descriptively (lowercase, hyphen-separated).
-- **Use the template** at `.collab/project-plans/project-plan-template.md` as a starting point.
+- **Use the template** at `.collab/templates/project-plan-template.md` as a starting point.
 
 ### Agent Behavior in `project-plans/`
 
@@ -687,7 +685,7 @@ _Status: draft_
 | {date} | Created (draft) | — |
 """,
 
-    ".collab/brainstorms/brainstorm-template.md": """\
+    ".collab/templates/brainstorm-template.md": """\
 # Idea Title
 
 _Started: {date}_
@@ -712,7 +710,7 @@ _Status: drafting_
 <!-- When graduated: Graduated → Issue #__ on [date] -->
 """,
 
-    ".collab/brainstorms/brainstorm-session-template.md": """\
+    ".collab/templates/brainstorm-session-template.md": """\
 # Brainstorm Session — Topic
 
 _Date: {date}_
@@ -764,7 +762,7 @@ _Participants: user, agent_
 <!-- Single-idea brainstorm files or project plans created from this session. -->
 """,
 
-    ".collab/project-plans/project-plan-template.md": """\
+    ".collab/templates/project-plan-template.md": """\
 # Plan Title
 
 _Created: {date}_
@@ -1221,7 +1219,7 @@ ticket_prefix: {ticket_prefix}
 """,
 
 
-    ".collab/session-summaries/session-summary-template.md": """\
+    ".collab/templates/session-summary-template.md": """\
 ---
 date: MM.DD.YYYY
 agent: <agent-name>
@@ -1248,7 +1246,7 @@ Paste this block into a new chat to resume exactly where this session left off.
 -->
 """,
 
-    ".collab/guides/git-guidelines.md": """\
+    ".collab/playbooks/git-guidelines.md": """\
 ---
 
 # Git Platform Governance & AI Agent Operating Guidelines
@@ -1570,8 +1568,8 @@ Use this to bootstrap quickly without over-engineering.
 - Require status checks for CI where available.
 
 4. Enable work item and change request templates:
-- Use `.collab/playbooks/templates/issue-template.md` as your baseline.
-- Use `.collab/playbooks/templates/pull-request-template.md` as your PR/MR template.
+- Use `.collab/templates/issue-template.md` as your baseline.
+- Use `.collab/templates/pull-request-template.md` as your PR/MR template.
 - Copy into your platform's template directory (`.github/`, `.gitlab/`, etc.).
 
 5. Set up a basic board:
@@ -1592,7 +1590,7 @@ This checklist is intentionally minimal. Expand controls only where risk or team
 ---
 """,
 
-    ".collab/playbooks/templates/issue-template.md": """\
+    ".collab/templates/issue-template.md": """\
 ---
 
 # Work Item Template (Platform-Agnostic)
@@ -1720,7 +1718,7 @@ For Lightweight mode, apply only the labels your repo actively uses.
 ---
 """,
 
-    ".collab/playbooks/templates/pull-request-template.md": """\
+    ".collab/templates/pull-request-template.md": """\
 ---
 
 # Change Request Template (Platform-Agnostic)
@@ -1830,7 +1828,7 @@ governance_mode: lightweight
 # Git Governance Playbook — Lightweight
 
 **When to use:** Prototypes, sandboxes, personal projects, early ideation.
-**Reference:** `.collab/guides/git-guidelines.md` explains the *why* behind each mode.
+**Reference:** `.collab/playbooks/git-guidelines.md` explains the *why* behind each mode.
 
 > Upgrade to Standard before shipping to production or onboarding a second contributor.
 
@@ -1884,7 +1882,7 @@ governance_mode: standard
 # Git Governance Playbook — Standard
 
 **When to use:** Most active projects — team delivery, side products, anything shipping to users.
-**Reference:** `.collab/guides/git-guidelines.md` explains the *why* behind each mode.
+**Reference:** `.collab/playbooks/git-guidelines.md` explains the *why* behind each mode.
 
 ---
 
@@ -1904,7 +1902,7 @@ governance_mode: standard
 
 ## Opening a PR / MR
 
-1. Use the template at `.collab/playbooks/templates/pull-request-template.md`.
+1. Use the template at `.collab/templates/pull-request-template.md`.
 2. Required sections: **Summary**, **Why**, **Linked Work Item(s)**, **Validation**.
 3. Link to the work item with `Closes #<number>` for auto-close.
 4. Keep scope tight — one concern per PR.
@@ -1942,7 +1940,7 @@ governance_mode: strict
 # Git Governance Playbook — Strict
 
 **When to use:** Compliance requirements, auditable work, high-risk or high-visibility systems.
-**Reference:** `.collab/guides/git-guidelines.md` explains the *why* behind each mode.
+**Reference:** `.collab/playbooks/git-guidelines.md` explains the *why* behind each mode.
 
 ---
 
@@ -1964,7 +1962,7 @@ governance_mode: strict
 
 ## Opening a PR / MR
 
-1. Use the full template at `.collab/playbooks/templates/pull-request-template.md`.
+1. Use the full template at `.collab/templates/pull-request-template.md`.
 2. All sections required: **Summary**, **Why**, **Linked Work Item(s)**, **Scope**, **Validation**, **Risk Assessment**, **Rollout and Rollback**.
 3. Risk assessment must be completed — do not leave fields blank.
 4. PR must pass all CI/CD checks before review is requested.
@@ -3793,14 +3791,13 @@ def ensure_required_directories(target_root: Path, mode: str) -> None:
         target_root / ".collab" / "agent-bridge",
         target_root / ".collab" / "audit",
         target_root / ".collab" / "chat-logs",
-        target_root / ".collab" / "guides",
         target_root / ".collab" / "project-plans",
         target_root / ".collab" / "session-summaries",
         target_root / ".collab" / "skills",
         target_root / ".collab" / "inbox",
         target_root / ".collab" / "prompts",
         target_root / ".collab" / "playbooks",
-        target_root / ".collab" / "playbooks" / "templates",
+        target_root / ".collab" / "templates",
     ]
     for path in required_dirs:
         path.mkdir(parents=True, exist_ok=True)
@@ -3824,7 +3821,7 @@ def _parse_project_yaml(yaml_path: Path) -> dict[str, str]:
 
 
 def _migrate_git_management(collab_dir: Path, dry_run: bool) -> list[str]:
-    """Move .collab/git-management/ files to guides/ and playbooks/templates/. Returns log lines."""
+    """Move .collab/git-management/ files to playbooks/ and templates/. Returns log lines."""
     git_mgmt_dir = collab_dir / "git-management"
     log: list[str] = []
 
@@ -3832,9 +3829,9 @@ def _migrate_git_management(collab_dir: Path, dry_run: bool) -> list[str]:
         return log
 
     moves = [
-        (git_mgmt_dir / "git-guidelines.md",      collab_dir / "guides" / "git-guidelines.md"),
-        (git_mgmt_dir / "issue-template.md",       collab_dir / "playbooks" / "templates" / "issue-template.md"),
-        (git_mgmt_dir / "pull-request-template.md", collab_dir / "playbooks" / "templates" / "pull-request-template.md"),
+        (git_mgmt_dir / "git-guidelines.md",      collab_dir / "playbooks" / "git-guidelines.md"),
+        (git_mgmt_dir / "issue-template.md",       collab_dir / "templates" / "issue-template.md"),
+        (git_mgmt_dir / "pull-request-template.md", collab_dir / "templates" / "pull-request-template.md"),
     ]
 
     for src, dst in moves:
@@ -3910,6 +3907,50 @@ def _migrate_supporting_artifacts_to_inbox(collab_dir: Path, dry_run: bool) -> l
     return log
 
 
+# Layout moves for older scaffolds: (old path, new path) relative to .collab/
+LAYOUT_MOVES: tuple[tuple[str, str], ...] = (
+    ("guides/git-guidelines.md", "playbooks/git-guidelines.md"),
+    ("playbooks/templates/issue-template.md", "templates/issue-template.md"),
+    ("playbooks/templates/pull-request-template.md", "templates/pull-request-template.md"),
+    ("brainstorms/brainstorm-template.md", "templates/brainstorm-template.md"),
+    ("brainstorms/brainstorm-session-template.md", "templates/brainstorm-session-template.md"),
+    ("project-plans/project-plan-template.md", "templates/project-plan-template.md"),
+    ("session-summaries/session-summary-template.md", "templates/session-summary-template.md"),
+)
+
+
+def _migrate_collab_layout(collab_dir: Path, dry_run: bool) -> list[str]:
+    """Move templates into templates/ and guides/ into playbooks/. Never overwrites or deletes files."""
+    log: list[str] = []
+    for old_rel, new_rel in LAYOUT_MOVES:
+        src, dst = collab_dir / old_rel, collab_dir / new_rel
+        if not src.is_file():
+            continue
+        if dst.exists():
+            log.append(f"  keep   .collab/{old_rel}  (.collab/{new_rel} already exists; merge by hand)")
+            continue
+        if not dry_run:
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            src.rename(dst)
+        log.append(f"  move   .collab/{old_rel} → .collab/{new_rel}")
+    for old_dir in ("playbooks/templates", "guides"):
+        d = collab_dir / old_dir
+        if d.is_dir() and not any(d.iterdir()):
+            if not dry_run:
+                d.rmdir()
+            log.append(f"  remove .collab/{old_dir}/  (empty)")
+    return log
+
+
+def template_files_for(governance_mode: str) -> dict[str, str]:
+    """TEMPLATE_FILES minus the git governance playbooks for modes other than this one."""
+    keep = f".collab/playbooks/git-governance-{governance_mode}.md"
+    return {
+        rel: content for rel, content in TEMPLATE_FILES.items()
+        if not rel.startswith(".collab/playbooks/git-governance-") or rel == keep
+    }
+
+
 # Files holding project state the user writes. --upgrade never replaces these, even with
 # --force; only a missing one is recreated from its template.
 USER_OWNED_FILES: frozenset[str] = frozenset({
@@ -3966,7 +4007,7 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
     # Build the full file manifest that scaffy would generate today
     files_to_check: dict[Path, str] = {}
 
-    for rel_path, content in TEMPLATE_FILES.items():
+    for rel_path, content in template_files_for(governance_mode).items():
         rendered = render_template(content, **render_kwargs)
         if rel_path == ".gitignore":
             # During upgrade, never touch an existing .gitignore
@@ -3995,14 +4036,13 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
         collab_dir / "brainstorms",
         collab_dir / "agent-bridge",
         collab_dir / "audit",
-        collab_dir / "guides",
         collab_dir / "project-plans",
         collab_dir / "session-summaries",
         collab_dir / "skills",
         collab_dir / "inbox",
         collab_dir / "prompts",
         collab_dir / "playbooks",
-        collab_dir / "playbooks" / "templates",
+        collab_dir / "templates",
     ]
 
     # Execute
@@ -4021,6 +4061,7 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
     migrated = _migrate_git_management(collab_dir, dry_run)
     migrated += _migrate_ideas_to_brainstorms(collab_dir, dry_run)
     migrated += _migrate_supporting_artifacts_to_inbox(collab_dir, dry_run)
+    migrated += _migrate_collab_layout(collab_dir, dry_run)
 
     for d in required_dirs:
         if not d.exists():
@@ -4265,7 +4306,7 @@ def main() -> None:
             return "write    "
 
         print("\nPlanned actions:")
-        for rel_path in TEMPLATE_FILES:
+        for rel_path in template_files_for(governance_mode):
             dest = effective_gitignore_dest if rel_path == ".gitignore" else target_root / rel_path
             print(f"  {_dry_action(dest)} {dest}")
         dest = target_root / ".collab/prompts/initial-prompt.md"
@@ -4286,7 +4327,7 @@ def main() -> None:
     target_root.mkdir(parents=True, exist_ok=True)
     ensure_required_directories(target_root, mode)
 
-    for rel_path, content in TEMPLATE_FILES.items():
+    for rel_path, content in template_files_for(governance_mode).items():
         rendered = render_template(content, **render_kwargs)
         if rel_path == ".gitignore":
             safe_write(effective_gitignore_dest, rendered, args.force)
@@ -4319,7 +4360,7 @@ def main() -> None:
 │  If you have ideas already in your head or written down somewhere else,      │
 │  now is a great time to move them in. Use the template to get started:       │
 │                                                                              │
-│    .collab/brainstorms/brainstorm-template.md                                │
+│    .collab/templates/brainstorm-template.md                                  │
 │                                                                              │
 │  One file per idea. No rules. Workshop them with your agent when ready.      │
 │                                                                              │

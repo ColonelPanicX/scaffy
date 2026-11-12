@@ -33,9 +33,16 @@ class TestInit(TempDirCase):
                 for rel in ("collab-contract.md", "kanban-board.md", "context.md",
                             "project.yaml", "prompts/initial-prompt.md"):
                     self.assertTrue((collab / rel).is_file(), rel)
-                for d in ("brainstorms", "session-summaries", "playbooks", "guides",
+                for d in ("brainstorms", "session-summaries", "playbooks", "templates",
                           "project-plans", "skills", "inbox", "audit"):
                     self.assertTrue((collab / d).is_dir(), d)
+                for gone in ("guides", "playbooks/templates"):
+                    self.assertFalse((collab / gone).exists(), gone)
+                playbooks = sorted(f.name for f in (collab / "playbooks").glob("git-governance-*.md"))
+                self.assertEqual(playbooks, [] if mode == "none" else [f"git-governance-{mode}.md"])
+                self.assertTrue((collab / "playbooks/git-guidelines.md").is_file())
+                for d in ("brainstorms", "project-plans", "session-summaries"):
+                    self.assertEqual(list((collab / d).iterdir()), [], d)
                 yaml = (collab / "project.yaml").read_text(encoding="utf-8")
                 self.assertIn(f"governance_mode: {mode}", yaml)
                 self.assertIn(f"project: gov-{mode}", yaml)
@@ -89,7 +96,7 @@ class TestInit(TempDirCase):
 
     def test_brainstorm_session_template_shipped(self) -> None:
         root = new_project(self.tmp, "bs")
-        tpl = (root / ".collab/brainstorms/brainstorm-session-template.md").read_text(encoding="utf-8")
+        tpl = (root / ".collab/templates/brainstorm-session-template.md").read_text(encoding="utf-8")
         self.assertIn("_Status: in-session_", tpl)
         for heading in ("## Framing", "## Ideas", "## Clusters", "## Evaluation",
                         "## Shortlist", "## Parked / Rejected", "## Proposed Next Steps"):
@@ -155,10 +162,10 @@ class TestUpgrade(TempDirCase):
 
     def test_upgrade_restores_missing_file_and_dir(self) -> None:
         root = new_project(self.tmp)
-        (root / ".collab/guides/git-guidelines.md").unlink()
+        (root / ".collab/playbooks/git-guidelines.md").unlink()
         (root / ".collab/skills").rmdir()
         scaffy("--upgrade", "--path", str(root))
-        self.assertTrue((root / ".collab/guides/git-guidelines.md").is_file())
+        self.assertTrue((root / ".collab/playbooks/git-guidelines.md").is_file())
         self.assertTrue((root / ".collab/skills").is_dir())
 
     def test_upgrade_without_force_keeps_edits(self) -> None:
@@ -280,10 +287,54 @@ class TestUpgrade(TempDirCase):
 
     def test_upgrade_dry_run_writes_nothing(self) -> None:
         root = new_project(self.tmp)
-        (root / ".collab/guides/git-guidelines.md").unlink()
+        (root / ".collab/playbooks/git-guidelines.md").unlink()
         before = snapshot(root)
         scaffy("--upgrade", "--path", str(root), "--dry-run")
         self.assertEqual(before, snapshot(root))
+
+    def test_upgrade_migrates_old_layout(self) -> None:
+        root = new_project(self.tmp, "old", "--governance", "standard")
+        c = root / ".collab"
+        old_paths = {
+            "templates/brainstorm-template.md": "brainstorms/brainstorm-template.md",
+            "templates/session-summary-template.md": "session-summaries/session-summary-template.md",
+            "templates/project-plan-template.md": "project-plans/project-plan-template.md",
+            "templates/issue-template.md": "playbooks/templates/issue-template.md",
+            "playbooks/git-guidelines.md": "guides/git-guidelines.md",
+        }
+        for new_rel, old_rel in old_paths.items():
+            (c / old_rel).parent.mkdir(parents=True, exist_ok=True)
+            (c / new_rel).rename(c / old_rel)
+            (c / old_rel).write_text(f"custom {old_rel}\n", encoding="utf-8")
+        (c / "templates/pull-request-template.md").rename(c / "playbooks/templates/pull-request-template.md")
+        scaffy("--upgrade", "--path", str(root))
+        for new_rel, old_rel in old_paths.items():
+            self.assertFalse((c / old_rel).exists(), old_rel)
+            self.assertEqual((c / new_rel).read_text(encoding="utf-8"), f"custom {old_rel}\n")
+        self.assertFalse((c / "guides").exists())
+        self.assertFalse((c / "playbooks/templates").exists())
+        self.assertTrue((c / "templates/pull-request-template.md").is_file())
+
+    def test_layout_migration_never_overwrites(self) -> None:
+        root = new_project(self.tmp)
+        c = root / ".collab"
+        (c / "guides").mkdir()
+        (c / "guides/git-guidelines.md").write_text("old\n", encoding="utf-8")
+        (c / "guides/team-notes.md").write_text("notes\n", encoding="utf-8")
+        out = scaffy("--upgrade", "--path", str(root)).stdout
+        self.assertEqual((c / "guides/git-guidelines.md").read_text(encoding="utf-8"), "old\n")
+        self.assertTrue((c / "guides/team-notes.md").is_file())
+        self.assertIn("merge by hand", out)
+
+    def test_upgrade_adds_only_current_governance_playbook(self) -> None:
+        root = new_project(self.tmp, "gov", "--governance", "strict")
+        pb = root / ".collab/playbooks"
+        (pb / "git-governance-strict.md").unlink()
+        (pb / "git-governance-standard.md").write_text("kept\n", encoding="utf-8")
+        scaffy("--upgrade", "--path", str(root), "--force")
+        self.assertTrue((pb / "git-governance-strict.md").is_file())
+        self.assertFalse((pb / "git-governance-lightweight.md").exists())
+        self.assertEqual((pb / "git-governance-standard.md").read_text(encoding="utf-8"), "kept\n")
 
     def test_upgrade_migrates_ideas_dir(self) -> None:
         root = new_project(self.tmp)
