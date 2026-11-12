@@ -186,6 +186,7 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
   Naming: `MM.DD.YYYY-claude-chat.md` (or `MM.DD.YYYY-##-claude-chat.md` for multiple per day).
 - `brainstorms/` — Thinking space for pre-ticket concepts and proposals.
   - `brainstorm-template.md` — Starter template for new brainstorm files.
+  - `brainstorm-session-template.md` — Template for facilitated brainstorm sessions.
 - `project-plans/` — Structured plans bridging brainstormed ideas and kanban execution.
   - `project-plan-template.md` — Starter template for new plan files.
 - `audit/` — Analysis reports, planning documents, and progress tracking artifacts.
@@ -247,6 +248,14 @@ Workflow:
 - When an idea is ready to become a ticket, note it at the bottom of the file and graduate it
   to your issue tracker. Leave the file in place as a record.
 - Ideas that don't go anywhere can be left as `parked` — they might be useful later.
+
+Brainstorm sessions:
+- For a topic with many possible answers, run a facilitated session (the scaffy skill:
+  `brainstorm session <topic>`). The agent frames the question with you, collects ideas
+  without judging them, groups them, helps you pick a shortlist, and writes it all up.
+- Each session produces `<topic>-session-MM.DD.YYYY.md` from `brainstorm-session-template.md`.
+  The file is written after every phase, so an interrupted session can be resumed.
+- Shortlisted ideas can be spun off into their own single-idea brainstorm files.
 
 ## Project Plans Directory Guidance
 
@@ -502,6 +511,23 @@ When an idea graduates to a formal ticket:
 - Add `Graduated → Issue #__ on [date]` at the bottom of the file.
 - Leave the file in `brainstorms/` as a record — do not delete it.
 
+### Brainstorm Sessions
+
+A brainstorm session is a facilitated working session on one question that ends in a written
+record: `.collab/brainstorms/<topic>-session-MM.DD.YYYY.md`, from
+`brainstorm-session-template.md`. Status: `in-session` → `complete`.
+
+The agent facilitates in five phases — **Frame, Diverge, Cluster, Converge, Close** — and:
+
+1. Confirms the framing (question, constraints, what a good outcome looks like) before
+   generating ideas. If `north-star.md` is `agreed`, it is part of the framing.
+2. Keeps the diverge phase judgment-free; the user's ideas come first, then the agent adds
+   ideas from new angles. Every idea is recorded with its source.
+3. Is honest in the converge phase: names weak ideas and risks, but the user picks the shortlist.
+4. Writes the file after every phase so nothing is lost if the session is interrupted.
+5. Does **not** create tickets, tasks, or kanban entries from the session without explicit
+   user approval. Proposed next steps are proposals.
+
 ---
 
 ## Project Plans Directory
@@ -642,6 +668,58 @@ _Status: drafting_
 
 ---
 <!-- When graduated: Graduated → Issue #__ on [date] -->
+""",
+
+    ".collab/brainstorms/brainstorm-session-template.md": """\
+# Brainstorm Session — Topic
+
+_Date: {date}_
+_Status: in-session_
+_Participants: user, agent_
+
+<!-- Status values: in-session | complete                                        -->
+<!-- Run with the scaffy skill: `brainstorm session <topic>`.                      -->
+<!-- The agent fills this in after each phase: Frame, Diverge, Cluster, Converge, Close. -->
+
+## Framing
+
+- **Question:** <!-- the one question this session answers -->
+- **Why now:**
+- **Constraints:** <!-- time, budget, tech, people, must-keeps -->
+- **A good outcome looks like:**
+- **North Star check:** <!-- from north-star.md if agreed; otherwise "n/a" -->
+
+## Ideas
+
+<!-- Numbered and unjudged. Mark the source of each: (user) or (agent). -->
+
+## Clusters
+
+<!-- Themes, with the idea numbers in each. -->
+
+## Evaluation
+
+| Idea / cluster | Fits the question | Effort | Risk | North Star fit | Notes |
+|---|---|---|---|---|---|
+
+## Shortlist
+
+<!-- What the user chose to take forward, and why. -->
+
+## Parked / Rejected
+
+| Idea | Why |
+|---|---|
+
+## Open Questions
+
+## Proposed Next Steps
+
+<!-- Proposals only. Nothing becomes a ticket or kanban entry without approval. -->
+
+## Spin-offs
+
+<!-- Single-idea brainstorm files or project plans created from this session. -->
 """,
 
     ".collab/project-plans/project-plan-template.md": """\

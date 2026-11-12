@@ -87,6 +87,16 @@ class TestInit(TempDirCase):
         self.assertIn("## North Star", contract)
         self.assertIn("north-star.md", (root / ".collab/prompts/initial-prompt.md").read_text(encoding="utf-8"))
 
+    def test_brainstorm_session_template_shipped(self) -> None:
+        root = new_project(self.tmp, "bs")
+        tpl = (root / ".collab/brainstorms/brainstorm-session-template.md").read_text(encoding="utf-8")
+        self.assertIn("_Status: in-session_", tpl)
+        for heading in ("## Framing", "## Ideas", "## Clusters", "## Evaluation",
+                        "## Shortlist", "## Parked / Rejected", "## Proposed Next Steps"):
+            self.assertIn(heading, tpl)
+        self.assertNotIn("{", tpl)
+        self.assertIn("### Brainstorm Sessions", (root / ".collab/collab-contract.md").read_text(encoding="utf-8"))
+
     def test_dry_run_writes_nothing(self) -> None:
         scaffy("--name", "dry", "--path", str(self.tmp), "--dry-run")
         self.assertFalse((self.tmp / "dry").exists())
@@ -200,7 +210,8 @@ class TestUpgrade(TempDirCase):
     def test_upgrade_migrates_ideas_dir(self) -> None:
         root = new_project(self.tmp)
         collab = root / ".collab"
-        (collab / "brainstorms/brainstorm-template.md").unlink()
+        for f in (collab / "brainstorms").iterdir():
+            f.unlink()
         (collab / "brainstorms").rmdir()
         (collab / "ideas").mkdir()
         (collab / "ideas/my-idea.md").write_text("idea\n", encoding="utf-8")
