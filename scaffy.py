@@ -17,7 +17,7 @@ Options:
   --name NAME          Project name (lowercase, hyphen-separated).
   --path PATH          Target directory where scaffold files will be installed.
                        For --upgrade: the project root (defaults to current directory).
-  --force              Overwrite existing files (with --upgrade: back up, never touch kanban/context/project.yaml/LICENSE).
+  --force              Overwrite existing files (with --upgrade: back up; never touches kanban/context/north-star/project.yaml/LICENSE).
   --dry-run            Show planned actions and exit without writing anything.
   --governance MODE    Governance mode: lightweight, standard, or strict. Default: standard.
   --platform PLATFORM  Git platform: github, gitlab, or none. Default: none.
@@ -174,6 +174,8 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
 - `collab-contract.md` — Rules, conventions, and logging requirements.
 - `kanban-board.md` — Task tracking (internal source of truth).
 - `context.md` — Stable project facts: tech stack, key files, conventions, dependencies.
+- `north-star.md` — The project's end goal, who it serves, non-goals, and principles. Stable;
+  changes only with the user's approval.
 - `project.yaml` — Machine-readable project metadata (name, date, governance mode, agents).
 - `session-summaries/` — Session summaries from all agents.
   Naming:
@@ -219,6 +221,18 @@ Conventions:
 - Filenames should be lowercase, hyphen-separated.
 - Subdirectories are encouraged for organization (e.g., `diagrams/`, `specs/`, `research/`).
 - Prefix date when time-sensitive: `MM.DD.YYYY-filename.md`
+
+## North Star Guidance
+
+`north-star.md` is the one short document that says where the project is headed and why. Every
+plan, brainstorm, and task should be checkable against it.
+
+Workflow:
+- Draft it early, with an agent interviewing you (the scaffy skill: `north star`).
+- Keep it short: one sentence of direction, then problem, audience, success, non-goals,
+  principles, and the signals that the project is drifting.
+- It changes rarely and deliberately. Each change gets a dated line in its **Revision Log**.
+- `scaffy --upgrade` never overwrites it.
 
 ## Brainstorm Directory Guidance
 
@@ -342,11 +356,13 @@ Immediately execute the Session Open Protocol — do not wait for additional ins
    (sort by filename date, newest first).
 2. Read `.collab/kanban-board.md` for current task state.
 3. Read `.collab/context.md` if it exists.
-4. Deliver a concise session resume to the user covering:
+4. Read `.collab/north-star.md` if its status is `agreed` (skip it while still `draft`).
+5. Deliver a concise session resume to the user covering:
    - What was accomplished last session
    - What is currently In Progress or Blocked on the board
    - What is up next
    - Any open questions or flags left from the last session
+   - Any work on the board that seems to pull away from the North Star
 
 Do **not** re-read `collab-contract.md` — focus on current state, not process rules.
 
@@ -434,6 +450,26 @@ Immediately execute the Chat Save Protocol — do not wait for additional instru
 > create, update, and close items there first.
 > Regardless, **always keep `kanban-board.md` in sync** so it remains a useful internal
 > snapshot for any agent or session that cannot reach the external tracker.
+
+---
+
+## North Star
+
+- **Location**: `.collab/north-star.md`
+- **Purpose**: The stable statement of where this project is going: the problem, who it is
+  for, what success looks like, what it will not do, and the principles that guide decisions.
+- **Status**: `draft` until the user agrees to it, then `agreed`.
+
+### Agent Behavior with the North Star
+
+1. When it is `agreed`, read it at session open and use it as the yardstick for proposals,
+   plans, brainstorms, and task priority.
+2. If requested work conflicts with it or matches one of its **Off-Course Signals**, say so
+   plainly and let the user decide. Do not refuse the work and do not quietly reinterpret it.
+3. Never edit `north-star.md` without the user's explicit approval of the exact change.
+4. Record every approved change as a dated row in its **Revision Log** and update
+   `_Last revised:_`.
+5. If the project has clearly moved on from it, suggest a revision; do not make one.
 
 ---
 
@@ -535,6 +571,52 @@ Examples:
 ## In Review (awaiting user/PR review)
 
 ## Done
+""",
+
+    ".collab/north-star.md": """\
+# North Star — {project_name}
+
+_Created: {date}_
+_Last revised: {date}_
+_Status: draft_
+
+<!-- Status values: draft | agreed                                                   -->
+<!-- Fill this in with your agent: run the scaffy skill with `north star`.           -->
+<!-- Keep it to one page. It changes rarely, and only with the user's approval.      -->
+
+## North Star
+
+<!-- One sentence: where this project is headed and why it matters. -->
+
+## Problem
+
+<!-- What is wrong or missing today, and for whom. -->
+
+## Who It's For
+
+<!-- The primary users or beneficiaries. Name secondary audiences only if they shape decisions. -->
+
+## What Success Looks Like
+
+<!-- Observable outcomes, not features. How would you know this worked? -->
+
+## Non-Goals
+
+<!-- What this project deliberately will not do, even if asked. -->
+
+## Guiding Principles
+
+<!-- 3-5 rules for making trade-offs (e.g. "simple by default", "no required services"). -->
+
+## Off-Course Signals
+
+<!-- Warning signs that work is drifting away from the North Star. -->
+
+## Revision Log
+
+| Date | Change | Approved by |
+|---|---|---|
+| {date} | Created (draft) | — |
 """,
 
     ".collab/brainstorms/brainstorm-template.md": """\
@@ -2408,6 +2490,8 @@ This project has a `.collab/` collaboration workspace. Before doing anything:
    `OPEN SESSION`, `SAVE SESSION`, `CLOSE SESSION`, and `SAVE CHAT`.
 3. The kanban board is empty — this is a new project. Wait for my direction before
    drafting plans or tasks.
+4. `north-star.md` is still a draft. Offer to interview me to fill it in; don't fill it in
+   on your own.
 """,
     "existing": """\
 This project has a `.collab/` collaboration workspace. Before doing anything:
@@ -3483,6 +3567,7 @@ USER_OWNED_FILES: frozenset[str] = frozenset({
     ".collab/context.md",
     ".collab/project.yaml",
     ".collab/prompts/initial-prompt.md",  # reflects how the project was created (new vs existing)
+    ".collab/north-star.md",
     "LICENSE",
 })
 
@@ -3675,7 +3760,7 @@ def main() -> None:
     )
     parser.add_argument("--name", metavar="NAME", help="Project name (any valid folder name).")
     parser.add_argument("--path", metavar="PATH", help="Target directory where scaffold files will be installed.")
-    parser.add_argument("--force", action="store_true", help="Overwrite existing files. With --upgrade: refresh scaffold-managed files (previous versions backed up to .collab/.upgrade-backups/); kanban, context, project.yaml and LICENSE are never replaced.")
+    parser.add_argument("--force", action="store_true", help="Overwrite existing files. With --upgrade: refresh scaffold-managed files (previous versions backed up to .collab/.upgrade-backups/); kanban, context, north-star, project.yaml, initial-prompt and LICENSE are never replaced.")
     parser.add_argument("--dry-run", action="store_true", help="Show planned actions without writing.")
     parser.add_argument(
         "--governance",
