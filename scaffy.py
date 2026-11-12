@@ -2593,7 +2593,7 @@ scaffy generates a `.collab/` multi-agent workspace into any project directory: 
 
 1. **Find scaffy** — verify it's available:
    - Run `scaffy --help` to confirm
-   - If not found, tell the user to install: `pip install scaffy` or download from https://github.com/ColonelPanicX/scaffy/releases/latest
+   - If not found, tell the user to install: `pipx install scaffy-collab` (or `pip install scaffy-collab`) or download from https://github.com/ColonelPanicX/scaffy/releases/latest
 
 2. **Gather inputs** — __GATHER__
    - **Project name** — any valid folder name (lowercase hyphen-separated is conventional, e.g. `my-project`)
