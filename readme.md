@@ -73,7 +73,7 @@ scaffy --name my-project --path /path/to/base \
 - `.collab/agent-bridge/` — Shared-file channels between agents of different types (empty until you open one)
 - `.collab/audit/` — Analysis reports and planning documents
 - `.collab/project-plans/` — Long-form plans, architecture docs, and multi-phase roadmaps
-- `.collab/skills/` — Project-specific agent skills and slash commands
+- `.collab/skills/` — The scaffy skill for Claude, Codex and Gemini (copy one to where your CLI loads skills), plus any project-specific skills
 - `.collab/inbox/` — Drop zone for files that might be useful; sort them out with your agent
 - `.collab/prompts/` — Reusable agent prompts, including the agent instructions generator
 - `.collab/playbooks/` — How-to guides: coding standards, git guidelines, the git playbook for your governance mode, agent bridges
@@ -267,7 +267,9 @@ Fill-in-the-blank issue and PR templates live in `.collab/templates/`.
 
 ### Agent Skills
 
-The [`skills/`](skills/) directory contains installable slash commands for Claude Code and Gemini CLI, and a passive skill for Codex CLI. Once installed, your agent knows how to run scaffy without you explaining it.
+scaffy ships a skill for each agent CLI: a slash command for Claude Code and Gemini CLI, and a passive skill for Codex CLI. Once installed, your agent knows how to run scaffy without you explaining it.
+
+Every scaffold includes them in `.collab/skills/<agent>/scaffy/SKILL.md`, and the same files are in this repo's [`skills/`](skills/) directory if you want to install before scaffolding anything. scaffy doesn't install them for you: copy the one for your CLI to where it loads skills. `scaffy --upgrade --force` refreshes the copies in `.collab/skills/` (re-copy afterwards to pick up changes).
 
 | Agent | File | Invocation |
 |---|---|---|
@@ -275,7 +277,7 @@ The [`skills/`](skills/) directory contains installable slash commands for Claud
 | Gemini CLI | `skills/gemini/scaffy/SKILL.md` | `/scaffy` |
 | Codex CLI | `skills/codex/scaffy/SKILL.md` | AI-activated |
 
-**Install (global):**
+**Install (global)**, from this repo or from any scaffolded project's `.collab/` (use `.collab/skills/...` in place of `skills/...`):
 
 ```bash
 # Claude Code

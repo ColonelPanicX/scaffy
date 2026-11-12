@@ -102,7 +102,7 @@ Execute immediately — do not wait for additional instructions:
 
 Execute immediately — do not wait for additional instructions:
 
-1. Run from the project root: `scaffy --save-chat`
+1. Run from the project root: `scaffy --save-chat --cli claude`
 2. The tool saves the transcript to `.collab/chat-logs/` automatically.
 3. Confirm the filename and path to the user.
 

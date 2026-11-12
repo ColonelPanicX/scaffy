@@ -7,17 +7,17 @@ description: Use this skill when the user wants to bootstrap a new project works
 
 Route based on the user's request:
 
-- `open session` → **Session Open Protocol**
-- `save session` → **Session Save Protocol**
-- `close session` → **Session Close Protocol**
-- `initialize` → **Initialize Protocol**
-- `save chat` → **Chat Save Protocol**
-- `north star` → **North Star Protocol**
-- `brainstorm session` or `brainstorm session <topic>` → **Brainstorm Session Protocol** (match this before `brainstorm <title>`)
-- `brainstorm` or `brainstorm <title>` → **Brainstorm Protocol**
-- `project plan` or `project plan <title>` → **Project Plan Protocol**
-- `bridge`, `bridge open <name>`, `bridge check [name]`, or `bridge close [name]` → **Agent Bridge Protocol**
-- anything else (project name, path, flags, or empty) → **Scaffold a new project**
+- `initialize` → **Initialize Protocol** (see below)
+- `open session` → **Session Open Protocol** (see below)
+- `save session` → **Session Save Protocol** (see below)
+- `close session` → **Session Close Protocol** (see below)
+- `save chat` → **Chat Save Protocol** (see below)
+- `north star` → **North Star Protocol** (see below)
+- `brainstorm session` or `brainstorm session <topic>` → **Brainstorm Session Protocol** (see below; match this before `brainstorm <title>`)
+- `brainstorm` or `brainstorm <title>` → **Brainstorm Protocol** (see below)
+- `project plan` or `project plan <title>` → **Project Plan Protocol** (see below)
+- `bridge`, `bridge open <name>`, `bridge check [name]`, or `bridge close [name]` → **Agent Bridge Protocol** (see below)
+- anything else (project name, path, flags, or empty) → **Scaffold a new project** (see below)
 
 ---
 
@@ -100,8 +100,7 @@ Execute immediately — do not wait for additional instructions:
 
 Execute immediately — do not wait for additional instructions:
 
-1. Run from the project root:
-   - If scaffy is on PATH: `scaffy --save-chat --cli codex`
+1. Run from the project root: `scaffy --save-chat --cli codex`
 2. The tool saves the transcript to `.collab/chat-logs/` automatically.
 3. Confirm the filename and path to the user.
 
@@ -347,7 +346,7 @@ scaffy generates a `.collab/` multi-agent workspace into any project directory: 
 
 1. **Find scaffy** — verify it's available:
    - Run `scaffy --help` to confirm
-   - If not found, prompt the user to install: `pip install scaffy` or download from https://github.com/ColonelPanicX/scaffy/releases/latest
+   - If not found, tell the user to install: `pip install scaffy` or download from https://github.com/ColonelPanicX/scaffy/releases/latest
 
 2. **Gather inputs** — ask the user for:
    - **Project name** — any valid folder name (lowercase hyphen-separated is conventional, e.g. `my-project`)
