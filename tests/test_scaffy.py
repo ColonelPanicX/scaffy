@@ -97,6 +97,17 @@ class TestInit(TempDirCase):
         self.assertNotIn("{", tpl)
         self.assertIn("### Brainstorm Sessions", (root / ".collab/collab-contract.md").read_text(encoding="utf-8"))
 
+    def test_open_session_sort_rule_is_date_aware(self) -> None:
+        root = new_project(self.tmp, "sortrule")
+        contract = (root / ".collab/collab-contract.md").read_text(encoding="utf-8")
+        self.assertIn("don't sort them alphabetically", contract)
+        self.assertIn("Order by year, then month, then day", contract)
+        self.assertNotIn("sort by filename date", contract)
+        for skill in Path(__file__).resolve().parent.parent.glob("skills/*/scaffy/SKILL.md"):
+            text = skill.read_text(encoding="utf-8")
+            self.assertIn("Order by year, then month, then day", text, skill)
+            self.assertNotIn("sort by filename date", text, skill)
+
     def test_dry_run_writes_nothing(self) -> None:
         scaffy("--name", "dry", "--path", str(self.tmp), "--dry-run")
         self.assertFalse((self.tmp / "dry").exists())
