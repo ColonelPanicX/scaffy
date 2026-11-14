@@ -173,8 +173,8 @@ The plain trigger phrases (`OPEN SESSION` and so on) still work without the skil
 ### First session
 
 With the skill installed, run `/scaffy initialize`. Without it, paste the prompt scaffy printed.
-Either way the agent reads the workspace, does a read-only scan of an existing repo to fill in
-`context.md`, and offers to interview you for the North Star.
+Either way the agent reads the workspace and, in an existing repo, does a read-only scan and
+reports what it found. Then run `/scaffy north star` to fill in the North Star.
 
 ---
 
