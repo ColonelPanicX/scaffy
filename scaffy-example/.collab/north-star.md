@@ -1,7 +1,7 @@
 # North Star — scaffy-example
 
-_Created: 11.13.2026_
-_Last revised: 11.13.2026_
+_Created: 11.14.2026_
+_Last revised: 11.14.2026_
 _Status: draft_
 
 <!-- Status values: draft | agreed                                                   -->
@@ -40,4 +40,4 @@ _Status: draft_
 
 | Date | Change | Approved by |
 |---|---|---|
-| 11.13.2026 | Created (draft) | — |
+| 11.14.2026 | Created (draft) | — |
