@@ -32,8 +32,10 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
 - `collab-contract.md` — Rules, conventions, and logging requirements.
 - `kanban-board.md` — Task tracking (internal source of truth).
 - `context.md` — Stable project facts: tech stack, key files, conventions, dependencies.
+- `north-star.md` — The project's end goal, who it serves, non-goals, and principles. Stable;
+  changes only with the user's approval.
 - `project.yaml` — Machine-readable project metadata (name, date, governance mode, agents).
-- `session-summaries/` — Session summaries from all agents.
+- `session-summaries/` — Session summaries from all agents (template in `templates/`).
   Naming:
   - First summary of the day: `MM.DD.YYYY-agentname-summary.md`
   - Additional same-day summaries: `MM.DD.YYYY-##-agentname-summary.md`
@@ -41,42 +43,48 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
 - `chat-logs/` — Full session transcripts exported via `SAVE CHAT`.
   Naming: `MM.DD.YYYY-claude-chat.md` (or `MM.DD.YYYY-##-claude-chat.md` for multiple per day).
 - `brainstorms/` — Thinking space for pre-ticket concepts and proposals.
-  - `brainstorm-template.md` — Starter template for new brainstorm files.
 - `project-plans/` — Structured plans bridging brainstormed ideas and kanban execution.
-  - `project-plan-template.md` — Starter template for new plan files.
+- `agent-bridge/` — Shared-file channels between agents of different types (one subdirectory
+  per bridge). Empty until a bridge is opened.
 - `audit/` — Analysis reports, planning documents, and progress tracking artifacts.
-- `supporting-artifacts/` — Adjacent project materials: diagrams, research notes, specs,
-  reference docs, exported data, and anything else that supports the work but isn't
-  source code. Keep the project root clean — if it belongs to the project but isn't
-  code, it probably belongs here.
+- `inbox/` — Drop zone for files that might be useful: notes, exports, screenshots, docs.
+  Sort through it with your agent; it may stay empty.
 - `prompts/` — Reusable agent prompts and supporting inputs.
   - `initial-prompt.md` — First-session onboarding prompt (paste on first launch).
   - `agent-profile.md` — Fill-in questionnaire for generating agent instruction files.
   - `agent-md-prompt.md` — Prompt to generate CLAUDE.md / AGENTS.md from the profile.
-- `guides/` — Reference documents explaining the *why* behind project conventions.
-  - `git-guidelines.md` — Git governance modes, branching strategy, label taxonomy, platform notes.
-- `playbooks/` — Step-by-step procedures for common operations.
+- `skills/` — The scaffy skill for each agent CLI (`claude/`, `codex/`, `gemini/`). Copy the one you
+  use to where your CLI loads skills. Add project-specific skills here too.
+- `playbooks/` — How-to guides and the reasoning behind project conventions.
   - `coding-playbook.md` — General coding standards and best practices.
-  - `git-governance-lightweight.md` / `git-governance-standard.md` / `git-governance-strict.md` — Execution playbooks per governance mode.
-  - `templates/` — Fill-in-the-blank forms: `issue-template.md`, `pull-request-template.md`.
+  - `agent-bridge-playbook.md` — How two agents of different types coordinate through a bridge.
+  - `git-guidelines.md` — Git governance modes, branching strategy, label taxonomy, platform notes.
+  - `git-governance-<mode>.md` — Step-by-step git procedure for this project's governance mode
+    (not created for mode `none`).
+- `templates/` — Starting points for new files: session summary, brainstorm, brainstorm session,
+  project plan, issue, and pull request.
 
-## Supporting Artifacts Guidance
+## Inbox Guidance
 
-Use `supporting-artifacts/` for anything adjacent to the project that isn't source code,
-config, or documentation that belongs in the repo. The goal is to keep the project root
-clean and consolidate everything the AI and user need in one place.
+`inbox/` is where you drop anything that might be useful to the project before you know
+where it belongs: notes, exports, screenshots, specs, links, research.
 
-Examples of what belongs here:
-- Architecture diagrams and wireframes
-- Research notes, vendor comparisons, and technical spikes
-- Specification drafts and design documents
-- Reference material, exports, and sample data
-- Scratch files and working notes from active sessions
+- Drop files in as they come. No naming rules, no sorting first.
+- When you're ready, ask your agent to go through it with you. It reads each item and
+  proposes what to do with it; where things end up is up to the two of you.
+- The agent moves, rewrites or deletes nothing in `inbox/` without your approval.
 
-Conventions:
-- Filenames should be lowercase, hyphen-separated.
-- Subdirectories are encouraged for organization (e.g., `diagrams/`, `specs/`, `research/`).
-- Prefix date when time-sensitive: `MM.DD.YYYY-filename.md`
+## North Star Guidance
+
+`north-star.md` is the one short document that says where the project is headed and why. Every
+plan, brainstorm, and task should be checkable against it.
+
+Workflow:
+- Draft it early, with an agent interviewing you (the scaffy skill: `north star`).
+- Keep it short: one sentence of direction, then problem, audience, success, non-goals,
+  principles, and the signals that the project is drifting.
+- It changes rarely and deliberately. Each change gets a dated line in its **Revision Log**.
+- `scaffy --upgrade` never overwrites it.
 
 ## Brainstorm Directory Guidance
 
@@ -85,12 +93,20 @@ proposals, things worth thinking through before committing to a sprint.
 
 Workflow:
 - Create one file per idea cluster, named descriptively (e.g., `better-onboarding.md`).
-- Use `brainstorm-template.md` as a starting point.
+- Use `templates/brainstorm-template.md` as a starting point.
 - Workshop ideas with an agent: ask for honest feedback, capture the discussion in the
   **Discussion Log** section of the file so context isn't lost when the session closes.
 - When an idea is ready to become a ticket, note it at the bottom of the file and graduate it
   to your issue tracker. Leave the file in place as a record.
 - Ideas that don't go anywhere can be left as `parked` — they might be useful later.
+
+Brainstorm sessions:
+- For a topic with many possible answers, run a facilitated session (the scaffy skill:
+  `brainstorm session <topic>`). The agent frames the question with you, collects ideas
+  without judging them, groups them, helps you pick a shortlist, and writes it all up.
+- Each session produces `<topic>-session-MM.DD.YYYY.md` from `templates/brainstorm-session-template.md`.
+  The file is written after every phase, so an interrupted session can be resumed.
+- Shortlisted ideas can be spun off into their own single-idea brainstorm files.
 
 ## Project Plans Directory Guidance
 
@@ -99,11 +115,23 @@ ready to be sprint tasks yet. Plans define the goal, phases, and tasks before an
 
 Workflow:
 - Create one file per initiative, named descriptively (e.g., `auth-refactor.md`).
-- Use `project-plan-template.md` as a starting point.
+- Use `templates/project-plan-template.md` as a starting point.
 - Work with an agent to fill out phases and surface risks. Capture decisions in the file itself.
 - When a phase is approved for execution, promote its tasks to `kanban-board.md` and note the
   date at the bottom of the plan file.
 - Plans that are complete or cancelled can be marked `archived` — leave them in place as a record.
+
+## Agent Bridge Guidance
+
+An agent bridge lets two agents of **different types** (say Claude and Codex) work on one
+problem through shared files instead of you relaying messages. Agents of the same type use
+their CLI's own messaging instead.
+
+- Opened only when you ask (the scaffy skill: `bridge open <name>`).
+- Each bridge is a subdirectory of `agent-bridge/` with `README.md`, `transcript.md` and
+  `status.md`. Closed bridges are kept as a record.
+- Agents never commit, push, or change code because of a bridge message without your approval.
+- Full procedure: `playbooks/agent-bridge-playbook.md`.
 
 ## Audit Directory Guidance
 

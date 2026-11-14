@@ -7,7 +7,7 @@ governance_mode: standard
 # Git Governance Playbook — Standard
 
 **When to use:** Most active projects — team delivery, side products, anything shipping to users.
-**Reference:** `.collab/guides/git-guidelines.md` explains the *why* behind each mode.
+**Reference:** `.collab/playbooks/git-guidelines.md` explains the *why* behind each mode.
 
 ---
 
@@ -27,7 +27,7 @@ governance_mode: standard
 
 ## Opening a PR / MR
 
-1. Use the template at `.collab/playbooks/templates/pull-request-template.md`.
+1. Use the template at `.collab/templates/pull-request-template.md`.
 2. Required sections: **Summary**, **Why**, **Linked Work Item(s)**, **Validation**.
 3. Link to the work item with `Closes #<number>` for auto-close.
 4. Keep scope tight — one concern per PR.

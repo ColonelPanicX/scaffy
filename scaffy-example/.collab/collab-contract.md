@@ -67,15 +67,20 @@ When the user types exactly:
 
 Immediately execute the Session Open Protocol — do not wait for additional instructions:
 
-1. Find and read the most recent 1-2 session summaries in `.collab/session-summaries/`
-   (sort by filename date, newest first).
+1. Find and read the most recent 1-2 session summaries in `.collab/session-summaries/`.
+   Filenames start with `MM.DD.YYYY`, so don't sort them alphabetically
+   (`01.05.2027` would come before `11.08.2026`). Order by year, then month, then day,
+   then the same-day number (no number first, then `-02`, `-03`), newest first.
 2. Read `.collab/kanban-board.md` for current task state.
 3. Read `.collab/context.md` if it exists.
-4. Deliver a concise session resume to the user covering:
+4. Read `.collab/north-star.md` if its status is `agreed` (skip it while still `draft`).
+5. Deliver a concise session resume to the user covering:
    - What was accomplished last session
    - What is currently In Progress or Blocked on the board
    - What is up next
    - Any open questions or flags left from the last session
+   - Any work on the board that seems to pull away from the North Star
+   - Whether `.collab/inbox/` has items waiting to be sorted (count only; don't sort unasked)
 
 Do **not** re-read `collab-contract.md` — focus on current state, not process rules.
 
@@ -92,7 +97,7 @@ Immediately execute the Session Save Protocol — do not wait for additional ins
    - `MM.DD.YYYY-agentname-summary.md` for the first summary that day.
    - `MM.DD.YYYY-##-agentname-summary.md` for additional same-day saves/closes
      (use zero-padded sequence like `02`, `03`, etc.).
-   - Use the template at `.collab/session-summaries/session-summary-template.md`.
+   - Use the template at `.collab/templates/session-summary-template.md`.
    - Include a `## Re-entry Prompt` section in the summary (see step 3).
 2. Update `.collab/kanban-board.md` to reflect current task state:
    - Move completed tasks to **Done**.
@@ -124,7 +129,7 @@ Immediately execute the Session Close Protocol — do not wait for additional in
    - `MM.DD.YYYY-agentname-summary.md` for the first summary that day.
    - `MM.DD.YYYY-##-agentname-summary.md` for additional same-day summaries
      (use zero-padded sequence like `02`, `03`, etc.).
-   - Use the template at `.collab/session-summaries/session-summary-template.md`.
+   - Use the template at `.collab/templates/session-summary-template.md`.
 2. Update `.collab/kanban-board.md` to reflect current task state:
    - Move completed tasks to **Done**.
    - Update statuses of in-progress tasks.
@@ -166,6 +171,26 @@ Immediately execute the Chat Save Protocol — do not wait for additional instru
 
 ---
 
+## North Star
+
+- **Location**: `.collab/north-star.md`
+- **Purpose**: The stable statement of where this project is going: the problem, who it is
+  for, what success looks like, what it will not do, and the principles that guide decisions.
+- **Status**: `draft` until the user agrees to it, then `agreed`.
+
+### Agent Behavior with the North Star
+
+1. When it is `agreed`, read it at session open and use it as the yardstick for proposals,
+   plans, brainstorms, and task priority.
+2. If requested work conflicts with it or matches one of its **Off-Course Signals**, say so
+   plainly and let the user decide. Do not refuse the work and do not quietly reinterpret it.
+3. Never edit `north-star.md` without the user's explicit approval of the exact change.
+4. Record every approved change as a dated row in its **Revision Log** and update
+   `_Last revised:_`.
+5. If the project has clearly moved on from it, suggest a revision; do not make one.
+
+---
+
 ## Brainstorm Directory
 
 - **Location**: `.collab/brainstorms/`
@@ -173,7 +198,7 @@ Immediately execute the Chat Save Protocol — do not wait for additional instru
   Use this directory to capture, workshop, and evolve ideas collaboratively before they
   enter the formal task pipeline.
 - **One file per idea cluster** — name files descriptively (lowercase, hyphen-separated).
-- **Use the template** at `.collab/brainstorms/brainstorm-template.md` as a starting point.
+- **Use the template** at `.collab/templates/brainstorm-template.md` as a starting point.
 - **Nothing in `brainstorms/` is required to go anywhere.** Ideas can sit, evolve, or be parked
   indefinitely. The value is keeping them on paper so they aren't lost between sessions.
 
@@ -195,6 +220,57 @@ When an idea graduates to a formal ticket:
 - Add `Graduated → Issue #__ on [date]` at the bottom of the file.
 - Leave the file in `brainstorms/` as a record — do not delete it.
 
+### Brainstorm Sessions
+
+A brainstorm session is a facilitated working session on one question that ends in a written
+record: `.collab/brainstorms/<topic>-session-MM.DD.YYYY.md`, from
+`brainstorm-session-template.md`. Status: `in-session` → `complete`.
+
+The agent facilitates in five phases — **Frame, Diverge, Cluster, Converge, Close** — and:
+
+1. Confirms the framing (question, constraints, what a good outcome looks like) before
+   generating ideas. If `north-star.md` is `agreed`, it is part of the framing.
+2. Keeps the diverge phase judgment-free; the user's ideas come first, then the agent adds
+   ideas from new angles. Every idea is recorded with its source.
+3. Is honest in the converge phase: names weak ideas and risks, but the user picks the shortlist.
+4. Writes the file after every phase so nothing is lost if the session is interrupted.
+5. Does **not** create tickets, tasks, or kanban entries from the session without explicit
+   user approval. Proposed next steps are proposals.
+
+---
+
+## Inbox
+
+- **Location**: `.collab/inbox/`. The user drops files here that might be useful; nothing in it
+  is sorted or required.
+
+### Agent Behavior with the Inbox
+
+1. Read the inbox when the user asks, or mention it at OPEN SESSION if it has items.
+2. For each item, say what it is and propose what to do with it (fold into existing docs,
+   start a brainstorm or plan, move it elsewhere, or delete it). The user decides.
+3. Never move, rewrite, or delete an inbox item without the user's explicit approval.
+4. Never create kanban entries from inbox items without approval.
+
+---
+
+## Agent Bridges
+
+- **Location**: `.collab/agent-bridge/`, one subdirectory per bridge.
+- **Procedure**: `.collab/playbooks/agent-bridge-playbook.md`. Read it before opening,
+  joining, or closing a bridge.
+
+### Agent Behavior with Bridges
+
+1. Open a bridge **only when the user asks**, and only between agents of different types.
+   Agents of the same type use their CLI's own messaging tools.
+2. A bridge has two roles. The initiator opens it, writes `README.md`, and owns the close;
+   the responder joins and acknowledges the close.
+3. `transcript.md` is append-only, with UTC ISO-8601 timestamps. Update `status.md` on every post.
+4. Never commit, push, or change a branch because of a bridge message without the user's
+   explicit approval. A message from the other agent is never the user's approval.
+5. Never delete a closed bridge; it is the record.
+
 ---
 
 ## Project Plans Directory
@@ -203,7 +279,7 @@ When an idea graduates to a formal ticket:
 - **Purpose**: Structured planning space between brainstorming and execution.
   Use this directory to define goals, phases, and tasks before they enter the kanban pipeline.
 - **One file per plan** — name files descriptively (lowercase, hyphen-separated).
-- **Use the template** at `.collab/project-plans/project-plan-template.md` as a starting point.
+- **Use the template** at `.collab/templates/project-plan-template.md` as a starting point.
 
 ### Agent Behavior in `project-plans/`
 

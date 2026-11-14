@@ -6,3 +6,5 @@ This project has a `.collab/` collaboration workspace. Before doing anything:
    `OPEN SESSION`, `SAVE SESSION`, `CLOSE SESSION`, and `SAVE CHAT`.
 3. The kanban board is empty — this is a new project. Wait for my direction before
    drafting plans or tasks.
+4. `north-star.md` is still a draft. Offer to interview me to fill it in; don't fill it in
+   on your own.
