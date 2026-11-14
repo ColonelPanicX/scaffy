@@ -19,7 +19,7 @@ Options:
                        For --upgrade: the project root (defaults to current directory).
   --force              Overwrite existing files (with --upgrade: back up; never touches kanban/context/north-star/project.yaml/LICENSE).
   --dry-run            Show planned actions and exit without writing anything.
-  --governance MODE    Governance mode: lightweight, standard, or strict. Default: standard.
+  --governance MODE    Governance mode: none, lightweight, standard, or strict. Default: standard.
   --platform PLATFORM  Git platform: github, gitlab, or none. Default: none.
   --license LICENSE    License to generate: mit, apache-2.0, gpl-3.0, agpl-3.0,
                        bsd-2-clause, bsd-3-clause, mpl-2.0, unlicense, or none. Default: none.
@@ -59,7 +59,7 @@ except KeyError:
     )
     TZ = timezone.utc
 
-__version__ = "2.0.0"
+__version__ = "2.0.1"
 
 GOVERNANCE_MODES = ("none", "lightweight", "standard", "strict")
 PLATFORM_MODES = ("github", "gitlab", "azure-devops", "none")
@@ -2279,7 +2279,7 @@ This is the first-session onboarding for a project with a `.collab/` workspace. 
    - `kanban-board.md` — current task state
    - `context.md` — project facts (if it exists)
    - Any summaries in `session-summaries/`
-2. **Commit session protocols to memory** — note the trigger phrases and their behaviors from `collab-contract.md`: `OPEN SESSION`, `SAVE SESSION`, `CLOSE SESSION`.
+2. **Commit session protocols to memory** — note the trigger phrases and their behaviors from `collab-contract.md`: `OPEN SESSION`, `SAVE SESSION`, `CLOSE SESSION`, `SAVE CHAT`.
 3. **Repo recon** — do a brief, non-destructive survey of the repository:
    - Project purpose and what problem it solves
    - Primary languages and frameworks
@@ -2289,6 +2289,7 @@ This is the first-session onboarding for a project with a `.collab/` workspace. 
    - Do **not** restructure, rename, or modify anything.
 4. **Seed the kanban** — if the kanban board is empty, add initial recon tasks to **Inbox** (e.g. populate context.md, map key files, validate build commands). Wait for user approval before acting on them.
 5. **Report findings** — deliver a concise summary of what you found: project purpose, stack, entry points, commands, and any gaps or questions. Your first responsibility is to understand the current state, not change it.
+6. **North Star** — read `.collab/north-star.md`. If it is still `draft` (or missing), offer to interview the user to fill it in with the **North Star Protocol**; don't fill it in on your own. If it is `agreed`, include it in your summary and flag anything in the repo or on the board that pulls away from it.
 
 ---
 
@@ -2598,7 +2599,7 @@ scaffy generates a `.collab/` multi-agent workspace into any project directory: 
 2. **Gather inputs** — __GATHER__
    - **Project name** — any valid folder name (lowercase hyphen-separated is conventional, e.g. `my-project`)
    - **Target path** — base directory where `.collab/` will be created
-   - **Governance mode** — `lightweight`, `standard` (default), or `strict`
+   - **Governance mode** — `none`, `lightweight`, `standard` (default), or `strict`
    - **Platform** — `github`, `gitlab`, `azure-devops`, or `none` (default)
    - **Description** — optional one-liner for `context.md`
 
@@ -3260,6 +3261,8 @@ This project has a `.collab/` collaboration workspace. Before doing anything:
    build/test commands, and existing documentation. Do not restructure or rename anything.
 4. If the kanban board is empty, add initial recon tasks to **Inbox** and wait for my approval
    before making any changes.
+5. `north-star.md` is still a draft. Once you've reported what you found, offer to interview me
+   to fill it in; don't fill it in on your own.
 
 Your first responsibility is to understand the current state, not change it.
 """,
@@ -4593,7 +4596,7 @@ def main() -> None:
         metavar="MODE",
         choices=GOVERNANCE_MODES,
         default=None,
-        help="Governance mode: lightweight, standard, or strict.",
+        help="Governance mode: none, lightweight, standard, or strict. Default: standard.",
     )
     parser.add_argument(
         "--platform",
