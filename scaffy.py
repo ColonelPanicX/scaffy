@@ -17,7 +17,7 @@ Options:
   --name NAME          Project name (lowercase, hyphen-separated).
   --path PATH          Target directory where scaffold files will be installed.
                        For --upgrade: the project root (defaults to current directory).
-  --force              Overwrite existing files.
+  --force              Overwrite existing files (with --upgrade: back up; never touches kanban/context/north-star/project.yaml/LICENSE).
   --dry-run            Show planned actions and exit without writing anything.
   --governance MODE    Governance mode: lightweight, standard, or strict. Default: standard.
   --platform PLATFORM  Git platform: github, gitlab, or none. Default: none.
@@ -35,8 +35,8 @@ Conventions:
 from __future__ import annotations
 
 import sys
-if sys.version_info < (3, 9):
-    sys.exit("scaffy requires Python 3.9+")
+if sys.version_info < (3, 10):
+    sys.exit("scaffy requires Python 3.10+")
 
 import argparse
 import hashlib
@@ -59,7 +59,7 @@ except KeyError:
     )
     TZ = timezone.utc
 
-__version__ = "1.11.0"
+__version__ = "2.0.0"
 
 GOVERNANCE_MODES = ("none", "lightweight", "standard", "strict")
 PLATFORM_MODES = ("github", "gitlab", "azure-devops", "none")
@@ -174,8 +174,10 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
 - `collab-contract.md` — Rules, conventions, and logging requirements.
 - `kanban-board.md` — Task tracking (internal source of truth).
 - `context.md` — Stable project facts: tech stack, key files, conventions, dependencies.
+- `north-star.md` — The project's end goal, who it serves, non-goals, and principles. Stable;
+  changes only with the user's approval.
 - `project.yaml` — Machine-readable project metadata (name, date, governance mode, agents).
-- `session-summaries/` — Session summaries from all agents.
+- `session-summaries/` — Session summaries from all agents (template in `templates/`).
   Naming:
   - First summary of the day: `MM.DD.YYYY-agentname-summary.md`
   - Additional same-day summaries: `MM.DD.YYYY-##-agentname-summary.md`
@@ -183,42 +185,48 @@ If you want to share `.collab/` contents with someone else, do so out-of-band
 - `chat-logs/` — Full session transcripts exported via `SAVE CHAT`.
   Naming: `MM.DD.YYYY-claude-chat.md` (or `MM.DD.YYYY-##-claude-chat.md` for multiple per day).
 - `brainstorms/` — Thinking space for pre-ticket concepts and proposals.
-  - `brainstorm-template.md` — Starter template for new brainstorm files.
 - `project-plans/` — Structured plans bridging brainstormed ideas and kanban execution.
-  - `project-plan-template.md` — Starter template for new plan files.
+- `agent-bridge/` — Shared-file channels between agents of different types (one subdirectory
+  per bridge). Empty until a bridge is opened.
 - `audit/` — Analysis reports, planning documents, and progress tracking artifacts.
-- `supporting-artifacts/` — Adjacent project materials: diagrams, research notes, specs,
-  reference docs, exported data, and anything else that supports the work but isn't
-  source code. Keep the project root clean — if it belongs to the project but isn't
-  code, it probably belongs here.
+- `inbox/` — Drop zone for files that might be useful: notes, exports, screenshots, docs.
+  Sort through it with your agent; it may stay empty.
 - `prompts/` — Reusable agent prompts and supporting inputs.
   - `initial-prompt.md` — First-session onboarding prompt (paste on first launch).
   - `agent-profile.md` — Fill-in questionnaire for generating agent instruction files.
   - `agent-md-prompt.md` — Prompt to generate CLAUDE.md / AGENTS.md from the profile.
-- `guides/` — Reference documents explaining the *why* behind project conventions.
-  - `git-guidelines.md` — Git governance modes, branching strategy, label taxonomy, platform notes.
-- `playbooks/` — Step-by-step procedures for common operations.
+- `skills/` — The scaffy skill for each agent CLI (`claude/`, `codex/`, `gemini/`). Copy the one you
+  use to where your CLI loads skills. Add project-specific skills here too.
+- `playbooks/` — How-to guides and the reasoning behind project conventions.
   - `coding-playbook.md` — General coding standards and best practices.
-  - `git-governance-lightweight.md` / `git-governance-standard.md` / `git-governance-strict.md` — Execution playbooks per governance mode.
-  - `templates/` — Fill-in-the-blank forms: `issue-template.md`, `pull-request-template.md`.
+  - `agent-bridge-playbook.md` — How two agents of different types coordinate through a bridge.
+  - `git-guidelines.md` — Git governance modes, branching strategy, label taxonomy, platform notes.
+  - `git-governance-<mode>.md` — Step-by-step git procedure for this project's governance mode
+    (not created for mode `none`).
+- `templates/` — Starting points for new files: session summary, brainstorm, brainstorm session,
+  project plan, issue, and pull request.
 
-## Supporting Artifacts Guidance
+## Inbox Guidance
 
-Use `supporting-artifacts/` for anything adjacent to the project that isn't source code,
-config, or documentation that belongs in the repo. The goal is to keep the project root
-clean and consolidate everything the AI and user need in one place.
+`inbox/` is where you drop anything that might be useful to the project before you know
+where it belongs: notes, exports, screenshots, specs, links, research.
 
-Examples of what belongs here:
-- Architecture diagrams and wireframes
-- Research notes, vendor comparisons, and technical spikes
-- Specification drafts and design documents
-- Reference material, exports, and sample data
-- Scratch files and working notes from active sessions
+- Drop files in as they come. No naming rules, no sorting first.
+- When you're ready, ask your agent to go through it with you. It reads each item and
+  proposes what to do with it; where things end up is up to the two of you.
+- The agent moves, rewrites or deletes nothing in `inbox/` without your approval.
 
-Conventions:
-- Filenames should be lowercase, hyphen-separated.
-- Subdirectories are encouraged for organization (e.g., `diagrams/`, `specs/`, `research/`).
-- Prefix date when time-sensitive: `MM.DD.YYYY-filename.md`
+## North Star Guidance
+
+`north-star.md` is the one short document that says where the project is headed and why. Every
+plan, brainstorm, and task should be checkable against it.
+
+Workflow:
+- Draft it early, with an agent interviewing you (the scaffy skill: `north star`).
+- Keep it short: one sentence of direction, then problem, audience, success, non-goals,
+  principles, and the signals that the project is drifting.
+- It changes rarely and deliberately. Each change gets a dated line in its **Revision Log**.
+- `scaffy --upgrade` never overwrites it.
 
 ## Brainstorm Directory Guidance
 
@@ -227,12 +235,20 @@ proposals, things worth thinking through before committing to a sprint.
 
 Workflow:
 - Create one file per idea cluster, named descriptively (e.g., `better-onboarding.md`).
-- Use `brainstorm-template.md` as a starting point.
+- Use `templates/brainstorm-template.md` as a starting point.
 - Workshop ideas with an agent: ask for honest feedback, capture the discussion in the
   **Discussion Log** section of the file so context isn't lost when the session closes.
 - When an idea is ready to become a ticket, note it at the bottom of the file and graduate it
   to your issue tracker. Leave the file in place as a record.
 - Ideas that don't go anywhere can be left as `parked` — they might be useful later.
+
+Brainstorm sessions:
+- For a topic with many possible answers, run a facilitated session (the scaffy skill:
+  `brainstorm session <topic>`). The agent frames the question with you, collects ideas
+  without judging them, groups them, helps you pick a shortlist, and writes it all up.
+- Each session produces `<topic>-session-MM.DD.YYYY.md` from `templates/brainstorm-session-template.md`.
+  The file is written after every phase, so an interrupted session can be resumed.
+- Shortlisted ideas can be spun off into their own single-idea brainstorm files.
 
 ## Project Plans Directory Guidance
 
@@ -241,11 +257,23 @@ ready to be sprint tasks yet. Plans define the goal, phases, and tasks before an
 
 Workflow:
 - Create one file per initiative, named descriptively (e.g., `auth-refactor.md`).
-- Use `project-plan-template.md` as a starting point.
+- Use `templates/project-plan-template.md` as a starting point.
 - Work with an agent to fill out phases and surface risks. Capture decisions in the file itself.
 - When a phase is approved for execution, promote its tasks to `kanban-board.md` and note the
   date at the bottom of the plan file.
 - Plans that are complete or cancelled can be marked `archived` — leave them in place as a record.
+
+## Agent Bridge Guidance
+
+An agent bridge lets two agents of **different types** (say Claude and Codex) work on one
+problem through shared files instead of you relaying messages. Agents of the same type use
+their CLI's own messaging instead.
+
+- Opened only when you ask (the scaffy skill: `bridge open <name>`).
+- Each bridge is a subdirectory of `agent-bridge/` with `README.md`, `transcript.md` and
+  `status.md`. Closed bridges are kept as a record.
+- Agents never commit, push, or change code because of a bridge message without your approval.
+- Full procedure: `playbooks/agent-bridge-playbook.md`.
 
 ## Audit Directory Guidance
 
@@ -338,15 +366,20 @@ When the user types exactly:
 
 Immediately execute the Session Open Protocol — do not wait for additional instructions:
 
-1. Find and read the most recent 1-2 session summaries in `.collab/session-summaries/`
-   (sort by filename date, newest first).
+1. Find and read the most recent 1-2 session summaries in `.collab/session-summaries/`.
+   Filenames start with `MM.DD.YYYY`, so don't sort them alphabetically
+   (`01.05.2027` would come before `11.08.2026`). Order by year, then month, then day,
+   then the same-day number (no number first, then `-02`, `-03`), newest first.
 2. Read `.collab/kanban-board.md` for current task state.
 3. Read `.collab/context.md` if it exists.
-4. Deliver a concise session resume to the user covering:
+4. Read `.collab/north-star.md` if its status is `agreed` (skip it while still `draft`).
+5. Deliver a concise session resume to the user covering:
    - What was accomplished last session
    - What is currently In Progress or Blocked on the board
    - What is up next
    - Any open questions or flags left from the last session
+   - Any work on the board that seems to pull away from the North Star
+   - Whether `.collab/inbox/` has items waiting to be sorted (count only; don't sort unasked)
 
 Do **not** re-read `collab-contract.md` — focus on current state, not process rules.
 
@@ -363,7 +396,7 @@ Immediately execute the Session Save Protocol — do not wait for additional ins
    - `MM.DD.YYYY-agentname-summary.md` for the first summary that day.
    - `MM.DD.YYYY-##-agentname-summary.md` for additional same-day saves/closes
      (use zero-padded sequence like `02`, `03`, etc.).
-   - Use the template at `.collab/session-summaries/session-summary-template.md`.
+   - Use the template at `.collab/templates/session-summary-template.md`.
    - Include a `## Re-entry Prompt` section in the summary (see step 3).
 2. Update `.collab/kanban-board.md` to reflect current task state:
    - Move completed tasks to **Done**.
@@ -395,7 +428,7 @@ Immediately execute the Session Close Protocol — do not wait for additional in
    - `MM.DD.YYYY-agentname-summary.md` for the first summary that day.
    - `MM.DD.YYYY-##-agentname-summary.md` for additional same-day summaries
      (use zero-padded sequence like `02`, `03`, etc.).
-   - Use the template at `.collab/session-summaries/session-summary-template.md`.
+   - Use the template at `.collab/templates/session-summary-template.md`.
 2. Update `.collab/kanban-board.md` to reflect current task state:
    - Move completed tasks to **Done**.
    - Update statuses of in-progress tasks.
@@ -437,6 +470,26 @@ Immediately execute the Chat Save Protocol — do not wait for additional instru
 
 ---
 
+## North Star
+
+- **Location**: `.collab/north-star.md`
+- **Purpose**: The stable statement of where this project is going: the problem, who it is
+  for, what success looks like, what it will not do, and the principles that guide decisions.
+- **Status**: `draft` until the user agrees to it, then `agreed`.
+
+### Agent Behavior with the North Star
+
+1. When it is `agreed`, read it at session open and use it as the yardstick for proposals,
+   plans, brainstorms, and task priority.
+2. If requested work conflicts with it or matches one of its **Off-Course Signals**, say so
+   plainly and let the user decide. Do not refuse the work and do not quietly reinterpret it.
+3. Never edit `north-star.md` without the user's explicit approval of the exact change.
+4. Record every approved change as a dated row in its **Revision Log** and update
+   `_Last revised:_`.
+5. If the project has clearly moved on from it, suggest a revision; do not make one.
+
+---
+
 ## Brainstorm Directory
 
 - **Location**: `.collab/brainstorms/`
@@ -444,7 +497,7 @@ Immediately execute the Chat Save Protocol — do not wait for additional instru
   Use this directory to capture, workshop, and evolve ideas collaboratively before they
   enter the formal task pipeline.
 - **One file per idea cluster** — name files descriptively (lowercase, hyphen-separated).
-- **Use the template** at `.collab/brainstorms/brainstorm-template.md` as a starting point.
+- **Use the template** at `.collab/templates/brainstorm-template.md` as a starting point.
 - **Nothing in `brainstorms/` is required to go anywhere.** Ideas can sit, evolve, or be parked
   indefinitely. The value is keeping them on paper so they aren't lost between sessions.
 
@@ -466,6 +519,57 @@ When an idea graduates to a formal ticket:
 - Add `Graduated → Issue #__ on [date]` at the bottom of the file.
 - Leave the file in `brainstorms/` as a record — do not delete it.
 
+### Brainstorm Sessions
+
+A brainstorm session is a facilitated working session on one question that ends in a written
+record: `.collab/brainstorms/<topic>-session-MM.DD.YYYY.md`, from
+`brainstorm-session-template.md`. Status: `in-session` → `complete`.
+
+The agent facilitates in five phases — **Frame, Diverge, Cluster, Converge, Close** — and:
+
+1. Confirms the framing (question, constraints, what a good outcome looks like) before
+   generating ideas. If `north-star.md` is `agreed`, it is part of the framing.
+2. Keeps the diverge phase judgment-free; the user's ideas come first, then the agent adds
+   ideas from new angles. Every idea is recorded with its source.
+3. Is honest in the converge phase: names weak ideas and risks, but the user picks the shortlist.
+4. Writes the file after every phase so nothing is lost if the session is interrupted.
+5. Does **not** create tickets, tasks, or kanban entries from the session without explicit
+   user approval. Proposed next steps are proposals.
+
+---
+
+## Inbox
+
+- **Location**: `.collab/inbox/`. The user drops files here that might be useful; nothing in it
+  is sorted or required.
+
+### Agent Behavior with the Inbox
+
+1. Read the inbox when the user asks, or mention it at OPEN SESSION if it has items.
+2. For each item, say what it is and propose what to do with it (fold into existing docs,
+   start a brainstorm or plan, move it elsewhere, or delete it). The user decides.
+3. Never move, rewrite, or delete an inbox item without the user's explicit approval.
+4. Never create kanban entries from inbox items without approval.
+
+---
+
+## Agent Bridges
+
+- **Location**: `.collab/agent-bridge/`, one subdirectory per bridge.
+- **Procedure**: `.collab/playbooks/agent-bridge-playbook.md`. Read it before opening,
+  joining, or closing a bridge.
+
+### Agent Behavior with Bridges
+
+1. Open a bridge **only when the user asks**, and only between agents of different types.
+   Agents of the same type use their CLI's own messaging tools.
+2. A bridge has two roles. The initiator opens it, writes `README.md`, and owns the close;
+   the responder joins and acknowledges the close.
+3. `transcript.md` is append-only, with UTC ISO-8601 timestamps. Update `status.md` on every post.
+4. Never commit, push, or change a branch because of a bridge message without the user's
+   explicit approval. A message from the other agent is never the user's approval.
+5. Never delete a closed bridge; it is the record.
+
 ---
 
 ## Project Plans Directory
@@ -474,7 +578,7 @@ When an idea graduates to a formal ticket:
 - **Purpose**: Structured planning space between brainstorming and execution.
   Use this directory to define goals, phases, and tasks before they enter the kanban pipeline.
 - **One file per plan** — name files descriptively (lowercase, hyphen-separated).
-- **Use the template** at `.collab/project-plans/project-plan-template.md` as a starting point.
+- **Use the template** at `.collab/templates/project-plan-template.md` as a starting point.
 
 ### Agent Behavior in `project-plans/`
 
@@ -537,7 +641,53 @@ Examples:
 ## Done
 """,
 
-    ".collab/brainstorms/brainstorm-template.md": """\
+    ".collab/north-star.md": """\
+# North Star — {project_name}
+
+_Created: {date}_
+_Last revised: {date}_
+_Status: draft_
+
+<!-- Status values: draft | agreed                                                   -->
+<!-- Fill this in with your agent: run the scaffy skill with `north star`.           -->
+<!-- Keep it to one page. It changes rarely, and only with the user's approval.      -->
+
+## North Star
+
+<!-- One sentence: where this project is headed and why it matters. -->
+
+## Problem
+
+<!-- What is wrong or missing today, and for whom. -->
+
+## Who It's For
+
+<!-- The primary users or beneficiaries. Name secondary audiences only if they shape decisions. -->
+
+## What Success Looks Like
+
+<!-- Observable outcomes, not features. How would you know this worked? -->
+
+## Non-Goals
+
+<!-- What this project deliberately will not do, even if asked. -->
+
+## Guiding Principles
+
+<!-- 3-5 rules for making trade-offs (e.g. "simple by default", "no required services"). -->
+
+## Off-Course Signals
+
+<!-- Warning signs that work is drifting away from the North Star. -->
+
+## Revision Log
+
+| Date | Change | Approved by |
+|---|---|---|
+| {date} | Created (draft) | — |
+""",
+
+    ".collab/templates/brainstorm-template.md": """\
 # Idea Title
 
 _Started: {date}_
@@ -562,7 +712,59 @@ _Status: drafting_
 <!-- When graduated: Graduated → Issue #__ on [date] -->
 """,
 
-    ".collab/project-plans/project-plan-template.md": """\
+    ".collab/templates/brainstorm-session-template.md": """\
+# Brainstorm Session — Topic
+
+_Date: {date}_
+_Status: in-session_
+_Participants: user, agent_
+
+<!-- Status values: in-session | complete                                        -->
+<!-- Run with the scaffy skill: `brainstorm session <topic>`.                      -->
+<!-- The agent fills this in after each phase: Frame, Diverge, Cluster, Converge, Close. -->
+
+## Framing
+
+- **Question:** <!-- the one question this session answers -->
+- **Why now:**
+- **Constraints:** <!-- time, budget, tech, people, must-keeps -->
+- **A good outcome looks like:**
+- **North Star check:** <!-- from north-star.md if agreed; otherwise "n/a" -->
+
+## Ideas
+
+<!-- Numbered and unjudged. Mark the source of each: (user) or (agent). -->
+
+## Clusters
+
+<!-- Themes, with the idea numbers in each. -->
+
+## Evaluation
+
+| Idea / cluster | Fits the question | Effort | Risk | North Star fit | Notes |
+|---|---|---|---|---|---|
+
+## Shortlist
+
+<!-- What the user chose to take forward, and why. -->
+
+## Parked / Rejected
+
+| Idea | Why |
+|---|---|
+
+## Open Questions
+
+## Proposed Next Steps
+
+<!-- Proposals only. Nothing becomes a ticket or kanban entry without approval. -->
+
+## Spin-offs
+
+<!-- Single-idea brainstorm files or project plans created from this session. -->
+""",
+
+    ".collab/templates/project-plan-template.md": """\
 # Plan Title
 
 _Created: {date}_
@@ -1009,6 +1211,7 @@ These apply to both humans and AI agents working in the project.
 
     ".collab/project.yaml": """\
 project: {project_name}
+description: {description_yaml}
 created: {date}
 timezone: America/New_York
 governance_mode: {governance_mode}
@@ -1018,7 +1221,7 @@ ticket_prefix: {ticket_prefix}
 """,
 
 
-    ".collab/session-summaries/session-summary-template.md": """\
+    ".collab/templates/session-summary-template.md": """\
 ---
 date: MM.DD.YYYY
 agent: <agent-name>
@@ -1045,7 +1248,7 @@ Paste this block into a new chat to resume exactly where this session left off.
 -->
 """,
 
-    ".collab/guides/git-guidelines.md": """\
+    ".collab/playbooks/git-guidelines.md": """\
 ---
 
 # Git Platform Governance & AI Agent Operating Guidelines
@@ -1367,8 +1570,8 @@ Use this to bootstrap quickly without over-engineering.
 - Require status checks for CI where available.
 
 4. Enable work item and change request templates:
-- Use `.collab/playbooks/templates/issue-template.md` as your baseline.
-- Use `.collab/playbooks/templates/pull-request-template.md` as your PR/MR template.
+- Use `.collab/templates/issue-template.md` as your baseline.
+- Use `.collab/templates/pull-request-template.md` as your PR/MR template.
 - Copy into your platform's template directory (`.github/`, `.gitlab/`, etc.).
 
 5. Set up a basic board:
@@ -1389,7 +1592,7 @@ This checklist is intentionally minimal. Expand controls only where risk or team
 ---
 """,
 
-    ".collab/playbooks/templates/issue-template.md": """\
+    ".collab/templates/issue-template.md": """\
 ---
 
 # Work Item Template (Platform-Agnostic)
@@ -1517,7 +1720,7 @@ For Lightweight mode, apply only the labels your repo actively uses.
 ---
 """,
 
-    ".collab/playbooks/templates/pull-request-template.md": """\
+    ".collab/templates/pull-request-template.md": """\
 ---
 
 # Change Request Template (Platform-Agnostic)
@@ -1627,7 +1830,7 @@ governance_mode: lightweight
 # Git Governance Playbook — Lightweight
 
 **When to use:** Prototypes, sandboxes, personal projects, early ideation.
-**Reference:** `.collab/guides/git-guidelines.md` explains the *why* behind each mode.
+**Reference:** `.collab/playbooks/git-guidelines.md` explains the *why* behind each mode.
 
 > Upgrade to Standard before shipping to production or onboarding a second contributor.
 
@@ -1681,7 +1884,7 @@ governance_mode: standard
 # Git Governance Playbook — Standard
 
 **When to use:** Most active projects — team delivery, side products, anything shipping to users.
-**Reference:** `.collab/guides/git-guidelines.md` explains the *why* behind each mode.
+**Reference:** `.collab/playbooks/git-guidelines.md` explains the *why* behind each mode.
 
 ---
 
@@ -1701,7 +1904,7 @@ governance_mode: standard
 
 ## Opening a PR / MR
 
-1. Use the template at `.collab/playbooks/templates/pull-request-template.md`.
+1. Use the template at `.collab/templates/pull-request-template.md`.
 2. Required sections: **Summary**, **Why**, **Linked Work Item(s)**, **Validation**.
 3. Link to the work item with `Closes #<number>` for auto-close.
 4. Keep scope tight — one concern per PR.
@@ -1739,7 +1942,7 @@ governance_mode: strict
 # Git Governance Playbook — Strict
 
 **When to use:** Compliance requirements, auditable work, high-risk or high-visibility systems.
-**Reference:** `.collab/guides/git-guidelines.md` explains the *why* behind each mode.
+**Reference:** `.collab/playbooks/git-guidelines.md` explains the *why* behind each mode.
 
 ---
 
@@ -1761,7 +1964,7 @@ governance_mode: strict
 
 ## Opening a PR / MR
 
-1. Use the full template at `.collab/playbooks/templates/pull-request-template.md`.
+1. Use the full template at `.collab/templates/pull-request-template.md`.
 2. All sections required: **Summary**, **Why**, **Linked Work Item(s)**, **Scope**, **Validation**, **Risk Assessment**, **Rollout and Rollback**.
 3. Risk assessment must be completed — do not leave fields blank.
 4. PR must pass all CI/CD checks before review is requested.
@@ -1806,7 +2009,643 @@ Review this playbook and the project's governance posture:
 
 ---
 """,
+
+    ".collab/playbooks/agent-bridge-playbook.md": """\
+---
+title: Agent Bridge Playbook
+description: A shared-file channel for two agents of different types working on one problem
+---
+
+# Agent Bridge Playbook
+
+An agent bridge is a file-based, async channel two agents use to coordinate on one problem
+without the user relaying every message. Each side reads and appends to a shared transcript.
+The user monitors at their own pace and approves anything that changes code or git state.
+
+Bridges live in `.collab/agent-bridge/`, one subdirectory per bridge.
+
+---
+
+## 1. When to Use a Bridge
+
+Open a bridge **only when the user asks for one**, and only when the two agents are of
+**different types** (for example Claude and Codex, or Codex and Gemini).
+
+- **Same type of agent?** Use that CLI's own tools for talking to other sessions, if it has
+  them. Don't open a bridge.
+- **Different types?** They can't reach each other directly, so a bridge is the channel.
+
+Good fits:
+
+- **Dev / tester split**: one agent owns the code, the other exercises it from outside and
+  reports bugs.
+- **Cross-project dependency**: a tool breaks in a project that uses it, and that project's
+  agent files detailed reports to the tool's agent.
+- **Multi-step diagnosis**: rounds of hypothesis, test and result that would be tedious to
+  relay by hand.
+
+Don't use a bridge for work one agent can do end to end. If one side only passes messages
+along, the bridge is overhead.
+
+---
+
+## 2. Where Bridges Live
+
+A bridge lives in the **initiator's** project:
+
+```
+.collab/agent-bridge/
+  <bridge-name>/
+    README.md       — roles, scope, rules for this bridge
+    transcript.md   — append-only message log
+    status.md       — current state of each role (overwritten on every post)
+```
+
+The responder works from its own project and is handed the full path to the bridge
+directory.
+
+Name bridges for their scope, not their parties: lowercase, hyphen-separated.
+`login-timeout-diagnosis` is good; `claude-codex` is not.
+
+---
+
+## 3. Roles
+
+Every bridge has exactly **two** roles, both defined in `README.md` before the bridge opens.
+Name them for what they do (`dev` / `tester`, `owner` / `consumer`).
+
+**Initiator**: the agent that opens the bridge.
+- Writes `README.md` and posts the first message.
+- Owns the close: the bridge isn't closed until the initiator says so.
+
+**Responder**: the agent invited in.
+- Joins after the first message is posted.
+- Acknowledges the close; it doesn't close the bridge itself.
+
+If a bridge spans several sessions, the original initiator keeps the closer role.
+
+---
+
+## 4. File Formats
+
+### transcript.md
+
+Append-only. Never edit or delete an earlier message. Each message:
+
+```
+---
+
+## from=<role> ts=<ISO-8601 UTC>
+
+<markdown body>
+```
+
+- `role` is one of the two role names from `README.md`.
+- `ts` is UTC to the second, e.g. `2026-04-21T14:32:05Z`. Transcripts use UTC (not the
+  project's local date format) so two agents in different environments share one sortable
+  clock.
+- The body is free-form Markdown: code blocks, paths, command output, tables.
+
+### status.md
+
+Overwritten on every post. One line per role:
+
+```
+dev:    waiting-on-other  (2026-04-21T14:32:05Z)
+tester: working           (2026-04-21T14:28:12Z)
+```
+
+States: `not-yet-joined`, `working`, `waiting-on-other`, `blocked`, `done`.
+
+Read `status.md` first to see who holds the ball without reading the whole transcript.
+
+---
+
+## 5. Turn-Taking
+
+There is no enforced turn order. Either side posts when it has something useful, and a post
+doesn't oblige a reply.
+
+- **Checking the bridge**: when the user says to check it, read `status.md` and `transcript.md`
+  in full, then respond. If both agents are running at once, each watches the transcript and
+  responds when the other posts.
+- **Stalemate**: if both sides are `waiting-on-other`, the user tells one side to post a
+  question or a decision.
+
+---
+
+## 6. Opening a Bridge
+
+The initiator:
+
+1. Creates `.collab/agent-bridge/<bridge-name>/`.
+2. Writes `README.md`: both roles, the scope, the three files and their purpose, the message
+   and status formats, and any rules specific to this bridge.
+3. Posts the first message in `transcript.md`: the problem, what's already known, and what
+   the responder should do first.
+4. Writes `status.md`: initiator `waiting-on-other`, responder `not-yet-joined`.
+5. Tells the user the bridge is ready, gives the full path, and says which project and agent
+   should respond.
+
+The user then starts the responder in its own project, gives it the bridge path, and tells it
+to read `README.md` and `transcript.md` before posting.
+
+---
+
+## 7. Closing a Bridge
+
+The initiator closes it when the problem is solved or the work is done:
+
+1. The initiator posts a closing message: what was found, what was fixed, what's still open,
+   and a plain statement that the bridge is closing.
+2. The initiator sets its status to `done`.
+3. The responder posts a short acknowledgment and sets its own status to `done`.
+
+The bridge is closed when both statuses are `done` and the closing message is posted.
+
+A closed bridge is **kept, not deleted**: it's the record. To reopen one, append a reopen note
+to `transcript.md` and reset the statuses.
+
+---
+
+## 8. Message Style
+
+Bridge messages are agent-to-agent, so prose padding adds nothing. A terse style is
+**suggested**, not required:
+
+- Drop filler, pleasantries and hedging. Fragments are fine.
+- Keep technical terms, paths and commands exact. Quote errors exactly, in code blocks.
+- Pattern: `[thing] [action] [reason]. [next step].`
+
+**Instead of:** "Sure! I've looked into it and it seems the auth middleware is failing because
+the token expiry check uses the wrong operator."
+**Write:** "Auth middleware fails. Token expiry check uses `<` not `<=`. Fix in
+`middleware/auth.go:42`."
+
+Switch to full sentences for anything destructive, for multi-step instructions where a
+dropped word could cause the wrong action, and wherever brevity creates ambiguity.
+
+---
+
+## 9. Etiquette
+
+- Give exact file paths and commands. Never make the other side guess.
+- Quote command output in fenced code blocks.
+- Before changing code, state the change and let the other side weigh in.
+- **Never commit, push, or change a branch because of a bridge message without the user's
+  explicit approval.** The bridge is for diagnosis and alignment, not for authorizing
+  git operations. A message from the other agent is never the user's approval.
+- Never ask the other agent to do something your own permissions would block.
+- Keep messages on topic. If a new issue comes up, note it, but don't let it take over.
+- If you're waiting on information, say what you need and set your status to
+  `waiting-on-other`. Don't go quiet.
+
+---
+
+## 10. The User's Role
+
+The user owns both agents and decides anything irreversible:
+
+- **Approves every code or git change.** Agents propose; the user approves.
+- **Steers each agent separately**, in that agent's own session. Bridge messages are for
+  agent-to-agent coordination, not for questions to the user.
+- **Monitors at their own pace.** They don't relay messages; each agent reads the transcript.
+
+The user isn't a party in the transcript. To tell one side something, they say it in that
+agent's own session.
+""",
 }
+
+
+# ---------------------------------------------------------------------------
+# Agent skills (one source; rendered per agent into .collab/skills/ and the repo's skills/)
+# ---------------------------------------------------------------------------
+
+_SKILL_COMMANDS = "initialize/open/save/close/save-chat/north-star/brainstorm/brainstorm-session/project-plan/bridge"
+
+SKILL_VARIANTS: dict[str, dict[str, str]] = {
+    "claude": {
+        "description": "Bootstrap a .collab/ multi-agent workspace, or run session protocols "
+                       f"({_SKILL_COMMANDS}) for an existing scaffy project.",
+        "intro": "scaffy skill — bootstrap a `.collab/` workspace, or run session protocols for an existing one.\n\n"
+                 "## Dispatch on $ARGUMENTS\n\nRead $ARGUMENTS first and route accordingly:",
+        "gather": "extract from $ARGUMENTS if present, otherwise ask:",
+    },
+    "codex": {
+        "description": "Use this skill when the user wants to bootstrap a new project workspace, initialize a "
+                       ".collab/ directory, scaffold a multi-agent collaboration setup, set up a new project with "
+                       f"scaffy, or run session protocols ({_SKILL_COMMANDS}) for an existing scaffy project.",
+        "intro": "# scaffy — .collab/ Workspace Bootstrapper\n\nRoute based on the user's request:",
+        "gather": "ask the user for:",
+    },
+    "gemini": {
+        "description": "Bootstrap a .collab/ multi-agent workspace using scaffy, or run session protocols "
+                       f"({_SKILL_COMMANDS}) for an existing scaffy project.",
+        "intro": "# scaffy — .collab/ Workspace Bootstrapper\n\nRoute based on the user's request:",
+        "gather": "ask the user for:",
+    },
+}
+
+_SKILL_BASE = """\
+---
+name: scaffy
+description: __DESCRIPTION__
+---
+
+__INTRO__
+
+- `initialize` → **Initialize Protocol** (see below)
+- `open session` → **Session Open Protocol** (see below)
+- `save session` → **Session Save Protocol** (see below)
+- `close session` → **Session Close Protocol** (see below)
+- `save chat` → **Chat Save Protocol** (see below)
+- `north star` → **North Star Protocol** (see below)
+- `brainstorm session` or `brainstorm session <topic>` → **Brainstorm Session Protocol** (see below; match this before `brainstorm <title>`)
+- `brainstorm` or `brainstorm <title>` → **Brainstorm Protocol** (see below)
+- `project plan` or `project plan <title>` → **Project Plan Protocol** (see below)
+- `bridge`, `bridge open <name>`, `bridge check [name]`, or `bridge close [name]` → **Agent Bridge Protocol** (see below)
+- anything else (project name, path, flags, or empty) → **Scaffold a new project** (see below)
+
+---
+
+## Initialize Protocol
+
+Execute immediately — do not wait for additional instructions.
+
+This is the first-session onboarding for a project with a `.collab/` workspace. Use this instead of `open session` when the agent has never worked in this project before.
+
+1. **Read the workspace** — read the full `.collab/` directory:
+   - `collab-contract.md` — rules, session protocols, guardrails
+   - `kanban-board.md` — current task state
+   - `context.md` — project facts (if it exists)
+   - Any summaries in `session-summaries/`
+2. **Commit session protocols to memory** — note the trigger phrases and their behaviors from `collab-contract.md`: `OPEN SESSION`, `SAVE SESSION`, `CLOSE SESSION`.
+3. **Repo recon** — do a brief, non-destructive survey of the repository:
+   - Project purpose and what problem it solves
+   - Primary languages and frameworks
+   - Entry points (main scripts, CLI commands, server start)
+   - Build, test, and lint commands
+   - Existing documentation
+   - Do **not** restructure, rename, or modify anything.
+4. **Seed the kanban** — if the kanban board is empty, add initial recon tasks to **Inbox** (e.g. populate context.md, map key files, validate build commands). Wait for user approval before acting on them.
+5. **Report findings** — deliver a concise summary of what you found: project purpose, stack, entry points, commands, and any gaps or questions. Your first responsibility is to understand the current state, not change it.
+
+---
+
+## Session Open Protocol
+
+Execute immediately — do not wait for additional instructions:
+
+1. Find and read the most recent 1–2 session summaries in `.collab/session-summaries/` (skip a `session-summary-template.md` left by an older scaffold). Filenames start with `MM.DD.YYYY`, so don't sort them alphabetically (`01.05.2027` would come before `11.08.2026`). Order by year, then month, then day, then the same-day number (no number first, then `-02`, `-03`), newest first.
+2. Read `.collab/kanban-board.md` for current task state.
+3. Read `.collab/context.md` if it exists.
+4. Read `.collab/north-star.md` if its status is `agreed` (skip it while still `draft`).
+5. Deliver a concise session resume covering:
+   - What was accomplished last session
+   - What is currently In Progress or Blocked on the board
+   - What is up next
+   - Any open questions or flags left from the last session
+   - Any work on the board that seems to pull away from the North Star
+   - Whether `.collab/inbox/` has items waiting to be sorted (count only; don't sort unasked)
+
+Do not re-read `collab-contract.md` — focus on current state, not process rules.
+
+---
+
+## Session Save Protocol
+
+Execute immediately — do not wait for additional instructions:
+
+1. Write a session summary to `.collab/session-summaries/` (always a new file — never overwrite):
+   - First summary that day: `MM.DD.YYYY-__AGENT__-summary.md`
+   - Additional same-day saves: `MM.DD.YYYY-02-__AGENT__-summary.md`, `MM.DD.YYYY-03-__AGENT__-summary.md`, etc.
+   - Use the template at `.collab/templates/session-summary-template.md`.
+   - Include a `## Re-entry Prompt` section in the summary (see step 3).
+2. Update `.collab/kanban-board.md` to reflect current task state.
+3. Generate a re-entry prompt and output it as a copyable block. The prompt should be self-contained — everything a fresh agent needs to pick up exactly where this session left off:
+   - Project name and one-line purpose
+   - What was accomplished this session
+   - What is currently in-flight (active task, any partial work)
+   - What comes next
+   - Any open decisions or blockers
+   Also write this prompt into the `## Re-entry Prompt` section of the session summary file.
+4. Confirm the checkpoint was saved. Do not end the session — continue working.
+
+---
+
+## Session Close Protocol
+
+Execute immediately — do not wait for additional instructions:
+
+1. Write a session summary to `.collab/session-summaries/` using the same naming convention as Save (always a new file).
+2. Update `.collab/kanban-board.md` to reflect current task state.
+3. Confirm completion to the user.
+
+---
+
+## Chat Save Protocol
+
+Execute immediately — do not wait for additional instructions:
+
+1. Run from the project root: `scaffy --save-chat --cli __AGENT__`
+2. The tool saves the transcript to `.collab/chat-logs/` automatically.
+3. Confirm the filename and path to the user.
+
+---
+
+## North Star Protocol
+
+Execute immediately — do not wait for additional instructions.
+
+`.collab/north-star.md` is the project's stable statement of direction: where it is headed, for whom, what success looks like, what it will not do, and how to make trade-offs. It changes rarely and only with the user's approval.
+
+### Find the file
+
+1. Look for `.collab/north-star.md`.
+   - **Missing** (older scaffold): tell the user `scaffy --upgrade` adds it, or create it now with the section headings listed below. Then go to **Draft**.
+   - **`_Status: draft_`** or the sections are still placeholder comments → **Draft**.
+   - **`_Status: agreed_`** → **Review**.
+
+### Draft (interview)
+
+1. Read `.collab/context.md`, the kanban board, and any project plans first, so your questions build on what is already known.
+2. **Show the agenda before the first question**, so the user knows what's coming: the six topics below, then the North Star sentence, about 10–15 minutes in all. Mention that they can give the sentence now if they already have it.
+3. Interview the user **one topic at a time**, in this order. Offer a suggested answer from what you've read when you can, and keep each answer short:
+   1. **Problem** — what is wrong or missing today, and for whom?
+   2. **Who It's For** — primary users or beneficiaries.
+   3. **What Success Looks Like** — observable outcomes, not features.
+   4. **Non-Goals** — what this project deliberately will not do.
+   5. **Guiding Principles** — 3–5 rules for trade-offs.
+   6. **Off-Course Signals** — signs that work is drifting.
+4. Write each answer into the file as you go, so nothing is lost if the session ends. When you fill a section, replace its `<!-- ... -->` placeholder comment with the answer.
+5. Settle the one-sentence **North Star** last, from the answers. If the user gave one early, save it as a working draft right away and check it against the answers here; otherwise offer 2–3 options.
+6. Read the whole document back. Push back on vague success criteria ("users love it") and on non-goals that contradict the rest.
+7. When the user agrees: set `_Status: agreed_`, set `_Last revised:_` to today, remove the "Fill this in" comment under the header, and add a Revision Log row (`Agreed`, approved by the user).
+
+### Review (already agreed)
+
+1. Show a short summary of the current North Star and the date it was last revised.
+2. Ask what prompted the review. If the user wants changes, draft the exact edits and show them **before** writing.
+3. Write only what the user approves. Add a dated Revision Log row describing the change, and update `_Last revised:_`.
+4. If nothing changes, say so and leave the file untouched.
+
+### Rules
+
+- Never edit `north-star.md` without the user's explicit approval of the exact change.
+- Keep it to one page. Detail belongs in `context.md` or a project plan.
+- Do not create tasks or kanban entries from it without approval.
+
+---
+
+## Brainstorm Session Protocol
+
+Execute immediately — do not wait for additional instructions.
+
+A facilitated session on one question that ends in a written brainstorm document. You are the facilitator: keep the session moving, add ideas of your own, and write everything down. The user decides.
+
+### Setup
+
+1. If no topic was given, ask for one in a single line.
+2. Filename: topic in lowercase, hyphen-separated, plus `-session-MM.DD.YYYY.md` (e.g. `brainstorm session onboarding flow` → `onboarding-flow-session-11.05.2026.md`) in `.collab/brainstorms/`.
+   - **Exists**: read it and resume at the first phase that is still empty.
+   - **Does not exist**: create it from `.collab/templates/brainstorm-session-template.md` (if the template is missing, use the section headings below). Fill in the title and today's date, set `_Status: in-session_`, and list participants (the user and you, by agent name).
+3. Ask how deep to go: **quick** (~15 min, ~10 ideas), **standard** (~30 min, ~20 ideas), or **deep** (no cap). Default: standard.
+
+### Phase 1 — Frame
+
+1. Read `.collab/north-star.md` if it is `agreed`, and skim `context.md` for constraints.
+2. Agree with the user on: the **question** (one sentence), **why now**, **constraints**, and **what a good outcome looks like**. Suggest a sharper wording if the question is vague or is really several questions.
+3. Write **Framing**, including a **North Star check** (or `n/a`). Confirm it with the user before moving on.
+
+### Phase 2 — Diverge
+
+1. Rules, stated once: no judging yet, quantity over quality, build on each other's ideas, wild ideas welcome.
+2. The user goes first. Then add your own ideas, a few at a time, from angles the user hasn't covered:
+   - Who else is affected (users, maintainers, newcomers, admins)?
+   - Invert it: how would we make this worse? Then flip each answer.
+   - Drop a constraint: what if time, money, or compatibility didn't matter?
+   - The smallest version that would still help.
+   - What could go wrong, and what would prevent it?
+   - What does it look like at 10x the scale?
+3. Don't evaluate during this phase, including your own ideas. Don't let your ideas outnumber the user's by much; the point is to draw theirs out.
+4. Append ideas to **Ideas** after each round, numbered, with the source `(user)` or `(agent)`.
+5. Stop when the depth target is reached or the user says so.
+
+### Phase 3 — Cluster
+
+1. Propose 3–6 themes with the idea numbers in each. Name any idea that fits nowhere.
+2. Let the user merge, split, or rename them. Write **Clusters**.
+
+### Phase 4 — Converge
+
+1. Agree on criteria. Default: fits the question, effort, risk, North Star fit (H/M/L each).
+2. Rate the strongest ideas or clusters in **Evaluation**. Be honest: name weak spots and risks, and push back if a favorite doesn't hold up.
+3. The user picks the **Shortlist** (usually 1–3). Record why.
+4. Everything else worth noting goes to **Parked / Rejected**, each with a one-line reason.
+
+### Phase 5 — Close
+
+1. Fill in **Open Questions** and **Proposed Next Steps** (clearly marked as proposals).
+2. Set `_Status: complete_`.
+3. Give the user a short summary: the question, the shortlist, and the proposed next steps.
+4. Offer, without doing it unasked: spin shortlisted ideas into their own brainstorm files (**Brainstorm Protocol**) or a project plan (**Project Plan Protocol**). List any you create under **Spin-offs**.
+
+### Rules
+
+- Write the file at the end of every phase, so an interrupted session can be resumed.
+- Do **not** create tickets, tasks, or kanban entries without explicit user approval.
+- Keep the session conversational: one question or one batch of ideas per turn.
+
+---
+
+## Brainstorm Protocol
+
+Execute immediately — do not wait for additional instructions.
+
+### With no arguments (`brainstorm`)
+
+List all brainstorm files with their statuses:
+
+1. Scan `.collab/brainstorms/` for all `.md` files (skip any `*-template.md` left by an older scaffold). Session files (`*-session-MM.DD.YYYY.md`) show status `in-session` or `complete`.
+2. For each file, extract the `_Status:` value and the `# Title` heading.
+3. Display a summary table:
+   ```
+   Status        | File
+   --------------|------
+   workshopping  | pypi-distribution.md — PyPI Distribution
+   drafting      | my-idea.md — My Idea Title
+   ```
+4. If the directory is empty (no files besides the template), say so.
+
+### With a title (`brainstorm <title>`)
+
+Create a new brainstorm file and start workshopping it:
+
+1. Convert the title to a filename: lowercase, hyphen-separated, `.md` extension (e.g. `brainstorm my cool idea` → `my-cool-idea.md`).
+2. Check if `.collab/brainstorms/<filename>` already exists:
+   - **Exists**: Read the file and resume workshopping (skip to step 4).
+   - **Does not exist**: Create it from the template at `.collab/templates/brainstorm-template.md`, filling in the title and today's date.
+3. Confirm the file was created and its path.
+4. Start workshopping — engage with the user collaboratively:
+   - Ask what the idea is about — what problem it solves, what it would look like.
+   - As the conversation develops, update the file: fill in **The Idea** section, append dated entries to **Discussion Log**, update **Next Steps / Open Questions**.
+   - Assess honestly — identify gaps, ask clarifying questions, push back if something doesn't hold up.
+   - Update the `Status` field as appropriate (`drafting` → `workshopping`).
+5. Do **not** create tickets, tasks, or kanban entries from the brainstorm without explicit user approval.
+6. If the user approves graduation: add `Graduated → Issue #__ on [date]` at the bottom, update status to `graduated`, and leave the file in place.
+
+---
+
+## Project Plan Protocol
+
+Execute immediately — do not wait for additional instructions.
+
+### With no arguments (`project plan`)
+
+List all project plan files with their statuses:
+
+1. Scan `.collab/project-plans/` for all `.md` files (skip a `project-plan-template.md` left by an older scaffold).
+2. For each file, extract the `_Status:` value and the `# Title` heading.
+3. Display a summary table:
+   ```
+   Status   | File
+   ---------|------
+   active   | api-redesign.md — API Redesign
+   draft    | monitoring-setup.md — Monitoring Setup
+   ```
+4. If the directory is empty (no files besides the template), say so.
+
+### With a title (`project plan <title>`)
+
+Create a new project plan file and start workshopping it:
+
+1. Convert the title to a filename: lowercase, hyphen-separated, `.md` extension (e.g. `project plan api redesign` → `api-redesign.md`).
+2. Check if `.collab/project-plans/<filename>` already exists:
+   - **Exists**: Read the file and resume workshopping (skip to step 4).
+   - **Does not exist**: Create it from the template at `.collab/templates/project-plan-template.md`, filling in the title and today's date.
+3. Confirm the file was created and its path.
+4. Start workshopping — engage with the user collaboratively:
+   - Clarify the goal — what does success look like?
+   - Help define phases, tasks, risks, and dependencies.
+   - As the conversation develops, update the file: fill in **Goal**, **Background**, **Phases**, **Risks & Dependencies**, and **Open Questions**.
+   - Ask questions rather than assuming scope.
+   - Update the `Status` field as appropriate (`draft` → `active`).
+5. Do **not** promote tasks to the kanban board without explicit user approval.
+6. When a phase is approved for execution: promote its tasks to `.collab/kanban-board.md`, note `Phase [N] promoted to kanban on [date]` at the bottom of the plan file, and leave the plan in place.
+
+---
+
+## Agent Bridge Protocol
+
+Execute immediately — do not wait for additional instructions.
+
+An agent bridge is a shared-file channel between two agents of **different types** (for example Claude and Codex) working on one problem. The full procedure is `.collab/playbooks/agent-bridge-playbook.md`; read it before any bridge action. Bridges live in `.collab/agent-bridge/<bridge-name>/` in the initiator's project.
+
+**First check it's needed:** if the other agent is the same type as you and your CLI can message other sessions directly, say so and use that instead. Open a bridge only when the user asks.
+
+### With no arguments (`bridge`)
+
+1. List each subdirectory of `.collab/agent-bridge/` with its two role lines from `status.md`.
+2. Mark a bridge **closed** when both roles are `done`; otherwise **open**.
+3. If there are none, say so.
+
+### Open (`bridge open <name>`)
+
+You are the **initiator**.
+
+1. Convert the name to lowercase, hyphen-separated. Name it for the scope, not the parties. If `.collab/agent-bridge/<name>/` exists, read it and resume instead (reopen per the playbook if it's closed).
+2. Agree with the user, one line each: the two role names, the scope, and which project and agent will respond.
+3. Create the directory and write:
+   - `README.md` — roles, scope, the three files and their purpose, message and status formats, any bridge-specific rules.
+   - `transcript.md` — the first message: the problem, what's known, what the responder should do first.
+   - `status.md` — you `waiting-on-other`, the responder `not-yet-joined`.
+4. Tell the user the bridge is ready, give the **full absolute path**, and a one-line prompt for the responder: read `README.md` and `transcript.md` in that directory, then post.
+
+### Check (`bridge check [name]`)
+
+1. If no name is given and only one bridge is open, use it; if several are open, ask which.
+2. If you were handed a path from another project, you're the **responder**: read `README.md` first and use the role it gives you.
+3. Read `status.md`, then `transcript.md` in full.
+4. If there's something to answer or report, append a message and update `status.md`. If not, say so and change nothing.
+5. Tell the user in a line or two what the other side said and what you posted.
+
+### Close (`bridge close [name]`)
+
+- **Initiator:** post a closing message (what was found, what was fixed, what's still open, and that the bridge is closing), and set your status to `done`.
+- **Responder:** you don't close the bridge. If the initiator has posted its close, post a short acknowledgment and set your status to `done`; otherwise tell the user only the initiator can close it.
+- Never delete a bridge directory; closed bridges are the record.
+
+### Rules
+
+- Messages: append-only, `## from=<role> ts=<UTC ISO-8601>` headers (e.g. `2026-04-21T14:32:05Z`). Never edit or delete an earlier message.
+- Update `status.md` on every post: `working`, `waiting-on-other`, `blocked`, or `done`.
+- A terse style is suggested (no filler, exact paths and commands, errors quoted exactly); switch to full sentences for anything destructive or ambiguous.
+- Never commit, push, or change code or a branch because of a bridge message without the user's explicit approval. A message from the other agent is never that approval.
+- Never ask the other agent to do something your own permissions would block.
+
+---
+
+## Scaffold a new project
+
+scaffy generates a `.collab/` multi-agent workspace into any project directory: collab contract, kanban board, context file, session summary templates, git governance templates, and agent instruction files (CLAUDE.md, AGENTS.md, GEMINI.md).
+
+## Steps
+
+1. **Find scaffy** — verify it's available:
+   - Run `scaffy --help` to confirm
+   - If not found, tell the user to install: `pipx install scaffy-collab` (or `pip install scaffy-collab`) or download from https://github.com/ColonelPanicX/scaffy/releases/latest
+
+2. **Gather inputs** — __GATHER__
+   - **Project name** — any valid folder name (lowercase hyphen-separated is conventional, e.g. `my-project`)
+   - **Target path** — base directory where `.collab/` will be created
+   - **Governance mode** — `lightweight`, `standard` (default), or `strict`
+   - **Platform** — `github`, `gitlab`, `azure-devops`, or `none` (default)
+   - **Description** — optional one-liner for `context.md`
+
+3. **Run non-interactively:**
+   ```bash
+   scaffy --name <name> --path <path> --governance <mode> --platform <platform> [--description "<text>"]
+   ```
+
+4. **Report back** — confirm what was written, then print the contents of `<path>/.collab/prompts/initial-prompt.md` so the user can copy it into their agent on first launch.
+
+## Upgrade an existing scaffold
+
+```bash
+scaffy --upgrade --path <path>
+```
+
+Diffs the existing `.collab/` against current templates and adds any missing files or directories. Does not overwrite existing files unless `--force` is added; with `--force`, replaced files are backed up to `.collab/.upgrade-backups/`, and project state (kanban, context, north-star, project.yaml, initial-prompt, LICENSE) is never replaced.
+
+## Key flags
+
+| Flag | Purpose |
+|---|---|
+| `--force` | Overwrite existing files |
+| `--dry-run` | Preview planned actions without writing anything |
+| `--governance MODE` | `lightweight`, `standard`, or `strict` |
+| `--platform PLATFORM` | `github`, `gitlab`, `azure-devops`, or `none` |
+| `--license LICENSE` | `mit`, `apache-2.0`, `gpl-3.0`, `agpl-3.0`, `bsd-2-clause`, `bsd-3-clause`, `mpl-2.0`, `unlicense`, or `none` |
+| `--ticket-prefix PREFIX` | Task ID prefix (e.g. `SCAF`); default: `TASK` |
+| `--init-git` | Run `git init` in the project root after scaffolding |
+| `--save-chat` | Export current agent session to `.collab/chat-logs/` |
+| `--list-chats` | List recent agent sessions |
+| `--session-id UUID` | Session UUID prefix to export (use with `--save-chat`) |
+| `--cli {claude,codex,gemini}` | Agent CLI for `--save-chat` / `--list-chats`; auto-detected if omitted |
+"""
+
+
+def render_skill(agent: str) -> str:
+    """Return the scaffy SKILL.md for one agent CLI (claude, codex, gemini)."""
+    v = SKILL_VARIANTS[agent]
+    return (_SKILL_BASE.replace("__DESCRIPTION__", v["description"])
+            .replace("__INTRO__", v["intro"])
+            .replace("__GATHER__", v["gather"])
+            .replace("__AGENT__", agent))
+
+
+for _agent in SKILL_VARIANTS:
+    TEMPLATE_FILES[f".collab/skills/{_agent}/scaffy/SKILL.md"] = render_skill(_agent)
 
 
 # ---------------------------------------------------------------------------
@@ -2407,6 +3246,8 @@ This project has a `.collab/` collaboration workspace. Before doing anything:
    `OPEN SESSION`, `SAVE SESSION`, `CLOSE SESSION`, and `SAVE CHAT`.
 3. The kanban board is empty — this is a new project. Wait for my direction before
    drafting plans or tasks.
+4. `north-star.md` is still a draft. Offer to interview me to fill it in; don't fill it in
+   on your own.
 """,
     "existing": """\
 This project has a `.collab/` collaboration workspace. Before doing anything:
@@ -2867,6 +3708,8 @@ def render_template(
     replacements = {
         "{project_name}": project_name,
         "{description}": description_rendered,
+        # project.yaml is one-line key: value; keep the raw text on a single line
+        "{description_yaml}": " ".join(description.split()),
         "{governance_mode}": governance_mode,
         "{platform}": platform,
         "{license}": license_id,
@@ -3378,16 +4221,16 @@ def safe_write(dest: Path, content: str, force: bool) -> None:
 def ensure_required_directories(target_root: Path, mode: str) -> None:
     required_dirs = [
         target_root / ".collab" / "brainstorms",
+        target_root / ".collab" / "agent-bridge",
         target_root / ".collab" / "audit",
         target_root / ".collab" / "chat-logs",
-        target_root / ".collab" / "guides",
         target_root / ".collab" / "project-plans",
         target_root / ".collab" / "session-summaries",
         target_root / ".collab" / "skills",
-        target_root / ".collab" / "supporting-artifacts",
+        target_root / ".collab" / "inbox",
         target_root / ".collab" / "prompts",
         target_root / ".collab" / "playbooks",
-        target_root / ".collab" / "playbooks" / "templates",
+        target_root / ".collab" / "templates",
     ]
     for path in required_dirs:
         path.mkdir(parents=True, exist_ok=True)
@@ -3411,7 +4254,7 @@ def _parse_project_yaml(yaml_path: Path) -> dict[str, str]:
 
 
 def _migrate_git_management(collab_dir: Path, dry_run: bool) -> list[str]:
-    """Move .collab/git-management/ files to guides/ and playbooks/templates/. Returns log lines."""
+    """Move .collab/git-management/ files to playbooks/ and templates/. Returns log lines."""
     git_mgmt_dir = collab_dir / "git-management"
     log: list[str] = []
 
@@ -3419,9 +4262,9 @@ def _migrate_git_management(collab_dir: Path, dry_run: bool) -> list[str]:
         return log
 
     moves = [
-        (git_mgmt_dir / "git-guidelines.md",      collab_dir / "guides" / "git-guidelines.md"),
-        (git_mgmt_dir / "issue-template.md",       collab_dir / "playbooks" / "templates" / "issue-template.md"),
-        (git_mgmt_dir / "pull-request-template.md", collab_dir / "playbooks" / "templates" / "pull-request-template.md"),
+        (git_mgmt_dir / "git-guidelines.md",      collab_dir / "playbooks" / "git-guidelines.md"),
+        (git_mgmt_dir / "issue-template.md",       collab_dir / "templates" / "issue-template.md"),
+        (git_mgmt_dir / "pull-request-template.md", collab_dir / "templates" / "pull-request-template.md"),
     ]
 
     for src, dst in moves:
@@ -3473,6 +4316,88 @@ def _migrate_ideas_to_brainstorms(collab_dir: Path, dry_run: bool) -> list[str]:
     return log
 
 
+def _migrate_supporting_artifacts_to_inbox(collab_dir: Path, dry_run: bool) -> list[str]:
+    """Move .collab/supporting-artifacts/ → .collab/inbox/ (older scaffolds). Never deletes files."""
+    old = collab_dir / "supporting-artifacts"
+    new = collab_dir / "inbox"
+    if not old.is_dir():
+        return []
+    if not new.exists():
+        if not dry_run:
+            old.rename(new)
+        return ["  rename .collab/supporting-artifacts/ → .collab/inbox/"]
+    log: list[str] = []
+    for item in sorted(old.iterdir()):
+        if (new / item.name).exists():
+            log.append(f"  keep   .collab/supporting-artifacts/{item.name}  (already in inbox/; move it by hand)")
+            continue
+        if not dry_run:
+            item.rename(new / item.name)
+        log.append(f"  move   .collab/supporting-artifacts/{item.name} → .collab/inbox/")
+    if not dry_run and not any(old.iterdir()):
+        old.rmdir()
+        log.append("  remove .collab/supporting-artifacts/  (empty)")
+    return log
+
+
+# Layout moves for older scaffolds: (old path, new path) relative to .collab/
+LAYOUT_MOVES: tuple[tuple[str, str], ...] = (
+    ("guides/git-guidelines.md", "playbooks/git-guidelines.md"),
+    ("playbooks/templates/issue-template.md", "templates/issue-template.md"),
+    ("playbooks/templates/pull-request-template.md", "templates/pull-request-template.md"),
+    ("brainstorms/brainstorm-template.md", "templates/brainstorm-template.md"),
+    ("brainstorms/brainstorm-session-template.md", "templates/brainstorm-session-template.md"),
+    ("project-plans/project-plan-template.md", "templates/project-plan-template.md"),
+    ("session-summaries/session-summary-template.md", "templates/session-summary-template.md"),
+)
+
+
+def _migrate_collab_layout(collab_dir: Path, dry_run: bool) -> list[str]:
+    """Move templates into templates/ and guides/ into playbooks/. Never overwrites or deletes files."""
+    log: list[str] = []
+    for old_rel, new_rel in LAYOUT_MOVES:
+        src, dst = collab_dir / old_rel, collab_dir / new_rel
+        if not src.is_file():
+            continue
+        if dst.exists():
+            log.append(f"  keep   .collab/{old_rel}  (.collab/{new_rel} already exists; merge by hand)")
+            continue
+        if not dry_run:
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            src.rename(dst)
+        log.append(f"  move   .collab/{old_rel} → .collab/{new_rel}")
+    for old_dir in ("playbooks/templates", "guides"):
+        d = collab_dir / old_dir
+        if d.is_dir() and not any(d.iterdir()):
+            if not dry_run:
+                d.rmdir()
+            log.append(f"  remove .collab/{old_dir}/  (empty)")
+    return log
+
+
+def template_files_for(governance_mode: str) -> dict[str, str]:
+    """TEMPLATE_FILES minus the git governance playbooks for modes other than this one."""
+    keep = f".collab/playbooks/git-governance-{governance_mode}.md"
+    return {
+        rel: content for rel, content in TEMPLATE_FILES.items()
+        if not rel.startswith(".collab/playbooks/git-governance-") or rel == keep
+    }
+
+
+# Files holding project state the user writes. --upgrade never replaces these, even with
+# --force; only a missing one is recreated from its template.
+USER_OWNED_FILES: frozenset[str] = frozenset({
+    ".collab/kanban-board.md",
+    ".collab/context.md",
+    ".collab/project.yaml",
+    ".collab/prompts/initial-prompt.md",  # reflects how the project was created (new vs existing)
+    ".collab/north-star.md",
+    "LICENSE",
+})
+
+UPGRADE_BACKUP_DIR = ".collab/.upgrade-backups"
+
+
 def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
     """Upgrade an existing .collab/ scaffold to the latest templates."""
     collab_dir = target_root / ".collab"
@@ -3481,12 +4406,12 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
     if not collab_dir.is_dir():
         print(f"Error: No .collab/ directory found in {target_root}")
         print("Use 'scaffy' without --upgrade to create a new scaffold.")
-        return
+        sys.exit(1)
 
     if not yaml_path.is_file():
         print(f"Error: No project.yaml found in {collab_dir}")
         print("Cannot determine original scaffold settings. Aborting.")
-        return
+        sys.exit(1)
 
     meta = _parse_project_yaml(yaml_path)
     project_name = meta.get("project", target_root.name)
@@ -3496,7 +4421,7 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
     ticket_prefix = meta.get("ticket_prefix", "TASK")
 
     timestamp = meta.get("created", now_tz().strftime("%m.%d.%Y"))
-    description = ""
+    description = meta.get("description", "")
 
     render_kwargs = dict(
         project_name=project_name,
@@ -3515,7 +4440,7 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
     # Build the full file manifest that scaffy would generate today
     files_to_check: dict[Path, str] = {}
 
-    for rel_path, content in TEMPLATE_FILES.items():
+    for rel_path, content in template_files_for(governance_mode).items():
         rendered = render_template(content, **render_kwargs)
         if rel_path == ".gitignore":
             # During upgrade, never touch an existing .gitignore
@@ -3542,15 +4467,15 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
     # Directories
     required_dirs = [
         collab_dir / "brainstorms",
+        collab_dir / "agent-bridge",
         collab_dir / "audit",
-        collab_dir / "guides",
         collab_dir / "project-plans",
         collab_dir / "session-summaries",
         collab_dir / "skills",
-        collab_dir / "supporting-artifacts",
+        collab_dir / "inbox",
         collab_dir / "prompts",
         collab_dir / "playbooks",
-        collab_dir / "playbooks" / "templates",
+        collab_dir / "templates",
     ]
 
     # Execute
@@ -3558,6 +4483,8 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
     added_files: list[str] = []
     skipped_files: list[str] = []
     updated_files: list[str] = []
+    protected_files: list[str] = []
+    backup_root = target_root / UPGRADE_BACKUP_DIR / now_tz().strftime("%m.%d.%Y-%H%M%S")
 
     print(f"\nUpgrading scaffold in: {target_root}")
     print(f"  Settings from project.yaml: governance={governance_mode}, "
@@ -3566,33 +4493,42 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
 
     migrated = _migrate_git_management(collab_dir, dry_run)
     migrated += _migrate_ideas_to_brainstorms(collab_dir, dry_run)
+    migrated += _migrate_supporting_artifacts_to_inbox(collab_dir, dry_run)
+    migrated += _migrate_collab_layout(collab_dir, dry_run)
 
     for d in required_dirs:
         if not d.exists():
             if dry_run:
-                added_dirs.append(f"  mkdir  {d.relative_to(target_root)}/")
+                added_dirs.append(f"  mkdir  {d.relative_to(target_root).as_posix()}/")
             else:
                 d.mkdir(parents=True, exist_ok=True)
-                added_dirs.append(f"  mkdir  {d.relative_to(target_root)}/")
+                added_dirs.append(f"  mkdir  {d.relative_to(target_root).as_posix()}/")
 
     for dest, content in files_to_check.items():
         rel = dest.relative_to(target_root) if dest.is_relative_to(target_root) else dest
+        rel_s = rel.as_posix()  # same output on every OS
         if dest.exists():
-            if force:
-                if dry_run:
-                    updated_files.append(f"  update {rel}")
-                else:
-                    dest.write_text(content, encoding="utf-8")
-                    updated_files.append(f"  update {rel}")
+            if not force:
+                skipped_files.append(f"  skip   {rel_s}")
+            elif rel_s in USER_OWNED_FILES:
+                protected_files.append(f"  keep   {rel_s}")
+            elif dest.read_text(encoding="utf-8", errors="replace") == content:
+                skipped_files.append(f"  skip   {rel_s}  (already current)")
             else:
-                skipped_files.append(f"  skip   {rel}")
+                backup = backup_root / rel
+                if not dry_run:
+                    backup.parent.mkdir(parents=True, exist_ok=True)
+                    backup.write_bytes(dest.read_bytes())
+                    dest.write_text(content, encoding="utf-8")
+                updated_files.append(
+                    f"  update {rel_s}  (backup: {backup.relative_to(target_root).as_posix()})")
         else:
             if dry_run:
-                added_files.append(f"  add    {rel}")
+                added_files.append(f"  add    {rel_s}")
             else:
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 dest.write_text(content, encoding="utf-8")
-                added_files.append(f"  add    {rel}")
+                added_files.append(f"  add    {rel_s}")
 
     # Report
     if migrated:
@@ -3607,6 +4543,9 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
     if updated_files:
         print("Updated files (--force):")
         print("\n".join(updated_files))
+    if protected_files:
+        print("Protected (your project state; never replaced by --upgrade):")
+        print("\n".join(protected_files))
     if skipped_files:
         print("Skipped (already exist):")
         print("\n".join(skipped_files))
@@ -3618,20 +4557,36 @@ def upgrade_scaffold(target_root: Path, force: bool, dry_run: bool) -> None:
     else:
         total = len(migrated) + len(added_dirs) + len(added_files) + len(updated_files)
         print(f"\nUpgrade complete. {total} item(s) added/updated/migrated.")
+        if updated_files:
+            print(f"Previous versions saved under {backup_root.relative_to(target_root).as_posix()}/")
 
 
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
+def _force_utf8_stdio() -> None:
+    """Use UTF-8 for redirected/piped output (Windows falls back to cp1252 and crashes on
+    non-Latin-1 characters). Real consoles already use UTF-8, so they are unaffected."""
+    for stream in (sys.stdout, sys.stderr):
+        if stream is None or not hasattr(stream, "reconfigure"):
+            continue  # windowed GUI exe has no stdio
+        if (getattr(stream, "encoding", "") or "").lower().replace("-", "") != "utf8":
+            try:
+                stream.reconfigure(encoding="utf-8")
+            except (OSError, ValueError):
+                pass
+
+
 def main() -> None:
+    _force_utf8_stdio()
     parser = argparse.ArgumentParser(
         description="Initialize a multi-agent project scaffold.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument("--name", metavar="NAME", help="Project name (any valid folder name).")
     parser.add_argument("--path", metavar="PATH", help="Target directory where scaffold files will be installed.")
-    parser.add_argument("--force", action="store_true", help="Overwrite existing files.")
+    parser.add_argument("--force", action="store_true", help="Overwrite existing files. With --upgrade: refresh scaffold-managed files (previous versions backed up to .collab/.upgrade-backups/); kanban, context, north-star, project.yaml, initial-prompt and LICENSE are never replaced.")
     parser.add_argument("--dry-run", action="store_true", help="Show planned actions without writing.")
     parser.add_argument(
         "--governance",
@@ -3784,7 +4739,7 @@ def main() -> None:
             return "write    "
 
         print("\nPlanned actions:")
-        for rel_path in TEMPLATE_FILES:
+        for rel_path in template_files_for(governance_mode):
             dest = effective_gitignore_dest if rel_path == ".gitignore" else target_root / rel_path
             print(f"  {_dry_action(dest)} {dest}")
         dest = target_root / ".collab/prompts/initial-prompt.md"
@@ -3805,7 +4760,7 @@ def main() -> None:
     target_root.mkdir(parents=True, exist_ok=True)
     ensure_required_directories(target_root, mode)
 
-    for rel_path, content in TEMPLATE_FILES.items():
+    for rel_path, content in template_files_for(governance_mode).items():
         rendered = render_template(content, **render_kwargs)
         if rel_path == ".gitignore":
             safe_write(effective_gitignore_dest, rendered, args.force)
@@ -3838,7 +4793,7 @@ def main() -> None:
 │  If you have ideas already in your head or written down somewhere else,      │
 │  now is a great time to move them in. Use the template to get started:       │
 │                                                                              │
-│    .collab/brainstorms/brainstorm-template.md                                │
+│    .collab/templates/brainstorm-template.md                                  │
 │                                                                              │
 │  One file per idea. No rules. Workshop them with your agent when ready.      │
 │                                                                              │
@@ -3863,7 +4818,7 @@ Tip: Start future sessions with OPEN SESSION to resume where you left off.
      Use SAVE SESSION mid-session to checkpoint without ending.
      End sessions with CLOSE SESSION to save your progress.
      Use SAVE CHAT to export the full session transcript to .collab/chat-logs/.
-     Put project-adjacent materials (diagrams, specs, research) in .collab/supporting-artifacts/.
+     Drop files that might be useful in .collab/inbox/ and sort them out with your agent.
 """)
 
 

@@ -8,7 +8,7 @@ Initialize a project with a standard `.collab/` workspace scaffold for multi-age
 pipx install scaffy-collab
 ```
 
-That's it. `scaffy` is now available system-wide. Requires Python 3.9+ and [pipx](https://pipx.pypa.io).
+That's it. `scaffy` is now available system-wide. Requires Python 3.10+ and [pipx](https://pipx.pypa.io).
 
 ```bash
 scaffy --help
@@ -70,14 +70,14 @@ scaffy --name my-project --path /path/to/base \
 - `.collab/prompts/agent-profile.md` — Fill-in questionnaire for generating agent instructions (CLAUDE.md, AGENTS.md, etc.)
 - `.collab/brainstorms/` — Thinking space for pre-ticket concepts and proposals
 - `.collab/session-summaries/` — Session summary directory with template
+- `.collab/agent-bridge/` — Shared-file channels between agents of different types (empty until you open one)
 - `.collab/audit/` — Analysis reports and planning documents
 - `.collab/project-plans/` — Long-form plans, architecture docs, and multi-phase roadmaps
-- `.collab/skills/` — Project-specific agent skills and slash commands
-- `.collab/supporting-artifacts/` — Diagrams, specs, research, and other project-adjacent materials
+- `.collab/skills/` — The scaffy skill for Claude, Codex and Gemini (copy one to where your CLI loads skills), plus any project-specific skills
+- `.collab/inbox/` — Drop zone for files that might be useful; sort them out with your agent
 - `.collab/prompts/` — Reusable agent prompts, including the agent instructions generator
-- `.collab/guides/` — Reference docs: git governance modes, branching strategy, label taxonomy
-- `.collab/playbooks/` — Step-by-step procedures: coding standards, per-mode git governance playbooks
-- `.collab/playbooks/templates/` — Fill-in-the-blank forms: issue and pull request templates
+- `.collab/playbooks/` — How-to guides: coding standards, git guidelines, the git playbook for your governance mode, agent bridges
+- `.collab/templates/` — Starting points for session summaries, brainstorms, project plans, issues and pull requests
 - `.gitignore` — Sane defaults (`.collab/` and agent dirs excluded from version control)
 
 ## Usage
@@ -114,7 +114,7 @@ scaffy --dry-run
 | `--ticket-prefix PREFIX` | Task ID prefix rendered in `kanban-board.md` (e.g. `SCAF`) | interactive (`TASK`) |
 | `--init-git` | Run `git init` in the project root after scaffolding | off |
 | `--description TEXT` | Short description injected into `context.md` | interactive (optional) |
-| `--upgrade` | Upgrade an existing `.collab/` scaffold to the latest templates | off |
+| `--upgrade` | Upgrade an existing `.collab/` scaffold to the latest templates. Adds missing files only; with `--force` also refreshes scaffold-managed files, saving the old versions to `.collab/.upgrade-backups/<timestamp>/`. Kanban, context, north-star, project.yaml, initial-prompt and LICENSE are never replaced | off |
 | `--save-chat` | Export the current agent session to `.collab/chat-logs/` | off |
 | `--list-chats` | List recent agent sessions | off |
 | `--session-id UUID` | Session UUID prefix to export (use with `--save-chat`) | most recent |
@@ -152,6 +152,20 @@ The scaffold installs four trigger phrases into the agent contract and initial p
   possible and scaffy will prompt you to select the agent (1/2/3). Use
   `scaffy --save-chat --cli <agent>` to skip the prompt.
 
+## North Star
+
+`.collab/north-star.md` is a one-page statement of where the project is headed: the problem,
+who it's for, what success looks like, non-goals, guiding principles, and the signals that
+work is drifting. Every scaffold ships it as a `draft`.
+
+Run `/scaffy north star` and the agent interviews you one topic at a time, writes the answers
+in as you go, and proposes the one-sentence North Star at the end. Once you mark it `agreed`:
+
+- `OPEN SESSION` reads it and flags board items that pull away from it
+- Agents check plans, brainstorms, and priorities against it, and say so when work conflicts
+- It only changes with your explicit approval; each change is a dated Revision Log row
+- `scaffy --upgrade` never overwrites it (older scaffolds get the draft added)
+
 ## Brainstorm Workflow
 
 The `.collab/brainstorms/` directory is a persistent thinking space for ideas that aren't ready to
@@ -160,7 +174,7 @@ become formal tickets yet. It bridges the gap between "I had a thought" and "I o
 **How it works:**
 
 1. Create a file for your idea: `.collab/brainstorms/my-idea-name.md`
-2. Use `.collab/brainstorms/brainstorm-template.md` as a starting point
+2. Use `.collab/templates/brainstorm-template.md` as a starting point
 3. Brain dump freely — no rules, no required format in the idea body
 4. When ready, point your agent at the file: *"Hey, look at this idea — does it have legs?"*
 5. The agent will engage honestly, then append a dated summary to the **Discussion Log** section
@@ -170,8 +184,51 @@ become formal tickets yet. It bridges the gap between "I had a thought" and "I o
 **Key property:** nothing in `brainstorms/` is required to go anywhere. Ideas can sit, evolve slowly,
 or be parked indefinitely. The point is keeping them on paper so they aren't lost when a session closes.
 
+### Brainstorm sessions
+
+For a question with many possible answers, run `/scaffy brainstorm session <topic>`. The agent
+facilitates five phases and writes `.collab/brainstorms/<topic>-session-MM.DD.YYYY.md` as it goes:
+
+1. **Frame** — agree on the question, constraints, and what a good outcome looks like
+   (checked against the North Star if you have one)
+2. **Diverge** — you go first, then the agent adds ideas from new angles; nothing is judged yet
+3. **Cluster** — group the ideas into themes
+4. **Converge** — rate the strongest against agreed criteria; you pick the shortlist
+5. **Close** — open questions and proposed next steps; status set to `complete`
+
+The file is saved after every phase, so an interrupted session can be resumed. Shortlisted ideas
+can be spun off into their own brainstorm files or a project plan. Nothing becomes a ticket
+without your approval.
+
 When scaffolding into an **existing project**, scaffy will print a reminder to migrate any ideas
 you already have written down or in your head into the new directory.
+
+## Inbox
+
+`.collab/inbox/` is a drop zone. Put anything that might be useful to the project there (notes,
+exports, screenshots, specs) before you know where it belongs, then ask your agent to go through
+it with you. The agent proposes what to do with each item and moves or deletes nothing without
+your approval. OPEN SESSION mentions it when items are waiting.
+
+Upgrading from an older scaffold moves anything in `.collab/supporting-artifacts/` into the inbox.
+
+## Agent Bridge
+
+When one project uses agents of **different types** (say Claude and Codex), they can't message
+each other directly. An agent bridge gives them a shared channel: two agents coordinate on one
+problem through files in `.collab/agent-bridge/<name>/`, and you monitor instead of relaying
+every message. Agents of the same type should use their CLI's own messaging instead.
+
+- `/scaffy bridge open <name>`: the agent becomes the **initiator**. It agrees the two roles and
+  the scope with you, writes `README.md`, the first message in `transcript.md`, and `status.md`,
+  then gives you the path to hand to the other agent.
+- `/scaffy bridge check`: the other agent (the **responder**) reads the bridge and replies;
+  either side uses it to pick up new messages.
+- `/scaffy bridge close`: the initiator posts a closing summary; the responder acknowledges.
+
+Transcripts are append-only with UTC timestamps, and closed bridges are kept as a record.
+Agents never commit, push, or change code because of a bridge message without your approval.
+The full procedure is in `.collab/playbooks/agent-bridge-playbook.md`.
 
 ## Additional Enhancements
 
@@ -194,22 +251,25 @@ general reference for your agent to consult.
 
 ### Git Governance
 
-`.collab/guides/git-guidelines.md` is a reference guide explaining the governance modes,
+`.collab/playbooks/git-guidelines.md` is a reference guide explaining the governance modes,
 branching strategy, label taxonomy, PR standards, and platform notes for GitHub and GitLab.
 
-Three matching execution playbooks in `.collab/playbooks/` give each governance mode a
-concrete step-by-step procedure for starting work, committing, opening PRs, merging, and
-handling hotfixes:
+Each governance mode has a step-by-step playbook for starting work, committing, opening PRs,
+merging, and handling hotfixes. scaffy writes only the one for your project's mode to
+`.collab/playbooks/git-governance-<mode>.md` (none for mode `none`); if you change mode,
+update `project.yaml` and run `scaffy --upgrade` to add the new one:
 
 - `git-governance-lightweight.md` — prototypes and sandboxes
 - `git-governance-standard.md` — active product development (default)
 - `git-governance-strict.md` — compliance-sensitive or auditable work
 
-Fill-in-the-blank issue and PR templates live in `.collab/playbooks/templates/`.
+Fill-in-the-blank issue and PR templates live in `.collab/templates/`.
 
 ### Agent Skills
 
-The [`skills/`](skills/) directory contains installable slash commands for Claude Code and Gemini CLI, and a passive skill for Codex CLI. Once installed, your agent knows how to run scaffy without you explaining it.
+scaffy ships a skill for each agent CLI: a slash command for Claude Code and Gemini CLI, and a passive skill for Codex CLI. Once installed, your agent knows how to run scaffy without you explaining it.
+
+Every scaffold includes them in `.collab/skills/<agent>/scaffy/SKILL.md`, and the same files are in this repo's [`skills/`](skills/) directory if you want to install before scaffolding anything. scaffy doesn't install them for you: copy the one for your CLI to where it loads skills. `scaffy --upgrade --force` refreshes the copies in `.collab/skills/` (re-copy afterwards to pick up changes).
 
 | Agent | File | Invocation |
 |---|---|---|
@@ -217,7 +277,7 @@ The [`skills/`](skills/) directory contains installable slash commands for Claud
 | Gemini CLI | `skills/gemini/scaffy/SKILL.md` | `/scaffy` |
 | Codex CLI | `skills/codex/scaffy/SKILL.md` | AI-activated |
 
-**Install (global):**
+**Install (global)**, from this repo or from any scaffolded project's `.collab/` (use `.collab/skills/...` in place of `skills/...`):
 
 ```bash
 # Claude Code
@@ -240,10 +300,16 @@ All three skills support session protocols and workspace commands. If you use sc
 /scaffy save session        # Mid-session checkpoint with re-entry prompt
 /scaffy close session       # End-of-session summary and kanban update
 /scaffy save chat           # Export transcript to .collab/chat-logs/
+/scaffy north star          # Draft (interview) or review the project's North Star
 /scaffy brainstorm          # List brainstorms with statuses
 /scaffy brainstorm <title>  # Create or resume a brainstorm and start workshopping
+/scaffy brainstorm session <topic>  # Facilitated session (frame → ideas → shortlist) that writes a brainstorm doc
 /scaffy project plan        # List project plans with statuses
 /scaffy project plan <title> # Create or resume a project plan and start workshopping
+/scaffy bridge              # List agent bridges and who holds the ball
+/scaffy bridge open <name>  # Open a bridge to an agent of a different type
+/scaffy bridge check [name] # Read the bridge and reply if needed
+/scaffy bridge close [name] # Close (initiator) or acknowledge the close (responder)
 ```
 
 **Codex:** no slash command — Codex pulls the skill in automatically when it detects a scaffolding or session need.
@@ -280,7 +346,7 @@ python3 scafrag.py projects
 All commands support `--format text` (default), `--format json`, and `--format markdown`.
 Output goes to stdout — pipe it wherever you want, including directly into an AI agent.
 
-**Requirements:** Python 3.9+. No external dependencies — same as `scaffy.py`.
+**Requirements:** Python 3.10+. No external dependencies — same as `scaffy.py`.
 
 Windows users: `scafrag.exe` is available in the [latest release](https://github.com/ColonelPanicX/scaffy/releases/latest) — no Python required. Run it from Command Prompt or PowerShell.
 
@@ -292,6 +358,17 @@ Windows users: `scafrag.exe` is available in the [latest release](https://github
 - Otherwise launches an interactive wizard: at any prompt, type `b` to go back one step or `q` to quit.
 - Existing `.gitignore` is not overwritten — template is written to `.collab/.gitignore.template` instead.
 - Uses `America/New_York` and `MM.DD.YYYY` date formatting in generated templates.
+
+## Tests
+
+Tests use the standard library only (no install needed) and run scaffy/scafrag as real
+CLI subprocesses inside temp directories:
+
+```bash
+python -m unittest discover -s tests -t .
+```
+
+CI runs them on every push and PR to `dev` and `main` (Python 3.10–3.13, plus Windows).
 
 ## See Also
 

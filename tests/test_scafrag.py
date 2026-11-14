@@ -1,0 +1,121 @@
+"""Regression tests for scafrag.py (index/query/context/status/projects)."""
+from __future__ import annotations
+
+import json
+import tempfile
+import unittest
+from pathlib import Path
+
+from tests.helpers import new_project, scafrag
+
+
+class ScafragCase(unittest.TestCase):
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._tmp.name)
+        self.home = self.tmp / "home"
+        self.home.mkdir()
+        self.root = self.tmp / "code"
+        self.root.mkdir()
+
+    def tearDown(self) -> None:
+        self._tmp.cleanup()
+
+    def rag(self, *args: str, check: bool = True):
+        return scafrag(*args, home=self.home, check=check)
+
+    def rag_json(self, *args: str):
+        return json.loads(self.rag(*args, "--format", "json").stdout)["data"]
+
+    def add_summary(self, root: Path, name: str, text: str) -> None:
+        (root / ".collab/session-summaries" / name).write_text(text, encoding="utf-8")
+
+
+class TestScafrag(ScafragCase):
+    def test_index_and_projects(self) -> None:
+        new_project(self.root, "alpha")
+        new_project(self.root, "beta")
+        out = self.rag("index", "--root", str(self.root))
+        self.assertIn("2 project", out.stderr + out.stdout)
+        self.assertTrue((self.home / ".scafrag/index.json").is_file())
+        names = sorted(p["project"] for p in self.rag_json("projects"))
+        self.assertEqual(names, ["alpha", "beta"])
+
+    def test_query_ranks_matching_project(self) -> None:
+        a = new_project(self.root, "alpha")
+        new_project(self.root, "beta")
+        self.add_summary(a, "11.01.2026-claude-summary.md", "Decided on kubernetes ingress.\n")
+        self.rag("index", "--root", str(self.root))
+        results = self.rag_json("query", "kubernetes ingress")
+        self.assertEqual(results[0]["project"], "alpha")
+        self.assertEqual(len(results), 1)
+
+    def test_session_template_not_indexed(self) -> None:
+        new_project(self.root, "alpha")
+        self.rag("index", "--root", str(self.root))
+        ctx = self.rag_json("context", "alpha")
+        self.assertNotIn("session-summaries", ctx["content"])
+
+    def test_context_partial_and_missing(self) -> None:
+        new_project(self.root, "alpha-service")
+        self.rag("index", "--root", str(self.root))
+        self.assertEqual(self.rag_json("context", "alpha")["project"], "alpha-service")
+        self.assertNotEqual(self.rag("context", "nope", check=False).returncode, 0)
+
+    def test_status_counts_kanban(self) -> None:
+        a = new_project(self.root, "alpha")
+        kanban = a / ".collab/kanban-board.md"
+        kanban.write_text(kanban.read_text(encoding="utf-8").replace(
+            "## Blocked", "## Blocked\n- [ ] TASK-009: stuck\n"))
+        self.rag("index", "--root", str(self.root))
+        row = self.rag_json("status")[0]
+        self.assertEqual(row["blocked"], 1)
+
+    def test_metadata_read_from_scaffy_keys(self) -> None:
+        new_project(self.root, "alpha", "--governance", "strict", "--description", "Alpha svc")
+        self.rag("index", "--root", str(self.root))
+        ctx = self.rag_json("context", "alpha")
+        self.assertEqual(ctx["governance"], "strict")
+        self.assertRegex(ctx["created"], r"^\d{2}\.\d{2}\.\d{4}$")
+        self.assertEqual(ctx["description"], "Alpha svc")
+
+    def test_metadata_legacy_keys(self) -> None:
+        legacy = self.root / "folder-name" / ".collab"
+        legacy.mkdir(parents=True)
+        (legacy / "project.yaml").write_text(
+            "name: legacy\ngovernance: lightweight\ndate: 01.02.2026\n", encoding="utf-8")
+        self.rag("index", "--root", str(self.root))
+        ctx = self.rag_json("context", "legacy")
+        self.assertEqual((ctx["governance"], ctx["created"]), ("lightweight", "01.02.2026"))
+
+    def test_same_name_projects_both_indexed(self) -> None:
+        (self.root / "personal").mkdir()
+        (self.root / "work").mkdir()
+        a = new_project(self.root / "personal", "api")
+        b = new_project(self.root / "work", "api")
+        self.add_summary(a, "11.01.2026-claude-summary.md", "personal oauth notes\n")
+        self.add_summary(b, "11.01.2026-claude-summary.md", "work oauth notes\n")
+        out = self.rag("index", "--root", str(self.root))
+        self.assertIn("2 project", out.stderr + out.stdout)
+        paths = sorted(p["path"] for p in self.rag_json("projects"))
+        self.assertEqual(paths, sorted([str(a.resolve()), str(b.resolve())]))
+        self.assertEqual(len(self.rag_json("query", "oauth")), 2)
+        self.assertEqual(len(self.rag_json("status")), 2)
+
+    def test_context_ambiguous_name_needs_path(self) -> None:
+        (self.root / "personal").mkdir()
+        (self.root / "work").mkdir()
+        a = new_project(self.root / "personal", "api")
+        b = new_project(self.root / "work", "api")
+        self.rag("index", "--root", str(self.root))
+        proc = self.rag("context", "api", check=False)
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertIn(str(b.resolve()), proc.stderr)
+        self.assertEqual(self.rag_json("context", str(a))["path"], str(a.resolve()))
+
+    def test_no_index(self) -> None:
+        self.assertNotEqual(self.rag("projects", check=False).returncode, 0)
+
+
+if __name__ == "__main__":
+    unittest.main()
