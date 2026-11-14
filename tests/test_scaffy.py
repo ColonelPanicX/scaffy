@@ -149,6 +149,22 @@ class TestInit(TempDirCase):
                 self.assertEqual(repo_copy.read_text(encoding="utf-8"), scaffy_mod.render_skill(agent),
                                  "skills/ is out of date; regenerate it from scaffy.py (see comment)")
 
+    def test_help_and_skill_list_every_governance_mode(self) -> None:
+        help_text = " ".join(scaffy("--help").stdout.split())
+        self.assertIn("none, lightweight, standard, or strict", help_text)
+        skill = scaffy_mod.render_skill("claude")
+        self.assertIn("`none`, `lightweight`, `standard` (default), or `strict`", skill)
+
+    def test_onboarding_covers_north_star_everywhere(self) -> None:
+        for kind, prompt in scaffy_mod.INITIAL_PROMPT_TEMPLATES.items():
+            with self.subTest(prompt=kind):
+                self.assertIn("north-star.md", prompt)
+                self.assertIn("SAVE CHAT", prompt)
+        initialize = scaffy_mod.render_skill("claude").split("## Initialize Protocol", 1)[1]
+        initialize = initialize.split("\n## ", 1)[0]
+        self.assertIn("north-star.md", initialize)
+        self.assertIn("`SAVE CHAT`", initialize)
+
     def test_dry_run_writes_nothing(self) -> None:
         scaffy("--name", "dry", "--path", str(self.tmp), "--dry-run")
         self.assertFalse((self.tmp / "dry").exists())
